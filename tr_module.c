@@ -113,7 +113,7 @@ static ngx_conf_post_handler_pt  ngx_http_gzip_hash_p = ngx_http_gzip_hash;
 
 static ngx_command_t  tr_filter_commands[] = {
 
-    { ngx_string("agzip"),
+    { ngx_string("sdch"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
                         |NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
@@ -121,7 +121,7 @@ static ngx_command_t  tr_filter_commands[] = {
       offsetof(tr_conf_t, enable),
       NULL },
 
-    { ngx_string("agzip_buffers"),
+    { ngx_string("sdch_buffers"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
       ngx_conf_set_bufs_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
