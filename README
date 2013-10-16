@@ -2,6 +2,8 @@ To build: configure nginx like this
 
 configure --add-module=/path/to/this/directory ...other..flags...
 
+also install openvcdiff packages
+
 Configuration: on the location level
 
 sdch on/off -- enable/disable (default: disable)

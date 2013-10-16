@@ -241,19 +241,22 @@ backtrace_log(ngx_log_t *log)
     void* callstack[128];
     int frames = backtrace(callstack, 128);
     char** strs = backtrace_symbols(callstack, frames);
-    for (int i = 0; i < frames; ++i) {
+    unsigned i;
+
+    for (i = 0; i < frames; ++i) {
         ngx_log_error(NGX_LOG_INFO, log, 0, "frame %d: %s", i, strs[i]);
     }
 }
 
 static int
-header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
+header_find(ngx_list_t *headers, char *key, ngx_str_t *value)
 {
 	size_t keylen = strlen(key);
 	ngx_list_part_t *part = &headers->part;
 	ngx_table_elt_t* data = part->elts;
+	unsigned i;
 
-	for (int i = 0 ;; i++) {
+	for (i = 0 ;; i++) {
 
 		if (i >= part->nelts) {
 			if (part->next == NULL) {
@@ -374,7 +377,9 @@ tr_header_filter(ngx_http_request_t *r)
 
     ngx_http_clear_content_length(r);
     ngx_http_clear_accept_ranges(r);
-    ngx_http_clear_etag(r);
+
+//   TODO(wawa): adverse impact should be verified if any
+//   ngx_http_clear_etag(r);
 
     return ngx_http_next_header_filter(r);
 }
@@ -1158,7 +1163,9 @@ static void
 ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
 {
 	ngx_encode_base64(dst, src);
-	for (unsigned i = 0; i < dst->len; i++) {
+	unsigned i;
+
+	for (i = 0; i < dst->len; i++) {
 		if (dst->data[i] == '+')
 			dst->data[i] = '-';
 		if (dst->data[i] == '/')
