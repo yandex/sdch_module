@@ -33,6 +33,8 @@ typedef struct {
     unsigned char user_dictid[9], server_dictid[9];
 
     ngx_str_t            sdch_url;
+
+    ngx_uint_t           sdch_proxied;
 } tr_conf_t;
 
 typedef struct {
@@ -111,6 +113,24 @@ static ngx_conf_post_handler_pt  ngx_http_gzip_hash_p = ngx_http_gzip_hash;
 #endif
 
 
+static ngx_conf_bitmask_t  ngx_http_sdch_proxied_mask[] = {
+    { ngx_string("off"), NGX_HTTP_GZIP_PROXIED_OFF },
+    { ngx_string("expired"), NGX_HTTP_GZIP_PROXIED_EXPIRED },
+    { ngx_string("no-cache"), NGX_HTTP_GZIP_PROXIED_NO_CACHE },
+    { ngx_string("no-store"), NGX_HTTP_GZIP_PROXIED_NO_STORE },
+    { ngx_string("private"), NGX_HTTP_GZIP_PROXIED_PRIVATE },
+    { ngx_string("no_last_modified"), NGX_HTTP_GZIP_PROXIED_NO_LM },
+    { ngx_string("no_etag"), NGX_HTTP_GZIP_PROXIED_NO_ETAG },
+    { ngx_string("auth"), NGX_HTTP_GZIP_PROXIED_AUTH },
+    { ngx_string("any"), NGX_HTTP_GZIP_PROXIED_ANY },
+    { ngx_null_string, 0 }
+};
+static ngx_str_t  ngx_http_gzip_no_cache = ngx_string("no-cache");
+static ngx_str_t  ngx_http_gzip_no_store = ngx_string("no-store");
+static ngx_str_t  ngx_http_gzip_private = ngx_string("private");
+
+
+
 static ngx_command_t  tr_filter_commands[] = {
 
     { ngx_string("sdch"),
@@ -141,6 +161,14 @@ static ngx_command_t  tr_filter_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_url),
       NULL },
+
+    { ngx_string("sdch_proxied"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
+      ngx_conf_set_bitmask_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(tr_conf_t, sdch_proxied),
+      &ngx_http_sdch_proxied_mask },
+
 
 #if 0
     { ngx_string("gzip_types"),
@@ -276,6 +304,126 @@ header_find(ngx_list_t *headers, char *key, ngx_str_t *value)
 }
 
 static ngx_int_t
+ngx_http_sdch_ok(ngx_http_request_t *r)
+{
+    time_t                     date, expires;
+    ngx_uint_t                 p;
+    ngx_array_t               *cc;
+    ngx_table_elt_t           *e, *d, *ae;
+    tr_conf_t                 *clcf;
+
+//    r->gzip_tested = 1;
+
+    if (r != r->main) {
+        return NGX_DECLINED;
+    }
+
+#if (NGX_HTTP_SPDY)
+    //if (r->spdy_stream) {
+    //    r->gzip_ok = 1;
+    //    return NGX_OK;
+    //}
+#endif
+
+    clcf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+
+    if (r->headers_in.via == NULL) {
+        goto ok;
+    }
+
+    p = clcf->sdch_proxied;
+
+    if (p & NGX_HTTP_GZIP_PROXIED_OFF) {
+        return NGX_DECLINED;
+    }
+
+    if (p & NGX_HTTP_GZIP_PROXIED_ANY) {
+        goto ok;
+    }
+
+    if (r->headers_in.authorization && (p & NGX_HTTP_GZIP_PROXIED_AUTH)) {
+        goto ok;
+    }
+
+    e = r->headers_out.expires;
+
+    if (e) {
+
+        if (!(p & NGX_HTTP_GZIP_PROXIED_EXPIRED)) {
+            return NGX_DECLINED;
+        }
+
+        expires = ngx_http_parse_time(e->value.data, e->value.len);
+        if (expires == NGX_ERROR) {
+            return NGX_DECLINED;
+        }
+
+        d = r->headers_out.date;
+
+        if (d) {
+            date = ngx_http_parse_time(d->value.data, d->value.len);
+            if (date == NGX_ERROR) {
+                return NGX_DECLINED;
+            }
+
+        } else {
+            date = ngx_time();
+        }
+
+        if (expires < date) {
+            goto ok;
+        }
+
+        return NGX_DECLINED;
+    }
+
+    cc = &r->headers_out.cache_control;
+
+    if (cc->elts) {
+
+        if ((p & NGX_HTTP_GZIP_PROXIED_NO_CACHE)
+            && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_no_cache,
+                                                 NULL)
+               >= 0)
+        {
+            goto ok;
+        }
+
+        if ((p & NGX_HTTP_GZIP_PROXIED_NO_STORE)
+            && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_no_store,
+                                                 NULL)
+               >= 0)
+        {
+            goto ok;
+        }
+
+        if ((p & NGX_HTTP_GZIP_PROXIED_PRIVATE)
+            && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_private,
+                                                 NULL)
+               >= 0)
+        {
+            goto ok;
+        }
+
+        return NGX_DECLINED;
+    }
+
+    if ((p & NGX_HTTP_GZIP_PROXIED_NO_LM) && r->headers_out.last_modified) {
+        return NGX_DECLINED;
+    }
+
+    if ((p & NGX_HTTP_GZIP_PROXIED_NO_ETAG) && r->headers_out.etag) {
+        return NGX_DECLINED;
+    }
+
+ok:
+
+    //r->gzip_ok = 1;
+
+    return NGX_OK;
+}
+
+static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
@@ -329,6 +477,10 @@ tr_header_filter(ngx_http_request_t *r)
         return ngx_http_next_header_filter(r);
     }
 #else
+    if (ngx_http_sdch_ok(r) != NGX_OK) {
+    	return ngx_http_next_header_filter(r);
+    }
+
     ngx_str_t val;
     if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
     	ngx_strstrn(val.data, "sdch", val.len) == 0)
