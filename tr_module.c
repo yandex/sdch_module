@@ -1290,7 +1290,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     }
     get_dict_ids(get_dictionary_begin(conf->hashed_dict), get_dictionary_size(conf->hashed_dict),
     		conf->user_dictid, conf->server_dictid);
-    ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "dictionary ids: user %s server %s",
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "dictionary ids: user %s server %s",
     		conf->user_dictid, conf->server_dictid);
 
     return NGX_CONF_OK;
