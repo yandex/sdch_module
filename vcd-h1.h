@@ -15,7 +15,7 @@ typedef struct vcd_encoder_s *vcd_encoder_p;
 
 #ifdef __cplusplus
 
-#include <auto_ptr.h>
+#include <memory>
 
 struct hashed_dictionary_s {
 	std::vector<char> dict;
