@@ -6,6 +6,7 @@
 
 
 #include <ngx_config.h>
+#include <nginx.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
 
@@ -530,8 +531,11 @@ tr_header_filter(ngx_http_request_t *r)
     ngx_http_clear_content_length(r);
     ngx_http_clear_accept_ranges(r);
 
+#if nginx_version > 1005000
+    ngx_http_clear_etag(r);
+#else
 //   TODO(wawa): adverse impact should be verified if any
-//   ngx_http_clear_etag(r);
+#endif
 
     return ngx_http_next_header_filter(r);
 }
