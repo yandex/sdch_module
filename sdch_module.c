@@ -227,7 +227,7 @@ static ngx_command_t  tr_filter_commands[] = {
 };
 
 
-static ngx_http_module_t  tr_filter_module_ctx = {
+static ngx_http_module_t  sdch_module_ctx = {
     NULL,                                  /* preconfiguration */
     tr_filter_init,             /* postconfiguration */
 
@@ -242,9 +242,9 @@ static ngx_http_module_t  tr_filter_module_ctx = {
 };
 
 
-ngx_module_t  tr_filter_module = {
+ngx_module_t  sdch_module = {
     NGX_MODULE_V1,
-    &tr_filter_module_ctx,      /* module context */
+    &sdch_module_ctx,      /* module context */
     tr_filter_commands,         /* module directives */
     NGX_HTTP_MODULE,                       /* module type */
     NULL,                                  /* init master */
@@ -325,7 +325,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
     //}
 #endif
 
-    clcf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    clcf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     if (r->headers_in.via == NULL) {
         goto ok;
@@ -433,7 +433,7 @@ tr_header_filter(ngx_http_request_t *r)
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "http tr filter header 000");
 
-    conf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     if (!conf->enable
         || (r->headers_out.status != NGX_HTTP_OK
@@ -506,7 +506,7 @@ tr_header_filter(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    ngx_http_set_ctx(r, ctx, tr_filter_module);
+    ngx_http_set_ctx(r, ctx, sdch_module);
 
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
@@ -547,7 +547,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_chain_t          *cl;
     tr_ctx_t  *ctx;
 
-    ctx = ngx_http_get_module_ctx(r, tr_filter_module);
+    ctx = ngx_http_get_module_ctx(r, sdch_module);
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "http tr filter body 000");
@@ -615,7 +615,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         cl = NULL;
 
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &cl,
-                                (ngx_buf_tag_t) &tr_filter_module);
+                                (ngx_buf_tag_t) &sdch_module);
         ctx->nomem = 0;
     }
 
@@ -684,7 +684,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_http_gzip_filter_free_copy_buf(r, ctx);
 
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
-                                (ngx_buf_tag_t) &tr_filter_module);
+                                (ngx_buf_tag_t) &sdch_module);
         ctx->last_out = &ctx->out;
 
         ctx->nomem = 0;
@@ -723,7 +723,7 @@ tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx)
 {
     tr_conf_t  *conf;
 
-    conf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    conf = ngx_http_get_module_loc_conf(r, sdch_module);
 }
 
 
@@ -751,7 +751,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
         ll = &cl->next;
     }
 
-    conf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     while (in) {
         cl = ngx_alloc_chain_link(r->pool);
@@ -779,7 +779,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
             b->pos = b->last;
 
             buf->last_buf = b->last_buf;
-            buf->tag = (ngx_buf_tag_t) &tr_filter_module;
+            buf->tag = (ngx_buf_tag_t) &sdch_module;
 
             cl->buf = buf;
 
@@ -805,7 +805,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     //int                    rc;
     tr_conf_t  *conf;
 
-    conf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     ctx->started = 1;
 
@@ -861,7 +861,7 @@ tr_filter_add_data(tr_ctx_t *ctx)
 
     ctx->in_buf = ctx->in->buf;
 
-    if (ctx->in_buf->tag == (ngx_buf_tag_t) &tr_filter_module) {
+    if (ctx->in_buf->tag == (ngx_buf_tag_t) &sdch_module) {
         ctx->copy_buf = ctx->in;
     }
 
@@ -905,7 +905,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
         return NGX_OK;
     }
 
-    conf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "tr_filter_get_buf");
@@ -921,7 +921,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
             return NGX_ERROR;
         }
 
-        ctx->out_buf->tag = (ngx_buf_tag_t) &tr_filter_module;
+        ctx->out_buf->tag = (ngx_buf_tag_t) &sdch_module;
         ctx->out_buf->recycled = 1;
         ctx->bufs++;
 
@@ -1070,7 +1070,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
         return NGX_OK;
     }
 
-    conf = ngx_http_get_module_loc_conf(r, tr_filter_module);
+    conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     if (conf->no_buffer && ctx->in == NULL) {
 
