@@ -10,8 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-#include "azlib.h"
-#include "pzlib.h"
+#include "zlib.h"
 #include "vcd-h1.h"
 
 typedef struct {
