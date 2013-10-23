@@ -1,4 +1,4 @@
-ngx_feature="tr descr"
+ngx_feature="SDCH module"
 ngx_feature_libs="-lvcdcom -lvcddec -lvcdenc"
 ngx_feature_name=
 ngx_feature_run=no
@@ -15,16 +15,16 @@ if [ $ngx_found = yes ]; then
     CORE_LIBS="$CORE_LIBS $ngx_feature_libs"
 else
  cat << END
- $0: error: tr feature not found.
+ $0: error: SDCH feature not found.
 END
  exit 1
 fi
 
-ngx_addon_name=tr_filter_module
-HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES tr_filter_module"
+ngx_addon_name=sdch_module
+HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES sdch_module"
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
-                $ngx_addon_dir/tr_module.c \
+                $ngx_addon_dir/sdch_module.c \
                 $ngx_addon_dir/vcd-h1.cc \
                 $ngx_addon_dir/ngoustr.cc \
                 "
