@@ -262,6 +262,7 @@ ngx_module_t  sdch_module = {
 static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
 static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
+#if 0
 #include <execinfo.h>
 static void
 backtrace_log(ngx_log_t *log)
@@ -275,6 +276,7 @@ backtrace_log(ngx_log_t *log)
         ngx_log_error(NGX_LOG_INFO, log, 0, "frame %d: %s", i, strs[i]);
     }
 }
+#endif
 
 static int
 header_find(ngx_list_t *headers, char *key, ngx_str_t *value)
@@ -449,7 +451,6 @@ tr_header_filter(ngx_http_request_t *r)
         int rf = ngx_http_next_header_filter(r);
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "tr filter header p1 %d", rf);
-        backtrace_log(r->connection->log);
         return rf;
     }
 
