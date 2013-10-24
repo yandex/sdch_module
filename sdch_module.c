@@ -1296,6 +1296,8 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "dictionary ids: user %s server %s",
     		conf->user_dictid, conf->server_dictid);
 
+    ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
+
     return NGX_CONF_OK;
 }
 
