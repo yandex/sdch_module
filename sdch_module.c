@@ -813,6 +813,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
 //INIT
      //aDeflateInit(&ctx->zstream);
      //ctx->tr1cookie = make_tr1(tr_filter_write, ctx);
+    ctx->last_out = &ctx->out;
     tr_filter_write(ctx, conf->server_dictid, 9);
     get_vcd_encoder(conf->hashed_dict, tr_filter_write, ctx, &ctx->enc);
 #if 0
@@ -825,7 +826,6 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
 
 //    r->connection->buffered |= NGX_HTTP_GZIP_BUFFERED;
 
-    ctx->last_out = &ctx->out;
     //ctx->crc32 = crc32(0L, Z_NULL, 0);
     //ctx->flush = Z_NO_FLUSH;
 
@@ -955,8 +955,19 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
             ctx->zstream.next_out += l0;
             rlen += l0;
         }
-        if (len > 0)
+        if (len > 0) {
             tr_filter_get_buf(ctx);
+
+            ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
+            if (cl == NULL) {
+                return NGX_ERROR;
+            }
+
+            cl->buf = ctx->out_buf;
+            cl->next = NULL;
+            *ctx->last_out = cl;
+            ctx->last_out = &cl->next;
+        }
     }
     return rlen;
 }
