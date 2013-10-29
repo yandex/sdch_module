@@ -915,7 +915,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
         ctx->out_buf = ctx->free->buf;
         ctx->free = ctx->free->next;
 
-    } else if (ctx->bufs < conf->bufs.num) {
+    } else if (1 /* ctx->bufs < conf->bufs.num */) {
 
         ctx->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
         if (ctx->out_buf == NULL) {
