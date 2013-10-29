@@ -692,8 +692,9 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return ngx_http_next_body_filter(r, in);
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http sdch filter");
+    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http sdch filter body 001 free=%p busy=%p out=%p", 
+                   ctx->free, ctx->busy, ctx->out);
 
     if (ctx->buffering) {
 
@@ -795,6 +796,8 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         if (ctx->out == NULL) {
             ngx_http_gzip_filter_free_copy_buf(r, ctx);
 
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http tr filter loop ret1 %p", ctx->busy);
             return ctx->busy ? NGX_AGAIN : NGX_OK;
         }
 
@@ -809,6 +812,9 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
                                 (ngx_buf_tag_t) &sdch_module);
         ctx->last_out = &ctx->out;
+        ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http tr filter loop update_chains free=%p busy=%p out=%p", 
+                       ctx->free, ctx->busy, ctx->out);
 
         ctx->nomem = 0;
 
