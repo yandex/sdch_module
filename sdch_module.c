@@ -951,6 +951,7 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
         if (l0 > 0) {
             memcpy(ctx->zstream.next_out, buff, l0);
             len -= l0;
+            buff += l0;
             ctx->zstream.avail_out -= l0;
             ctx->zstream.next_out += l0;
             rlen += l0;
