@@ -37,7 +37,13 @@ int main0(int argc, char *argv[])
     
     vcd_encoder_p e;
     get_vcd_encoder(hd, write_fd, make_fd(1), &e);
-    vcdwriter(e, &src[0], src.size());
+    for (const char *p = &src[0]; p < &src[src.size()]; ) {
+        size_t l = 32768;
+        if (p+l >= &src[src.size()])
+            l = &src[src.size()] - p;
+        vcdwriter(e, p, l);
+        p += l;
+    }
     vcdclose(e);
 
     return 0;
