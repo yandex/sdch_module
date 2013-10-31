@@ -957,17 +957,19 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
             rlen += l0;
         }
         if (len > 0) {
-            tr_filter_get_buf(ctx);
+            if (ctx->out_buf) {
+                ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
+                if (cl == NULL) {
+                    return NGX_ERROR;
+                }
 
-            ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
-            if (cl == NULL) {
-                return NGX_ERROR;
+                cl->buf = ctx->out_buf;
+                cl->next = NULL;
+                *ctx->last_out = cl;
+                ctx->last_out = &cl->next;
             }
 
-            cl->buf = ctx->out_buf;
-            cl->next = NULL;
-            *ctx->last_out = cl;
-            ctx->last_out = &cl->next;
+            tr_filter_get_buf(ctx);
         }
     }
     return rlen;
