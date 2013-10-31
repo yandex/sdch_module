@@ -958,6 +958,7 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
         }
         if (len > 0) {
             if (ctx->out_buf) {
+                ctx->out_buf->last = ctx->zstream.next_out;
                 ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
                 if (cl == NULL) {
                     return NGX_ERROR;
