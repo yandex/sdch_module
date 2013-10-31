@@ -1,5 +1,5 @@
 ngx_feature="SDCH module"
-ngx_feature_libs="-lvcdcom -lvcddec -lvcdenc"
+ngx_feature_libs="-lvcdcom -lvcdenc"
 ngx_feature_name=
 ngx_feature_run=no
 ngx_feature_incs=""
@@ -34,6 +34,6 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
 
 
 CORE_LIBS="$CORE_LIBS \
-          -lvcdcom -lvcdenc -lvcddec \
+          -lvcdcom -lvcdenc \
           -lstdc++ \
 	  "
