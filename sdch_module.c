@@ -170,14 +170,14 @@ static ngx_command_t  tr_filter_commands[] = {
       &ngx_http_sdch_proxied_mask },
 
 
-#if 0
-    { ngx_string("gzip_types"),
+    { ngx_string("sdch_types"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
       ngx_http_types_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, types_keys),
+      offsetof(tr_conf_t, types_keys),
       &ngx_http_html_default_types[0] },
 
+#if 0
     { ngx_string("gzip_comp_level"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -1289,6 +1289,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_size_value(conf->memlevel, prev->memlevel,
                               MAX_MEM_LEVEL - 1);
     ngx_conf_merge_value(conf->min_length, prev->min_length, 20);
+#endif
 
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->types,
                              &prev->types_keys, &prev->types,
@@ -1297,7 +1298,6 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     {
         return NGX_CONF_ERROR;
     }
-#endif
 
     if (!conf->enable)
     	return NGX_CONF_OK;
