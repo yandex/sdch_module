@@ -433,7 +433,7 @@ tr_header_filter(ngx_http_request_t *r)
     tr_conf_t  *conf;
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                   "http tr filter header 000");
+                   "http sdch filter header 000");
 
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
@@ -450,7 +450,7 @@ tr_header_filter(ngx_http_request_t *r)
     {
         int rf = ngx_http_next_header_filter(r);
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-            "tr filter header p1 %d", rf);
+            "sdch filter header p1 %d", rf);
         return rf;
     }
 
@@ -551,14 +551,14 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ctx = ngx_http_get_module_ctx(r, sdch_module);
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                   "http tr filter body 000");
+                   "http sdch filter body 000");
 
     if (ctx == NULL || ctx->done || r->header_only) {
         return ngx_http_next_body_filter(r, in);
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http tr filter");
+                   "http sdch filter");
 
     if (ctx->buffering) {
 
@@ -597,7 +597,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http tr filter started");
+                   "http sdch filter started");
 
     if (in) {
         if (ngx_chain_add_copy(r->pool, &ctx->in, in) != NGX_OK) {
@@ -621,7 +621,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http tr filter mainloop entry");
+                   "http sdch filter mainloop entry");
 
     for ( ;; ) {
 
@@ -669,7 +669,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http tr filter loop1 exit");
+                       "http sdch filter loop1 exit");
         if (ctx->out == NULL) {
             ngx_http_gzip_filter_free_copy_buf(r, ctx);
 
@@ -692,7 +692,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
         if (ctx->done) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http tr filter done return %d", rc);
+                       "http sdch filter done return %d", rc);
             return rc;
         }
     }
@@ -714,7 +714,7 @@ failed:
     ngx_http_gzip_filter_free_copy_buf(r, ctx);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-               "http tr filter failed return");
+               "http sdch filter failed return");
     return NGX_ERROR;
 }
 
@@ -842,7 +842,7 @@ tr_filter_add_data(tr_ctx_t *ctx)
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "tr in: %p", ctx->in);
+                   "sdch in: %p", ctx->in);
 
     if (ctx->in == NULL) {
         return NGX_DECLINED;
@@ -872,7 +872,7 @@ tr_filter_add_data(tr_ctx_t *ctx)
     ctx->zstream.avail_in = ctx->in_buf->last - ctx->in_buf->pos;
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "tr in_buf:%p ni:%p ai:%ud",
+                   "sdch in_buf:%p ni:%p ai:%ud",
                    ctx->in_buf,
                    ctx->zstream.next_in, ctx->zstream.avail_in);
 
@@ -1328,7 +1328,7 @@ tr_filter_init(ngx_conf_t *cf)
     ngx_http_top_body_filter = tr_body_filter;
 
     ngx_conf_log_error(NGX_LOG_INFO, cf, 0,
-                   "http tr filter init");
+                   "http sdch filter init");
     return NGX_OK;
 }
 
