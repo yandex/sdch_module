@@ -13,6 +13,11 @@
 #include "zlib.h"
 #include "vcd-h1.h"
 
+struct sdch_dict {
+    hashed_dictionary_p  hashed_dict;
+    unsigned char user_dictid[9], server_dictid[9];
+};
+
 typedef struct {
     ngx_flag_t           enable;
     ngx_flag_t           no_buffer;
@@ -28,9 +33,8 @@ typedef struct {
 
     ngx_array_t         *types_keys;
     
-    ngx_str_t            dict;
-    hashed_dictionary_p  hashed_dict;
-    unsigned char user_dictid[9], server_dictid[9];
+    ngx_array_t          *dicts;
+    ngx_array_t          *dict_data;
 
     ngx_str_t            sdch_url;
 
@@ -50,6 +54,8 @@ typedef struct {
     ngx_buf_t           *in_buf;
     ngx_buf_t           *out_buf;
     ngx_int_t            bufs;
+    
+    unsigned		 dictnum;
 
 
     unsigned             started:1;
@@ -150,9 +156,9 @@ static ngx_command_t  tr_filter_commands[] = {
 
     { ngx_string("sdch_dict"),
    	  NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-	  ngx_conf_set_str_slot,
+	  ngx_conf_set_str_array_slot,
 	  NGX_HTTP_LOC_CONF_OFFSET,
-	  offsetof(tr_conf_t, dict),
+	  offsetof(tr_conf_t, dicts),
 	  NULL },
 
     { ngx_string("sdch_url"),
@@ -425,6 +431,35 @@ ok:
     return NGX_OK;
 }
 
+static unsigned int
+find_dict(u_char *h, tr_conf_t *conf)
+{
+    unsigned int i;
+    struct sdch_dict *dict_data;
+    
+    dict_data = conf->dict_data->elts;
+    for (i = 0; i < conf->dict_data->nelts; i++) {
+        if (ngx_strncmp(h, dict_data[i].user_dictid, 8) == 0)
+            return i;
+    }
+    return (unsigned int)(-1);
+}
+
+static ngx_int_t
+get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
+{
+    ngx_table_elt_t *h;
+    h = ngx_list_push(&r->headers_out.headers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    h->hash = 1;
+    ngx_str_set(&h->key, "Get-Dictionary");
+    h->value = conf->sdch_url;
+    return NGX_OK;
+}
+
 static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
@@ -486,19 +521,26 @@ tr_header_filter(ngx_http_request_t *r)
     if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
     	ngx_strstrn(val.data, "sdch", val.len) == 0)
     	return ngx_http_next_header_filter(r);
-    if (
-    	header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0 ||
-    	val.len != 8 || strncmp(val.data, conf->user_dictid, 8) != 0
-    	) {
-        h = ngx_list_push(&r->headers_out.headers);
-        if (h == NULL) {
-            return NGX_ERROR;
-        }
-
-        h->hash = 1;
-        ngx_str_set(&h->key, "Get-Dictionary");
-        h->value = conf->sdch_url;
-    	return ngx_http_next_header_filter(r);
+    if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
+        ngx_str_set(&val, "");
+    }
+    unsigned int dictnum = 1000;
+    while (val.len >= 8) {
+        unsigned int d = find_dict(val.data, conf);
+        if (d < dictnum)
+            dictnum = d;
+        val.data += 8; val.len -= 8;
+        unsigned l = strspn((char*)val.data, " \t,");
+        if (l > val.len)
+            l = val.len;
+        val.data += l; val.len -= l;
+    }
+    if (dictnum > 0) {
+    	ngx_int_t e = get_dictionary_header(r, conf);
+    	if (e)
+    	    return e;
+        if (dictnum >= 1000)
+            return ngx_http_next_header_filter(r);
     }
 #endif
 
@@ -511,6 +553,7 @@ tr_header_filter(ngx_http_request_t *r)
 
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
+    ctx->dictnum = dictnum;
 
     tr_filter_memory(r, ctx);
 
@@ -814,8 +857,9 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
      //aDeflateInit(&ctx->zstream);
      //ctx->tr1cookie = make_tr1(tr_filter_write, ctx);
     ctx->last_out = &ctx->out;
-    tr_filter_write(ctx, conf->server_dictid, 9);
-    get_vcd_encoder(conf->hashed_dict, tr_filter_write, ctx, &ctx->enc);
+    struct sdch_dict *dict_data = conf->dict_data->elts;
+    tr_filter_write(ctx, dict_data[ctx->dictnum].server_dictid, 9);
+    get_vcd_encoder(dict_data[ctx->dictnum].hashed_dict, tr_filter_write, ctx, &ctx->enc);
 #if 0
     if (rc != Z_OK) {
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
@@ -1253,8 +1297,8 @@ tr_create_conf(ngx_conf_t *cf)
 
     conf->enable = NGX_CONF_UNSET;
     
-    ngx_str_null(&conf->dict);
-    conf->hashed_dict = NULL;
+    conf->dicts = NGX_CONF_UNSET_PTR;
+    conf->dict_data = NULL;
 #if 0
     conf->no_buffer = NGX_CONF_UNSET;
 
@@ -1266,6 +1310,20 @@ tr_create_conf(ngx_conf_t *cf)
 #endif
 
     return conf;
+}
+
+static char *
+init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
+{
+    if (get_hashed_dict(dict->data, &data->hashed_dict)) {
+    	ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "get_hashed_dict %s failed", dict->data);
+    	return NGX_CONF_ERROR;
+    }
+    get_dict_ids(get_dictionary_begin(data->hashed_dict), get_dictionary_size(data->hashed_dict),
+    		data->user_dictid, data->server_dictid);
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "dictionary ids: user %s server %s",
+    		data->user_dictid, data->server_dictid);
+    return NGX_CONF_OK;
 }
 
 
@@ -1302,15 +1360,19 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (!conf->enable)
     	return NGX_CONF_OK;
 
-    ngx_conf_merge_str_value(conf->dict, prev->dict, "");
-    if (get_hashed_dict(conf->dict.data, &conf->hashed_dict)) {
-    	ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "get_hashed_dict %s failed", conf->dict.data);
-    	return NGX_CONF_ERROR;
+    //ngx_conf_merge_str_value(conf->dict, prev->dict, "");
+    if (conf->dicts == NGX_CONF_UNSET_PTR)
+        conf->dicts = prev->dicts;
+
+    conf->dict_data = ngx_array_create(cf->pool, conf->dicts->nelts, sizeof(struct sdch_dict));
+    int i;
+    ngx_str_t *sdch_dicts = conf->dicts->elts;
+    for (i = 0; i < conf->dicts->nelts; i++) {
+        struct sdch_dict *data = ngx_array_push(conf->dict_data);
+        char *p = init_dict_data(cf, &sdch_dicts[i], data);
+        if (p != NGX_CONF_OK)
+            return p;
     }
-    get_dict_ids(get_dictionary_begin(conf->hashed_dict), get_dictionary_size(conf->hashed_dict),
-    		conf->user_dictid, conf->server_dictid);
-    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "dictionary ids: user %s server %s",
-    		conf->user_dictid, conf->server_dictid);
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
 
