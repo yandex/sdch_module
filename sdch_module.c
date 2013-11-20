@@ -321,7 +321,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
     time_t                     date, expires;
     ngx_uint_t                 p;
     ngx_array_t               *cc;
-    ngx_table_elt_t           *e, *d, *ae;
+    ngx_table_elt_t           *e, *d;
     tr_conf_t                 *clcf;
 
 //    r->gzip_tested = 1;
@@ -1368,7 +1368,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->dicts = prev->dicts;
 
     conf->dict_data = ngx_array_create(cf->pool, conf->dicts->nelts, sizeof(struct sdch_dict));
-    int i;
+    unsigned i;
     ngx_str_t *sdch_dicts = conf->dicts->elts;
     for (i = 0; i < conf->dicts->nelts; i++) {
         struct sdch_dict *data = ngx_array_push(conf->dict_data);
