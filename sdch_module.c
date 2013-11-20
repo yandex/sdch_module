@@ -96,6 +96,10 @@ static void ngx_http_gzip_filter_free(void *opaque, void *address);
 static void ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
     tr_ctx_t *ctx);
 
+static ngx_int_t tr_add_variables(ngx_conf_t *cf);
+static ngx_int_t tr_ratio_variable(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
+
 static ngx_int_t tr_filter_init(ngx_conf_t *cf);
 static void *tr_create_conf(ngx_conf_t *cf);
 static char *tr_merge_conf(ngx_conf_t *cf,
@@ -234,7 +238,7 @@ static ngx_command_t  tr_filter_commands[] = {
 
 
 static ngx_http_module_t  sdch_module_ctx = {
-    NULL,                                  /* preconfiguration */
+    tr_add_variables,                                  /* preconfiguration */
     tr_filter_init,             /* postconfiguration */
 
     NULL,                                  /* create main configuration */
@@ -1017,6 +1021,7 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
             tr_filter_get_buf(ctx);
         }
     }
+    ctx->zout += rlen;
     return rlen;
 }
 
@@ -1040,6 +1045,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
     int l0 = vcdwriter(ctx->enc, ctx->zstream.next_in, ctx->zstream.avail_in);
     ctx->zstream.next_in += l0;
     ctx->zstream.avail_in -= l0;
+    ctx->zin += l0;
     rc = (ctx->flush == Z_FINISH) ? Z_STREAM_END : Z_OK;
 
     if (rc != Z_OK && rc != Z_STREAM_END && rc != Z_BUF_ERROR) {
@@ -1160,9 +1166,6 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
     ngx_chain_t       *cl;
     //struct gztrailer  *trailer;
 
-    ctx->zin = ctx->zstream.total_in;
-    ctx->zout = ctx->zstream.total_out;
-
 #if 0
     rc = aDeflateEnd(&ctx->zstream);
 
@@ -1215,35 +1218,36 @@ ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
 }
 
 
-#if 0
+static ngx_str_t tr_ratio = ngx_string("sdch_ratio");
+
 static ngx_int_t
-ngx_http_gzip_add_variables(ngx_conf_t *cf)
+tr_add_variables(ngx_conf_t *cf)
 {
     ngx_http_variable_t  *var;
 
-    var = ngx_http_add_variable(cf, &ngx_http_gzip_ratio, NGX_HTTP_VAR_NOHASH);
+    var = ngx_http_add_variable(cf, &tr_ratio, NGX_HTTP_VAR_NOHASH);
     if (var == NULL) {
         return NGX_ERROR;
     }
 
-    var->get_handler = ngx_http_gzip_ratio_variable;
+    var->get_handler = tr_ratio_variable;
 
     return NGX_OK;
 }
 
 
 static ngx_int_t
-ngx_http_gzip_ratio_variable(ngx_http_request_t *r,
+tr_ratio_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
 {
     ngx_uint_t            zint, zfrac;
-    ngx_http_gzip_ctx_t  *ctx;
+    tr_ctx_t  *ctx;
 
     v->valid = 1;
     v->no_cacheable = 0;
     v->not_found = 0;
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_gzip_filter_module);
+    ctx = ngx_http_get_module_ctx(r, sdch_module);
 
     if (ctx == NULL || ctx->zout == 0) {
         v->not_found = 1;
@@ -1274,7 +1278,6 @@ ngx_http_gzip_ratio_variable(ngx_http_request_t *r,
 
     return NGX_OK;
 }
-#endif
 
 
 static void *
