@@ -27,6 +27,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/sdch_module.c \
                 $ngx_addon_dir/vcd-h1.cc \
                 $ngx_addon_dir/ngoustr.cc \
+                $ngx_addon_dir/teefd.cpp \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \

@@ -14,6 +14,7 @@
 
 #include "zlib.h"
 #include "vcd-h1.h"
+#include "teefd.h"
 
 struct sdch_dict {
     hashed_dictionary_p  hashed_dict;
@@ -41,6 +42,8 @@ typedef struct {
     ngx_str_t            sdch_url;
 
     ngx_uint_t           sdch_proxied;
+    
+    ngx_str_t            sdch_dumpdir;
 } tr_conf_t;
 
 typedef struct {
@@ -75,7 +78,9 @@ typedef struct {
     ngx_http_request_t  *request;
     
     //void		*tr1cookie;
-    vcd_encoder_p        enc;
+    writerfunc          *wf;
+    void                *coo;
+    vcd_encoder_p       enc;
 } tr_ctx_t;
 
 
@@ -173,6 +178,13 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_url),
+      NULL },
+
+    { ngx_string("sdch_dumpdir"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(tr_conf_t, sdch_dumpdir),
       NULL },
 
     { ngx_string("sdch_proxied"),
@@ -854,6 +866,19 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     struct sdch_dict *dict_data = conf->dict_data->elts;
     tr_filter_write(ctx, dict_data[ctx->dictnum].server_dictid, 9);
     get_vcd_encoder(dict_data[ctx->dictnum].hashed_dict, tr_filter_write, ctx, &ctx->enc);
+    ctx->wf = vcdwriter;
+    ctx->coo = ctx->enc;
+    if (conf->sdch_dumpdir.len > 0) {
+        char *fn = ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30);
+        sprintf(fn, "%s/%08x-%08x-%08x", conf->sdch_dumpdir.data, random(), random(), random());
+        ctx->coo = make_teefd(fn, ctx->wf, ctx->enc);
+        if (ctx->coo == NULL) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
+            return NGX_ERROR;
+        } else {
+            ctx->wf = write_teefd;
+        }
+    }
 #if 0
     if (rc != Z_OK) {
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
@@ -1041,7 +1066,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
 
     //rc = aDeflate(&ctx->zstream, ctx->flush);
     //int l0 = do_tr1(ctx->tr1cookie, ctx->zstream.next_in, ctx->zstream.avail_in);
-    int l0 = vcdwriter(ctx->enc, ctx->zstream.next_in, ctx->zstream.avail_in);
+    int l0 = (ctx->wf)(ctx->coo, ctx->zstream.next_in, ctx->zstream.avail_in);
     ctx->zstream.next_in += l0;
     ctx->zstream.avail_in -= l0;
     ctx->zin += l0;
@@ -1141,6 +1166,9 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 #else
     //free_tr1(ctx->tr1cookie);
     vcdclose(ctx->enc);
+    if (ctx->wf == write_teefd) {
+        free_teefd(ctx->coo);
+    }
 #endif
 
     //ngx_pfree(r->pool, ctx->preallocated);
@@ -1335,6 +1363,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
+    ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
 
     return NGX_CONF_OK;
 }
