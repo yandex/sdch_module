@@ -5,6 +5,8 @@
  */
 
 
+#include <assert.h>
+
 #include <ngx_config.h>
 #include <nginx.h>
 #include <ngx_core.h>
@@ -82,6 +84,7 @@ static void tr_filter_memory(ngx_http_request_t *r,
     tr_ctx_t *ctx);
 static ngx_int_t tr_filter_buffer(tr_ctx_t *ctx,
     ngx_chain_t *in);
+static ngx_int_t tr_filter_out_buf_out(tr_ctx_t *ctx);
 static ngx_int_t tr_filter_deflate_start(tr_ctx_t *ctx);
 static ngx_int_t tr_filter_add_data(tr_ctx_t *ctx);
 static ngx_int_t tr_filter_get_buf(tr_ctx_t *ctx);
@@ -689,19 +692,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             }
 
 
-            /* ... there are buffers to write zlib output */
-
-            rc = tr_filter_get_buf(ctx);
-
-            if (rc == NGX_DECLINED) {
-                break;
-            }
-
-            if (rc == NGX_ERROR) {
-                goto failed;
-            }
-
-
             rc = tr_filter_deflate(ctx);
 
             if (rc == NGX_OK) {
@@ -874,9 +864,6 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
 
 //    r->connection->buffered |= NGX_HTTP_GZIP_BUFFERED;
 
-    //ctx->crc32 = crc32(0L, Z_NULL, 0);
-    //ctx->flush = Z_NO_FLUSH;
-
     return NGX_OK;
 }
 
@@ -950,9 +937,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
     ngx_http_request_t *r = ctx->request;
     tr_conf_t  *conf;
 
-    if (ctx->zstream.avail_out) {
-        return NGX_OK;
-    }
+    assert (ctx->zstream.avail_out == 0);
 
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
@@ -985,6 +970,27 @@ tr_filter_get_buf(tr_ctx_t *ctx)
     return NGX_OK;
 }
 
+static ngx_int_t
+tr_filter_out_buf_out(tr_ctx_t *ctx)
+{
+    ctx->out_buf->last = ctx->zstream.next_out;
+    assert(ctx->out_buf->last != ctx->out_buf->pos);
+    ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
+    if (cl == NULL) {
+        return NGX_ERROR;
+    }
+
+    cl->buf = ctx->out_buf;
+    cl->next = NULL;
+    *ctx->last_out = cl;
+    ctx->last_out = &cl->next;
+    
+    ctx->out_buf = NULL;
+    ctx->zstream.avail_out = 0;
+
+    return NGX_OK;
+}
+
 pssize_type
 tr_filter_write(void *ctx0, const void *buf, psize_type len)
 {
@@ -1006,16 +1012,9 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
         }
         if (len > 0) {
             if (ctx->out_buf) {
-                ctx->out_buf->last = ctx->zstream.next_out;
-                ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
-                if (cl == NULL) {
-                    return NGX_ERROR;
-                }
-
-                cl->buf = ctx->out_buf;
-                cl->next = NULL;
-                *ctx->last_out = cl;
-                ctx->last_out = &cl->next;
+                int rc = tr_filter_out_buf_out(ctx);
+                if (rc != NGX_OK)
+                    return rc;
             }
 
             tr_filter_get_buf(ctx);
@@ -1074,25 +1073,6 @@ tr_filter_deflate(tr_ctx_t *ctx)
 
     ctx->out_buf->last = ctx->zstream.next_out;
 
-    if (ctx->zstream.avail_out == 0) {
-
-        /* zlib wants to output some more gzipped data */
-
-        cl = ngx_alloc_chain_link(r->pool);
-        if (cl == NULL) {
-            return NGX_ERROR;
-        }
-
-        cl->buf = ctx->out_buf;
-        cl->next = NULL;
-        *ctx->last_out = cl;
-        ctx->last_out = &cl->next;
-
-        ctx->redo = 1;
-
-        return NGX_AGAIN;
-    }
-
     ctx->redo = 0;
 
     if (ctx->flush == Z_SYNC_FLUSH) {
@@ -1139,18 +1119,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     if (conf->no_buffer && ctx->in == NULL) {
-
-        cl = ngx_alloc_chain_link(r->pool);
-        if (cl == NULL) {
-            return NGX_ERROR;
-        }
-
-        cl->buf = ctx->out_buf;
-        cl->next = NULL;
-        *ctx->last_out = cl;
-        ctx->last_out = &cl->next;
-
-        return NGX_OK;
+        return tr_filter_out_buf_out(ctx);
     }
 
     return NGX_AGAIN;
@@ -1160,11 +1129,6 @@ tr_filter_deflate(tr_ctx_t *ctx)
 static ngx_int_t
 tr_filter_deflate_end(tr_ctx_t *ctx)
 {
-    ngx_http_request_t *r = ctx->request;
-    //int                rc;
-    //ngx_buf_t         *b;
-    ngx_chain_t       *cl;
-    //struct gztrailer  *trailer;
 
 #if 0
     rc = aDeflateEnd(&ctx->zstream);
@@ -1181,17 +1145,10 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 
     //ngx_pfree(r->pool, ctx->preallocated);
 
-    cl = ngx_alloc_chain_link(r->pool);
-    if (cl == NULL) {
-        return NGX_ERROR;
-    }
-
-    cl->buf = ctx->out_buf;
-    cl->next = NULL;
-    *ctx->last_out = cl;
-    ctx->last_out = &cl->next;
-    
     ctx->out_buf->last_buf = 1;
+    ngx_int_t rc = tr_filter_out_buf_out(ctx);
+    if (rc != NGX_OK)
+        return rc;
 
     ctx->zstream.avail_in = 0;
     ctx->zstream.avail_out = 0;
