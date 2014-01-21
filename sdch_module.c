@@ -480,6 +480,21 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 }
 
 static ngx_int_t
+x_sdch_encode_0_header(ngx_http_request_t *r)
+{
+    ngx_table_elt_t *h = ngx_list_push(&r->headers_out.headers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    h->hash = 1;
+    ngx_str_set(&h->key, "X-Sdch-Encode");
+    ngx_str_set(&h->value, "0");
+    
+    return NGX_OK;
+}
+
+static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
@@ -491,6 +506,14 @@ tr_header_filter(ngx_http_request_t *r)
 
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
+    ngx_str_t val;
+    if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
+    	ngx_strstrn(val.data, "sdch", val.len) == 0)
+    	return ngx_http_next_header_filter(r);
+    if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
+        ngx_str_set(&val, "");
+    }
+
     if (!conf->enable
         || (r->headers_out.status != NGX_HTTP_OK
             && r->headers_out.status != NGX_HTTP_FORBIDDEN
@@ -499,15 +522,18 @@ tr_header_filter(ngx_http_request_t *r)
             && r->headers_out.content_encoding->value.len)
         || (r->headers_out.content_length_n != -1
             && r->headers_out.content_length_n < conf->min_length)
-        || ngx_http_test_content_type(r, &conf->types) == NULL
-        || r->header_only)
+        || ngx_http_test_content_type(r, &conf->types) == NULL)
     {
-        int rf = ngx_http_next_header_filter(r);
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-            "sdch filter header p1 %d", rf);
-        return rf;
+        ngx_int_t e = x_sdch_encode_0_header(r);
+        if (e)
+            return e;
+        return ngx_http_next_header_filter(r);
     }
 
+    if (r->header_only)
+    {
+        return ngx_http_next_header_filter(r);
+    }
     //r->gzip_vary = 1;
 
 #if (NGX_HTTP_DEGRADATION)
@@ -536,13 +562,6 @@ tr_header_filter(ngx_http_request_t *r)
     	return ngx_http_next_header_filter(r);
     }
 
-    ngx_str_t val;
-    if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
-    	ngx_strstrn(val.data, "sdch", val.len) == 0)
-    	return ngx_http_next_header_filter(r);
-    if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
-        ngx_str_set(&val, "");
-    }
     unsigned int dictnum = 1000;
     while (val.len >= 8) {
         unsigned int d = find_dict(val.data, conf);
@@ -558,8 +577,12 @@ tr_header_filter(ngx_http_request_t *r)
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
-        if (dictnum >= 1000)
+        if (dictnum >= 1000) {
+            e = x_sdch_encode_0_header(r);
+            if (e)
+                return e;
             return ngx_http_next_header_filter(r);
+        }
     }
 #endif
 
