@@ -82,9 +82,14 @@ size_t get_dictionary_size(hashed_dictionary_p d)
 	return d->dict.size();
 }
 
-vcd_encoder_s::vcd_encoder_s(writerfunc writer, void *cookie) :
-		outstr(writer, cookie)
+static writerfunc vcdwriter;
+static closefunc vcdclose;
+
+vcd_encoder_s::vcd_encoder_s(void *cookie) :
+		outstr(cookie)
 {
+        ph.wf = vcdwriter;
+        ph.cf = vcdclose;
 }
 
 pssize_type vcdwriter(void *cookie, const void *buf, psize_type len)
@@ -100,8 +105,8 @@ void vcdclose(void *cookie) {
 	delete e;
 }
 
-void get_vcd_encoder(hashed_dictionary_p d, writerfunc writer, void *cookie, vcd_encoder_p *e) {
-	vcd_encoder_s *en = new vcd_encoder_s(writer, cookie);
+void get_vcd_encoder(hashed_dictionary_p d, void *cookie, vcd_encoder_p *e) {
+	vcd_encoder_s *en = new vcd_encoder_s(cookie);
 	en->enc.reset(new open_vcdiff::VCDiffStreamingEncoder(d->hashed_dict.get(),
         open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM, 0));
 	en->enc.get()->StartEncodingToInterface(&en->outstr);

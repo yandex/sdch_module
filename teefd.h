@@ -7,9 +7,7 @@
 extern "C" {
 #endif
 
-void *make_teefd(const char *fn, writerfunc wf, void *coo);
-extern writerfunc write_teefd;
-extern closefunc free_teefd;
+void *make_teefd(const char *fn, void *coo);
 
 #ifdef __cplusplus
 }

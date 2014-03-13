@@ -19,16 +19,20 @@ void NgOuStr::ReserveAdditionalBytes(size_t)
 {
 }
 
-NgOuStr::NgOuStr(writerfunc *w, void *c) :
+NgOuStr::NgOuStr(void *c) :
     cursize(0),
-    writer(w),
     cookie(c)
 {
 }
 
+NgOuStr::~NgOuStr()
+{
+    do_close(cookie);
+}
+
 open_vcdiff::OutputStringInterface& NgOuStr::append(const char *s, size_t n)
 {
-    writer(cookie, s, n);
+    do_write(cookie, s, n);
     cursize += n;
     return *this;
 }

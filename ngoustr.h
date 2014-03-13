@@ -7,10 +7,10 @@
 class NgOuStr : public open_vcdiff::OutputStringInterface {
 private:
     size_t cursize;
-    writerfunc *writer;
     void *cookie;
 public:
-    NgOuStr(writerfunc *w, void *c);
+    NgOuStr(void *c);
+    ~NgOuStr();
     virtual OutputStringInterface& append(const char* s, size_t n);
     virtual void clear();
     virtual void push_back(char c);

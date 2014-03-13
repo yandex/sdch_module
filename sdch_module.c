@@ -47,6 +47,7 @@ typedef struct {
 } tr_conf_t;
 
 typedef struct {
+    struct pz            pzh;
     ngx_chain_t         *in;
     ngx_chain_t         *free;
     ngx_chain_t         *busy;
@@ -80,13 +81,14 @@ typedef struct {
     ngx_http_request_t  *request;
     
     //void		*tr1cookie;
-    writerfunc          *wf;
+    //writerfunc          *wf;
     void                *coo;
     vcd_encoder_p       enc;
 } tr_ctx_t;
 
 
 static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
+static closefunc tr_filter_close;
 static void tr_filter_memory(ngx_http_request_t *r,
     tr_ctx_t *ctx);
 static ngx_int_t tr_filter_buffer(tr_ctx_t *ctx,
@@ -613,6 +615,8 @@ tr_header_filter(ngx_http_request_t *r)
     ctx->buffering = (conf->postpone_gzipping != 0);
     ctx->dictnum = dictnum;
     ctx->store = ctxstore;
+    ctx->pzh.wf = tr_filter_write;
+    ctx->pzh.cf = tr_filter_close;
 
     tr_filter_memory(r, ctx);
 
@@ -905,18 +909,15 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     ctx->last_out = &ctx->out;
     struct sdch_dict *dict_data = conf->dict_data->elts;
     tr_filter_write(ctx, dict_data[ctx->dictnum].server_dictid, 9);
-    get_vcd_encoder(dict_data[ctx->dictnum].hashed_dict, tr_filter_write, ctx, &ctx->enc);
-    ctx->wf = vcdwriter;
+    get_vcd_encoder(dict_data[ctx->dictnum].hashed_dict, ctx, &ctx->enc);
     ctx->coo = ctx->enc;
     if (conf->sdch_dumpdir.len > 0) {
         char *fn = ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30);
         sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
-        ctx->coo = make_teefd(fn, ctx->wf, ctx->enc);
+        ctx->coo = make_teefd(fn, ctx->coo);
         if (ctx->coo == NULL) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
             return NGX_ERROR;
-        } else {
-            ctx->wf = write_teefd;
         }
     }
 #if 0
@@ -1056,6 +1057,11 @@ tr_filter_out_buf_out(tr_ctx_t *ctx)
     return NGX_OK;
 }
 
+void
+tr_filter_close(void *c)
+{
+}
+
 pssize_type
 tr_filter_write(void *ctx0, const void *buf, psize_type len)
 {
@@ -1106,7 +1112,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
 
     //rc = aDeflate(&ctx->zstream, ctx->flush);
     //int l0 = do_tr1(ctx->tr1cookie, ctx->zstream.next_in, ctx->zstream.avail_in);
-    int l0 = (ctx->wf)(ctx->coo, ctx->zstream.next_in, ctx->zstream.avail_in);
+    int l0 = do_write(ctx->coo, ctx->zstream.next_in, ctx->zstream.avail_in);
     ctx->zstream.next_in += l0;
     ctx->zstream.avail_in -= l0;
     ctx->zin += l0;
@@ -1204,11 +1210,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
         return NGX_ERROR;
     }
 #else
-    //free_tr1(ctx->tr1cookie);
-    vcdclose(ctx->enc);
-    if (ctx->wf == write_teefd) {
-        free_teefd(ctx->coo);
-    }
+    do_close(ctx->coo);
 #endif
 
     //ngx_pfree(r->pool, ctx->preallocated);
