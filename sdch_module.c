@@ -69,6 +69,8 @@ typedef struct {
     unsigned             done:1;
     unsigned             nomem:1;
     unsigned             buffering:1;
+    
+    unsigned             store:1;
 
     size_t               zin;
     size_t               zout;
@@ -562,6 +564,20 @@ tr_header_filter(ngx_http_request_t *r)
     	return ngx_http_next_header_filter(r);
     }
 
+    unsigned int ctxstore = 0;
+    if (ngx_strcmp(val.data, "AUTOAUTO") == 0) {
+        ctxstore = 1;
+
+        ngx_table_elt_t *h = ngx_list_push(&r->headers_out.headers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        h->hash = 1;
+        ngx_str_set(&h->key, "X-Sdch-Use-As-Dictionary");
+        ngx_str_set(&h->value, "1");
+    }
+
     unsigned int dictnum = 1000;
     while (val.len >= 8) {
         unsigned int d = find_dict(val.data, conf);
@@ -596,6 +612,7 @@ tr_header_filter(ngx_http_request_t *r)
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
     ctx->dictnum = dictnum;
+    ctx->store = ctxstore;
 
     tr_filter_memory(r, ctx);
 
