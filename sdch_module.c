@@ -15,6 +15,7 @@
 #include "zlib.h"
 #include "vcd-h1.h"
 #include "teefd.h"
+#include "blobstore.h"
 
 struct sdch_dict {
     hashed_dictionary_p  hashed_dict;
@@ -84,6 +85,8 @@ typedef struct {
     //writerfunc          *wf;
     void                *coo;
     vcd_encoder_p       enc;
+    
+    void		*blob;
 } tr_ctx_t;
 
 
@@ -919,6 +922,9 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
             return NGX_ERROR;
         }
+    }
+    if (ctx->store) {
+        ctx->coo = make_blobstore(ctx->coo, &ctx->blob);
     }
 #if 0
     if (rc != Z_OK) {
