@@ -1218,6 +1218,17 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 #else
     do_close(ctx->coo);
 #endif
+    if (ctx->store && ctx->blob) {
+        unsigned char user_dictid[9];
+        unsigned char server_dictid[9];
+        get_dict_ids(blob_data_begin(ctx->blob), blob_data_size(ctx->blob),
+            user_dictid, server_dictid);
+        if (blob_append(ctx->blob, user_dictid, 8) != 0) {
+            blob_destroy(ctx->blob);
+        } else {
+            stor_store(user_dictid, time(0), ctx->blob); // XXX
+        }
+    }
 
     //ngx_pfree(r->pool, ctx->preallocated);
 
