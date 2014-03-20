@@ -6,7 +6,7 @@ static closefunc close_blobstore;
 
 struct blob_obj {
     struct pz pzh;
-    void **blob;
+    blob_type *blob;
     void *coonext;
     blob_obj() {
         pzh.wf = write_blobstore;
@@ -14,7 +14,7 @@ struct blob_obj {
     }
 };
 
-void *make_blobstore(void *c, void **blob)
+void *make_blobstore(void *c, blob_type *blob)
 {
     blob_obj *r = new blob_obj;
     r->blob = blob;

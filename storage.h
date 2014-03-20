@@ -7,12 +7,15 @@
 extern "C" {
 #endif
 
-int blob_create(void **obj);
-int blob_append(void *obj, const void *s, int len);
-int blob_destroy(void *obj);
+struct blob_s;
+typedef struct blob_s *blob_type;
 
-int stor_store(const char *key, time_t ts, void *obj);
-int stor_find(const char *key, void **obj);
+int blob_create(blob_type *obj);
+int blob_append(blob_type obj, const void *s, int len);
+int blob_destroy(blob_type obj);
+
+int stor_store(const char *key, time_t ts, blob_type obj);
+int stor_find(const char *key, blob_type *obj);
 int stor_clear(time_t ts);
 
 #ifdef __cplusplus

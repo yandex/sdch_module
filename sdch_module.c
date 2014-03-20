@@ -86,7 +86,7 @@ typedef struct {
     void                *coo;
     vcd_encoder_p       enc;
     
-    void		*blob;
+    blob_type            blob;
 } tr_ctx_t;
 
 
