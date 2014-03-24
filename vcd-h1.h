@@ -19,7 +19,6 @@ typedef struct vcd_encoder_s *vcd_encoder_p;
 
 struct hashed_dictionary_s {
 	std::vector<char> dict;
-	const char *dict_payload;
 	std::auto_ptr<open_vcdiff::HashedDictionary> hashed_dict;
 };
 struct vcd_encoder_s {

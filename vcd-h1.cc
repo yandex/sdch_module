@@ -62,8 +62,8 @@ int get_hashed_dict(const unsigned char *fn, hashed_dictionary_p *d)
 	try {
 		hashed_dictionary_s *h = new hashed_dictionary_s;
 		read_file((const char *)fn, h->dict);
-		h->dict_payload = &*get_dict_payload(h->dict);
-		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(h->dict_payload, &*h->dict.end()-h->dict_payload));
+		const char *dict_payload = &*get_dict_payload(h->dict);
+		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, &*h->dict.end()-dict_payload));
 		h->hashed_dict->Init();
 		*d = h;
 		return 0;
