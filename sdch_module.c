@@ -63,8 +63,8 @@ typedef struct {
     ngx_buf_t           *out_buf;
     ngx_int_t            bufs;
     
-    unsigned		 dictnum;
-
+    struct sdch_dict    *dict;
+    struct sdch_dict     fdict;
 
     unsigned             started:1;
     unsigned             flush:4;
@@ -472,6 +472,18 @@ find_dict(u_char *h, tr_conf_t *conf)
     return (unsigned int)(-1);
 }
 
+static blob_type
+find_fakedict(u_char *h)
+{
+    char nm[9];
+    nm[8] = 0;
+    memcpy(nm, h, 8);
+
+    blob_type b = NULL;
+    stor_find(nm, &b);
+    return b;
+}
+
 static ngx_int_t
 get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 {
@@ -585,10 +597,13 @@ tr_header_filter(ngx_http_request_t *r)
     }
 
     unsigned int dictnum = 1000;
+    blob_type fakedict_blob = NULL;
     while (val.len >= 8) {
         unsigned int d = find_dict(val.data, conf);
         if (d < dictnum)
             dictnum = d;
+        if (fakedict_blob == NULL)
+            fakedict_blob = find_fakedict(val.data);
         val.data += 8; val.len -= 8;
         unsigned l = strspn((char*)val.data, " \t,");
         if (l > val.len)
@@ -599,7 +614,7 @@ tr_header_filter(ngx_http_request_t *r)
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
-        if (dictnum >= 1000) {
+        if (dictnum >= 1000 && fakedict_blob == NULL) {
             e = x_sdch_encode_0_header(r);
             if (e)
                 return e;
@@ -617,7 +632,16 @@ tr_header_filter(ngx_http_request_t *r)
 
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
-    ctx->dictnum = dictnum;
+    if (dictnum < 1000) {
+        struct sdch_dict *dict_data = conf->dict_data->elts;
+        ctx->dict = &dict_data[dictnum];
+    } else {
+        ctx->dict = &ctx->fdict;
+        ctx->fdict.dict = fakedict_blob;
+        size_t sz = blob_data_size(fakedict_blob)-8;
+        memcpy(ctx->fdict.server_dictid, (const char*)blob_data_begin(fakedict_blob)+sz, 8);
+        get_hashed_dict(fakedict_blob, &ctx->fdict.hashed_dict);
+    }
     ctx->store = ctxstore;
     ctx->pzh.wf = tr_filter_write;
     ctx->pzh.cf = tr_filter_close;
@@ -911,9 +935,8 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
      //aDeflateInit(&ctx->zstream);
      //ctx->tr1cookie = make_tr1(tr_filter_write, ctx);
     ctx->last_out = &ctx->out;
-    struct sdch_dict *dict_data = conf->dict_data->elts;
-    tr_filter_write(ctx, dict_data[ctx->dictnum].server_dictid, 9);
-    get_vcd_encoder(dict_data[ctx->dictnum].hashed_dict, ctx, &ctx->enc);
+    tr_filter_write(ctx, ctx->dict->server_dictid, 9);
+    get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
     ctx->coo = ctx->enc;
     if (conf->sdch_dumpdir.len > 0) {
         char *fn = ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30);
