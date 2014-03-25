@@ -1,10 +1,6 @@
 #include <vector>
 #include "storage.h"
 
-struct blob_s {
-    std::vector<char> data;
-};
-
 
 int blob_create(blob_s** obj) {
     *obj = new blob_s;

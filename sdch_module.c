@@ -18,6 +18,7 @@
 #include "blobstore.h"
 
 struct sdch_dict {
+    blob_type dict;
     hashed_dictionary_p  hashed_dict;
     unsigned char user_dictid[9], server_dictid[9];
 };
@@ -1362,11 +1363,13 @@ tr_create_conf(ngx_conf_t *cf)
 static char *
 init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
 {
-    if (get_hashed_dict(dict->data, &data->hashed_dict)) {
+    blob_create(&data->dict);
+    read_file(dict->data, data->dict);
+    if (get_hashed_dict(data->dict, &data->hashed_dict)) {
     	ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "get_hashed_dict %s failed", dict->data);
     	return NGX_CONF_ERROR;
     }
-    get_dict_ids(get_dictionary_begin(data->hashed_dict), get_dictionary_size(data->hashed_dict),
+    get_dict_ids(blob_data_begin(data->dict), blob_data_size(data->dict),
     		data->user_dictid, data->server_dictid);
     ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "dictionary ids: user %s server %s",
     		data->user_dictid, data->server_dictid);

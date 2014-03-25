@@ -29,17 +29,17 @@ public:
     ~fdholder() {close(fd);}
 };
 
-void read_file(const char *fn, std::vector<char> &cn)
+void read_file(const char *fn, blob_type cn)
 {
-    cn.clear();
+    cn->data.clear();
     fdholder fd(open(fn, O_RDONLY));
     if (fd == -1)
         throw std::runtime_error(std::string("can not open: ") + fn);
     struct stat st;
     if (fstat(fd, &st) == -1)
         throw std::runtime_error("fstat");
-    cn.resize(st.st_size);
-    if (read(fd, &cn[0], cn.size()) != (ssize_t)cn.size())
+    cn->data.resize(st.st_size);
+    if (read(fd, &cn->data[0], cn->data.size()) != (ssize_t)cn->data.size())
         throw std::runtime_error("read");
 }
 
@@ -57,29 +57,18 @@ std::vector<char>::const_iterator get_dict_payload(const std::vector<char> &dict
 	return dict.end();
 }
 
-int get_hashed_dict(const unsigned char *fn, hashed_dictionary_p *d)
+int get_hashed_dict(blob_type cn, hashed_dictionary_p *d)
 {
 	try {
 		hashed_dictionary_s *h = new hashed_dictionary_s;
-		read_file((const char *)fn, h->dict);
-		const char *dict_payload = &*get_dict_payload(h->dict);
-		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, &*h->dict.end()-dict_payload));
+		const char *dict_payload = &*get_dict_payload(cn->data);
+		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, &*cn->data.end()-dict_payload));
 		h->hashed_dict->Init();
 		*d = h;
 		return 0;
 	} catch (...) {
 		return 1;
 	}
-}
-
-void *get_dictionary_begin(hashed_dictionary_p d)
-{
-	return &d->dict[0];
-}
-
-size_t get_dictionary_size(hashed_dictionary_p d)
-{
-	return d->dict.size();
 }
 
 static writerfunc vcdwriter;

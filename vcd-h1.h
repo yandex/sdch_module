@@ -2,6 +2,7 @@
 #define VCD_H1_H_
 
 #include "pzlib.h"
+#include "storage.h"
 
 #ifdef __cplusplus
 #include "ngoustr.h"
@@ -18,7 +19,6 @@ typedef struct vcd_encoder_s *vcd_encoder_p;
 #include <memory>
 
 struct hashed_dictionary_s {
-	std::vector<char> dict;
 	std::auto_ptr<open_vcdiff::HashedDictionary> hashed_dict;
 };
 struct vcd_encoder_s {
@@ -28,14 +28,12 @@ struct vcd_encoder_s {
 
 	vcd_encoder_s(void *c);
 };
-void read_file(const char *fn, std::vector<char> &cn);
 
 extern "C" {
 #endif
 
-int get_hashed_dict(const unsigned char *fn, hashed_dictionary_p *d);
-void *get_dictionary_begin(hashed_dictionary_p d);
-size_t get_dictionary_size(hashed_dictionary_p d);
+void read_file(const char *fn, blob_type cn);
+int get_hashed_dict(blob_type cn, hashed_dictionary_p *d);
 
 void get_vcd_encoder(hashed_dictionary_p d, void *cookie, vcd_encoder_p *e);
 

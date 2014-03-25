@@ -3,11 +3,16 @@
 
 #include <time.h>
 
+struct blob_s;
 #ifdef __cplusplus
+#include <vector>
+
+struct blob_s {
+    std::vector<char> data;
+};
+
 extern "C" {
 #endif
-
-struct blob_s;
 typedef struct blob_s *blob_type;
 
 int blob_create(blob_type *obj);
