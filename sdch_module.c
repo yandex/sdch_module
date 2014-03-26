@@ -640,7 +640,8 @@ tr_header_filter(ngx_http_request_t *r)
         ctx->fdict.dict = fakedict_blob;
         size_t sz = blob_data_size(fakedict_blob)-8;
         memcpy(ctx->fdict.server_dictid, (const char*)blob_data_begin(fakedict_blob)+sz, 8);
-        get_hashed_dict(fakedict_blob, &ctx->fdict.hashed_dict);
+        get_hashed_dict(blob_data_begin(fakedict_blob), (const char*)blob_data_begin(fakedict_blob)+sz,
+            &ctx->fdict.hashed_dict);
     }
     ctx->store = ctxstore;
     ctx->pzh.wf = tr_filter_write;
@@ -1388,7 +1389,9 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
 {
     blob_create(&data->dict);
     read_file(dict->data, data->dict);
-    if (get_hashed_dict(data->dict, &data->hashed_dict)) {
+    if (get_hashed_dict(blob_data_begin(data->dict),
+            blob_data_begin(data->dict)+blob_data_size(data->dict),
+            &data->hashed_dict)) {
     	ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "get_hashed_dict %s failed", dict->data);
     	return NGX_CONF_ERROR;
     }

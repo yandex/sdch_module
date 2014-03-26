@@ -43,26 +43,26 @@ void read_file(const char *fn, blob_type cn)
         throw std::runtime_error("read");
 }
 
-std::vector<char>::const_iterator get_dict_payload(const std::vector<char> &dict)
+const char *get_dict_payload(const char *dictbegin, const char *dictend)
 {
-	std::vector<char>::const_iterator nl = dict.begin();
-	while (nl < dict.end()) {
+	const char *nl = dictbegin;
+	while (nl < dictend) {
 		if (*nl == '\n')
 			return nl+1;
-		nl = find(nl, dict.end(), '\n');
-		if (nl == dict.end())
+		nl = (const char*)memchr(nl, '\n', dictend-nl);
+		if (nl == dictend)
 			return nl;
 		++nl;
 	}
-	return dict.end();
+	return dictend;
 }
 
-int get_hashed_dict(blob_type cn, hashed_dictionary_p *d)
+int get_hashed_dict(const char *dictbegin, const char *dictend, hashed_dictionary_p *d)
 {
 	try {
 		hashed_dictionary_s *h = new hashed_dictionary_s;
-		const char *dict_payload = &*get_dict_payload(cn->data);
-		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, &*cn->data.end()-dict_payload));
+		const char *dict_payload = get_dict_payload(dictbegin, dictend);
+		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, dictend-dict_payload));
 		h->hashed_dict->Init();
 		*d = h;
 		return 0;
