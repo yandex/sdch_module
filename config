@@ -30,6 +30,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/teefd.cpp \
                 $ngx_addon_dir/blobstore.cc \
                 $ngx_addon_dir/blob.cc \
+                $ngx_addon_dir/storage.cc \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
