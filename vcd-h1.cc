@@ -57,11 +57,11 @@ const char *get_dict_payload(const char *dictbegin, const char *dictend)
 	return dictend;
 }
 
-int get_hashed_dict(const char *dictbegin, const char *dictend, hashed_dictionary_p *d)
+int get_hashed_dict(const char *dictbegin, const char *dictend, int faked, hashed_dictionary_p *d)
 {
 	try {
 		hashed_dictionary_s *h = new hashed_dictionary_s;
-		const char *dict_payload = get_dict_payload(dictbegin, dictend);
+		const char *dict_payload = faked ? dictbegin : get_dict_payload(dictbegin, dictend);
 		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, dictend-dict_payload));
 		h->hashed_dict->Init();
 		*d = h;
