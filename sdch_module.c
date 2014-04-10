@@ -652,17 +652,17 @@ tr_header_filter(ngx_http_request_t *r)
 
     tr_filter_memory(r, ctx);
 
-#if 1
-    h = ngx_list_push(&r->headers_out.headers);
-    if (h == NULL) {
-        return NGX_ERROR;
-    }
+    if (ctx->dict != NULL) {
+        h = ngx_list_push(&r->headers_out.headers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
 
-    h->hash = 1;
-    ngx_str_set(&h->key, "Content-Encoding");
-    ngx_str_set(&h->value, "sdch");
-    r->headers_out.content_encoding = h;
-#endif
+        h->hash = 1;
+        ngx_str_set(&h->key, "Content-Encoding");
+        ngx_str_set(&h->value, "sdch");
+        r->headers_out.content_encoding = h;
+    }
 
     r->main_filter_need_in_memory = 1;
 
