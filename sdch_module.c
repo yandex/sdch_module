@@ -618,7 +618,8 @@ tr_header_filter(ngx_http_request_t *r)
             e = x_sdch_encode_0_header(r);
             if (e)
                 return e;
-            return ngx_http_next_header_filter(r);
+            if (ctxstore == 0)
+                return ngx_http_next_header_filter(r);
         }
     }
 #endif
@@ -635,13 +636,15 @@ tr_header_filter(ngx_http_request_t *r)
     if (dictnum < 1000) {
         struct sdch_dict *dict_data = conf->dict_data->elts;
         ctx->dict = &dict_data[dictnum];
-    } else {
+    } else if (fakedict_blob != NULL) {
         ctx->dict = &ctx->fdict;
         ctx->fdict.dict = fakedict_blob;
         size_t sz = blob_data_size(fakedict_blob)-8;
         memcpy(ctx->fdict.server_dictid, (const char*)blob_data_begin(fakedict_blob)+sz, 8);
         get_hashed_dict(blob_data_begin(fakedict_blob), (const char*)blob_data_begin(fakedict_blob)+sz,
             1, &ctx->fdict.hashed_dict);
+    } else {
+        ctx->dict = NULL;
     }
     ctx->store = ctxstore;
     ctx->pzh.wf = tr_filter_write;
@@ -942,9 +945,13 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
      //aDeflateInit(&ctx->zstream);
      //ctx->tr1cookie = make_tr1(tr_filter_write, ctx);
     ctx->last_out = &ctx->out;
-    tr_filter_write(ctx, ctx->dict->server_dictid, 9);
-    get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
-    ctx->coo = ctx->enc;
+    
+    ctx->coo = ctx;
+    if (ctx->dict != NULL) {
+        tr_filter_write(ctx, ctx->dict->server_dictid, 9);
+        get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
+        ctx->coo = ctx->enc;
+    }
     if (conf->sdch_dumpdir.len > 0) {
         char *fn = ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30);
         sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
