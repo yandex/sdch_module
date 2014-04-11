@@ -1245,6 +1245,8 @@ static ngx_int_t
 tr_filter_deflate_end(tr_ctx_t *ctx)
 {
 
+    ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0,
+        "closing ctx");
 #if 0
     rc = aDeflateEnd(&ctx->zstream);
 
@@ -1256,6 +1258,10 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 #else
     do_close(ctx->coo);
 #endif
+    if (ctx->store && !ctx->blob) {
+        ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
+            "storing fakedict: no blob");
+    }
     if (ctx->store && ctx->blob) {
         unsigned char user_dictid[9];
         unsigned char server_dictid[9];
@@ -1265,6 +1271,8 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
             blob_destroy(ctx->blob);
         } else {
             stor_store(user_dictid, time(0), ctx->blob); // XXX
+            ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
+                "storing fakedict %s", user_dictid);
         }
     }
 
