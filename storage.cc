@@ -6,7 +6,8 @@
 struct sv {
     time_t ts;
     blob_type b;
-    sv(time_t t, blob_type bl) : ts(t), b(bl) {}
+    int locked;
+    sv(time_t t, blob_type bl) : ts(t), b(bl), locked(0) {}
 };
 
 typedef std::map<std::string, sv> stor_type;
@@ -24,9 +25,17 @@ int stor_store(const char *key, time_t ts, blob_type obj) {
     }
 }
 
-int stor_find(const char *key, blob_type *obj) {
+int stor_find(const char *key, blob_type *obj, sv** v) {
     stor_type::iterator i = stor.find(key);
     if (i == stor.end())
         return 1;
     *obj = i->second.b;
+    i->second.locked = 1;
+    *v = &(i->second);
+    return 0;
+}
+
+int stor_unlock(sv* v) {
+    v->locked = 0;
+    return 0;
 }

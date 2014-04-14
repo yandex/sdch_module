@@ -21,8 +21,10 @@ int blob_destroy(blob_type obj);
 const void *blob_data_begin(blob_type obj);
 size_t blob_data_size(blob_type obj);
 
+struct sv;
 int stor_store(const char *key, time_t ts, blob_type obj);
-int stor_find(const char *key, blob_type *obj);
+int stor_find(const char *key, blob_type *obj, struct sv**);
+int stor_unlock(struct sv*);
 int stor_clear(time_t ts);
 
 #ifdef __cplusplus

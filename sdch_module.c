@@ -88,6 +88,7 @@ typedef struct {
     vcd_encoder_p       enc;
     
     blob_type            blob;
+    struct sv            *stuc;
 } tr_ctx_t;
 
 
@@ -473,14 +474,14 @@ find_dict(u_char *h, tr_conf_t *conf)
 }
 
 static blob_type
-find_fakedict(u_char *h)
+find_fakedict(u_char *h, struct sv **v)
 {
     char nm[9];
     nm[8] = 0;
     memcpy(nm, h, 8);
 
     blob_type b = NULL;
-    stor_find(nm, &b);
+    stor_find(nm, &b, v);
     return b;
 }
 
@@ -518,7 +519,7 @@ static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
-    tr_ctx_t   *ctx;
+    tr_ctx_t   *ctx = NULL;
     tr_conf_t  *conf;
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
@@ -598,12 +599,13 @@ tr_header_filter(ngx_http_request_t *r)
 
     unsigned int dictnum = 1000;
     blob_type fakedict_blob = NULL;
+    struct sv *ctxstuc;
     while (val.len >= 8) {
         unsigned int d = find_dict(val.data, conf);
         if (d < dictnum)
             dictnum = d;
         if (fakedict_blob == NULL)
-            fakedict_blob = find_fakedict(val.data);
+            fakedict_blob = find_fakedict(val.data, &ctxstuc);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "find_fakedict %.8s -> %p", val.data, fakedict_blob);
         val.data += 8; val.len -= 8;
@@ -649,6 +651,7 @@ tr_header_filter(ngx_http_request_t *r)
         ctx->dict = NULL;
     }
     ctx->store = ctxstore;
+    ctx->stuc = ctxstuc;
     ctx->pzh.wf = tr_filter_write;
     ctx->pzh.cf = tr_filter_close;
 
@@ -1276,6 +1279,9 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
             ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
                 "storing fakedict %s (%p)", user_dictid, ctx->blob);
         }
+    }
+    if (ctx->stuc) {
+        stor_unlock(ctx->stuc);
     }
 
     //ngx_pfree(r->pool, ctx->preallocated);
