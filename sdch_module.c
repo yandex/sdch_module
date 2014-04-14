@@ -604,6 +604,8 @@ tr_header_filter(ngx_http_request_t *r)
             dictnum = d;
         if (fakedict_blob == NULL)
             fakedict_blob = find_fakedict(val.data);
+            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                   "find_fakedict %.8s -> %p", val.data, fakedict_blob);
         val.data += 8; val.len -= 8;
         unsigned l = strspn((char*)val.data, " \t,");
         if (l > val.len)
@@ -1272,7 +1274,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
         } else {
             stor_store(user_dictid, time(0), ctx->blob); // XXX
             ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
-                "storing fakedict %s", user_dictid);
+                "storing fakedict %s (%p)", user_dictid, ctx->blob);
         }
     }
 
