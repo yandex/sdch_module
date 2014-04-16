@@ -12,15 +12,20 @@ struct sv {
 
 typedef std::map<std::string, sv> stor_type;
 static stor_type stor;
+typedef std::multimap<time_t, std::string> lru_type;
+static lru_type lru;
 
 int stor_store(const char *key, time_t ts, blob_type obj) {
     std::pair<stor_type::iterator, bool> r = stor.insert(stor_type::value_type(key, sv(ts, obj)));
     if (!r.second) {
+#if 0
         if (r.first->second.ts < ts)
             r.first->second.ts = ts;
+#endif
         blob_destroy(obj);
         return 1;
     } else {
+        lru.insert(lru_type::value_type(ts, key));
         return 0;
     }
 }
