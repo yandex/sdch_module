@@ -1,6 +1,8 @@
 #include <map>
 #include <string>
 
+#include <cassert>
+
 #include "storage.h"
 
 struct sv {
@@ -14,6 +16,8 @@ typedef std::map<std::string, sv> stor_type;
 static stor_type stor;
 typedef std::multimap<time_t, std::string> lru_type;
 static lru_type lru;
+static size_t sum_size;
+size_t max_stor_size = 10000000;
 
 int stor_store(const char *key, time_t ts, blob_type obj) {
     std::pair<stor_type::iterator, bool> r = stor.insert(stor_type::value_type(key, sv(ts, obj)));
@@ -26,6 +30,21 @@ int stor_store(const char *key, time_t ts, blob_type obj) {
         return 1;
     } else {
         lru.insert(lru_type::value_type(ts, key));
+        sum_size += blob_data_size(obj);
+        for (lru_type::iterator i = lru.begin(); sum_size > max_stor_size && i != lru.end();) {
+            stor_type::iterator si = stor.find(i->second);
+            if (si == stor.end()) {
+                assert(0);
+                continue;
+            }
+            if (si->second.locked) { // XXX
+                i++;
+                continue;
+            }
+            sum_size -= blob_data_size(si->second.b);
+            stor.erase(si);
+            lru.erase(i++);
+        }
         return 0;
     }
 }
