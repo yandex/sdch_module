@@ -26,6 +26,7 @@ int stor_store(const char *key, time_t ts, blob_type obj);
 int stor_find(const char *key, blob_type *obj, struct sv**);
 int stor_unlock(struct sv*);
 int stor_clear(time_t ts);
+extern size_t max_stor_size;
 
 #ifdef __cplusplus
 }

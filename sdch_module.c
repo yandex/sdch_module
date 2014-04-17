@@ -49,6 +49,10 @@ typedef struct {
 } tr_conf_t;
 
 typedef struct {
+    ngx_uint_t           stor_size;
+} tr_main_conf_t;
+
+typedef struct {
     struct pz            pzh;
     ngx_chain_t         *in;
     ngx_chain_t         *free;
@@ -121,6 +125,8 @@ static ngx_int_t tr_filter_init(ngx_conf_t *cf);
 static void *tr_create_conf(ngx_conf_t *cf);
 static char *tr_merge_conf(ngx_conf_t *cf,
     void *parent, void *child);
+static void *tr_create_main_conf(ngx_conf_t *cf);
+static char *tr_init_main_conf(ngx_conf_t *cf, void *conf);
 
 static void get_dict_ids(const char *buf, size_t buflen,
 	unsigned char user_dictid[9], unsigned char server_dictid[9]);
@@ -156,7 +162,9 @@ static ngx_str_t  ngx_http_gzip_no_cache = ngx_string("no-cache");
 static ngx_str_t  ngx_http_gzip_no_store = ngx_string("no-store");
 static ngx_str_t  ngx_http_gzip_private = ngx_string("private");
 
-
+static ngx_conf_num_bounds_t tr_stor_size_bounds = {
+    ngx_conf_check_num_bounds, 1, 0xffffffffU
+};
 
 static ngx_command_t  tr_filter_commands[] = {
 
@@ -210,6 +218,13 @@ static ngx_command_t  tr_filter_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, types_keys),
       &ngx_http_html_default_types[0] },
+
+    { ngx_string("sdch_stor_size"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(tr_main_conf_t, stor_size),
+      &tr_stor_size_bounds },
 
 #if 0
     { ngx_string("gzip_comp_level"),
@@ -265,8 +280,8 @@ static ngx_http_module_t  sdch_module_ctx = {
     tr_add_variables,                                  /* preconfiguration */
     tr_filter_init,             /* postconfiguration */
 
-    NULL,                                  /* create main configuration */
-    NULL,                                  /* init main configuration */
+    tr_create_main_conf,                   /* create main configuration */
+    tr_init_main_conf,                     /* init main configuration */
 
     NULL,                                  /* create server configuration */
     NULL,                                  /* merge server configuration */
@@ -1377,6 +1392,29 @@ tr_ratio_variable(ngx_http_request_t *r,
     return NGX_OK;
 }
 
+static void *
+tr_create_main_conf(ngx_conf_t *cf)
+{
+    tr_main_conf_t  *conf;
+
+    conf = ngx_pcalloc(cf->pool, sizeof(tr_main_conf_t));
+    if (conf == NULL) {
+        return NULL;
+    }
+    
+    conf->stor_size = NGX_CONF_UNSET_SIZE;
+
+    return conf;
+}
+
+static char *
+tr_init_main_conf(ngx_conf_t *cf, void *cnf)
+{
+    tr_main_conf_t *conf = cnf;
+    if (conf->stor_size != NGX_CONF_UNSET_SIZE)
+        max_stor_size = conf->stor_size;
+    return NGX_CONF_OK;
+}
 
 static void *
 tr_create_conf(ngx_conf_t *cf)
