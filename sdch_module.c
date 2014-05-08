@@ -82,11 +82,9 @@ typedef struct {
     size_t               zin;
     size_t               zout;
 
-    //uint32_t             crc32;
     z_stream             zstream;
     ngx_http_request_t  *request;
     
-    //void		*tr1cookie;
     //writerfunc          *wf;
     void                *coo;
     vcd_encoder_p       enc;
@@ -962,8 +960,6 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     ctx->started = 1;
 
 //INIT
-     //aDeflateInit(&ctx->zstream);
-     //ctx->tr1cookie = make_tr1(tr_filter_write, ctx);
     ctx->last_out = &ctx->out;
     
     ctx->coo = ctx;
@@ -1174,8 +1170,6 @@ tr_filter_deflate(tr_ctx_t *ctx)
                  ctx->zstream.avail_in, ctx->zstream.avail_out,
                  ctx->flush, ctx->redo);
 
-    //rc = aDeflate(&ctx->zstream, ctx->flush);
-    //int l0 = do_tr1(ctx->tr1cookie, ctx->zstream.next_in, ctx->zstream.avail_in);
     int l0 = do_write(ctx->coo, ctx->zstream.next_in, ctx->zstream.avail_in);
     ctx->zstream.next_in += l0;
     ctx->zstream.avail_in -= l0;
@@ -1267,17 +1261,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 
     ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0,
         "closing ctx");
-#if 0
-    rc = aDeflateEnd(&ctx->zstream);
-
-    if (rc != Z_OK) {
-        ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                      "deflateEnd() failed: %d", rc);
-        return NGX_ERROR;
-    }
-#else
     do_close(ctx->coo);
-#endif
     if (ctx->store && !ctx->blob) {
         ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
             "storing quasidict: no blob");
