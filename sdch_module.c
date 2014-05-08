@@ -1441,7 +1441,7 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
     blob_create(&data->dict);
     read_file(dict->data, data->dict);
     if (get_hashed_dict(blob_data_begin(data->dict),
-            blob_data_begin(data->dict)+blob_data_size(data->dict),
+            (char*)blob_data_begin(data->dict)+blob_data_size(data->dict),
             0, &data->hashed_dict)) {
     	ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "get_hashed_dict %s failed", dict->data);
     	return NGX_CONF_ERROR;
