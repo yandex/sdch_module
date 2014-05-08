@@ -326,7 +326,7 @@ backtrace_log(ngx_log_t *log)
 #endif
 
 static int
-header_find(ngx_list_t *headers, char *key, ngx_str_t *value)
+header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 {
 	size_t keylen = strlen(key);
 	ngx_list_part_t *part = &headers->part;
