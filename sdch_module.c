@@ -1274,7 +1274,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
         if (blob_append(ctx->blob, user_dictid, 8) != 0) {
             blob_destroy(ctx->blob);
         } else {
-            stor_store(user_dictid, time(0), ctx->blob); // XXX
+            stor_store((const char *)user_dictid, time(0), ctx->blob); // XXX
             ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
                 "storing quasidict %s (%p)", user_dictid, ctx->blob);
         }
