@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 void read_file(const char *fn, blob_type cn);
-int get_hashed_dict(const char *dictbegin, const char *dictend, int faked, hashed_dictionary_p *d);
+int get_hashed_dict(const char *dictbegin, const char *dictend, int quasi, hashed_dictionary_p *d);
 
 void get_vcd_encoder(hashed_dictionary_p d, void *cookie, vcd_encoder_p *e);
 

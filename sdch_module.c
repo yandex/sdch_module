@@ -489,7 +489,7 @@ find_dict(u_char *h, tr_conf_t *conf)
 }
 
 static blob_type
-find_fakedict(u_char *h, struct sv **v)
+find_quasidict(u_char *h, struct sv **v)
 {
     char nm[9];
     nm[8] = 0;
@@ -613,16 +613,16 @@ tr_header_filter(ngx_http_request_t *r)
     }
 
     unsigned int dictnum = 1000;
-    blob_type fakedict_blob = NULL;
+    blob_type quasidict_blob = NULL;
     struct sv *ctxstuc;
     while (val.len >= 8) {
         unsigned int d = find_dict(val.data, conf);
         if (d < dictnum)
             dictnum = d;
-        if (fakedict_blob == NULL)
-            fakedict_blob = find_fakedict(val.data, &ctxstuc);
+        if (quasidict_blob == NULL)
+            quasidict_blob = find_quasidict(val.data, &ctxstuc);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                   "find_fakedict %.8s -> %p", val.data, fakedict_blob);
+                   "find_quasidict %.8s -> %p", val.data, quasidict_blob);
         val.data += 8; val.len -= 8;
         unsigned l = strspn((char*)val.data, " \t,");
         if (l > val.len)
@@ -633,7 +633,7 @@ tr_header_filter(ngx_http_request_t *r)
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
-        if (dictnum >= 1000 && fakedict_blob == NULL) {
+        if (dictnum >= 1000 && quasidict_blob == NULL) {
             e = x_sdch_encode_0_header(r);
             if (e)
                 return e;
@@ -655,12 +655,12 @@ tr_header_filter(ngx_http_request_t *r)
     if (dictnum < 1000) {
         struct sdch_dict *dict_data = conf->dict_data->elts;
         ctx->dict = &dict_data[dictnum];
-    } else if (fakedict_blob != NULL) {
+    } else if (quasidict_blob != NULL) {
         ctx->dict = &ctx->fdict;
-        ctx->fdict.dict = fakedict_blob;
-        size_t sz = blob_data_size(fakedict_blob)-8;
-        memcpy(ctx->fdict.server_dictid, (const char*)blob_data_begin(fakedict_blob)+sz, 8);
-        get_hashed_dict(blob_data_begin(fakedict_blob), (const char*)blob_data_begin(fakedict_blob)+sz,
+        ctx->fdict.dict = quasidict_blob;
+        size_t sz = blob_data_size(quasidict_blob)-8;
+        memcpy(ctx->fdict.server_dictid, (const char*)blob_data_begin(quasidict_blob)+sz, 8);
+        get_hashed_dict(blob_data_begin(quasidict_blob), (const char*)blob_data_begin(quasidict_blob)+sz,
             1, &ctx->fdict.hashed_dict);
     } else {
         ctx->dict = NULL;
@@ -1280,7 +1280,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 #endif
     if (ctx->store && !ctx->blob) {
         ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
-            "storing fakedict: no blob");
+            "storing quasidict: no blob");
     }
     if (ctx->store && ctx->blob) {
         unsigned char user_dictid[9];
@@ -1292,7 +1292,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
         } else {
             stor_store(user_dictid, time(0), ctx->blob); // XXX
             ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
-                "storing fakedict %s (%p)", user_dictid, ctx->blob);
+                "storing quasidict %s (%p)", user_dictid, ctx->blob);
         }
     }
     if (ctx->stuc) {
