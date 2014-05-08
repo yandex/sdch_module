@@ -893,7 +893,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     ctx->coo = ctx->enc;
     if (conf->sdch_dumpdir.len > 0) {
         char *fn = ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30);
-        sprintf(fn, "%s/%08x-%08x-%08x", conf->sdch_dumpdir.data, random(), random(), random());
+        sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
         ctx->coo = make_teefd(fn, ctx->wf, ctx->enc);
         if (ctx->coo == NULL) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
