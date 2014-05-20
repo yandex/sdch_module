@@ -1406,6 +1406,7 @@ tr_filter_init(ngx_conf_t *cf)
     return NGX_OK;
 }
 
+#if nginx_version < 1006000
 static void
 ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
 {
@@ -1419,6 +1420,7 @@ ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
 			dst->data[i] = '_';
 	}
 }
+#endif
 
 #include <openssl/sha.h>
 
