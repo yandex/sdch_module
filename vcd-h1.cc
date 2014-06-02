@@ -11,6 +11,7 @@
 #include <vector>
 #include <stdexcept>
 #include <algorithm>
+#include <string>
 
 #include <google/vcencoder.h>
 
