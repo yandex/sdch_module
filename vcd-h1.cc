@@ -38,7 +38,7 @@ void read_file(const char *fn, std::vector<char> &cn)
     if (fstat(fd, &st) == -1)
         throw std::runtime_error("fstat");
     cn.resize(st.st_size);
-    if (read(fd, &cn[0], cn.size()) != cn.size())
+    if (read(fd, &cn[0], cn.size()) != (ssize_t)cn.size())
         throw std::runtime_error("read");
 }
 
@@ -56,11 +56,11 @@ std::vector<char>::const_iterator get_dict_payload(const std::vector<char> &dict
 	return dict.end();
 }
 
-int get_hashed_dict(const char *fn, hashed_dictionary_p *d)
+int get_hashed_dict(const unsigned char *fn, hashed_dictionary_p *d)
 {
 	try {
 		hashed_dictionary_s *h = new hashed_dictionary_s;
-		read_file(fn, h->dict);
+		read_file((const char *)fn, h->dict);
 		h->dict_payload = &*get_dict_payload(h->dict);
 		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(h->dict_payload, &*h->dict.end()-h->dict_payload));
 		h->hashed_dict->Init();

@@ -33,7 +33,7 @@ void read_file(const char *fn, std::vector<char> &cn);
 extern "C" {
 #endif
 
-int get_hashed_dict(const char *fn, hashed_dictionary_p *d);
+int get_hashed_dict(const unsigned char *fn, hashed_dictionary_p *d);
 void *get_dictionary_begin(hashed_dictionary_p d);
 size_t get_dictionary_size(hashed_dictionary_p d);
 
