@@ -322,7 +322,7 @@ header_find(ngx_list_t *headers, char *key, ngx_str_t *value)
 			data = part->elts;
 			i = 0;
 		}
-		if (data[i].key.len == keylen && ngx_strncasecmp(data[i].key.data, key, keylen) == 0) {
+		if (data[i].key.len == keylen && ngx_strncasecmp(data[i].key.data, (u_char*)key, keylen) == 0) {
 			*value = data[i].value;
 			return 1;
 		}
@@ -919,7 +919,6 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
 static ngx_int_t
 tr_filter_add_data(tr_ctx_t *ctx)
 {
-    ngx_http_request_t *r = ctx->request;
     if (ctx->zstream.avail_in || ctx->flush != Z_NO_FLUSH || ctx->redo) {
         return NGX_OK;
     }
