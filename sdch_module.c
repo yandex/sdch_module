@@ -46,6 +46,8 @@ typedef struct {
     ngx_uint_t           sdch_proxied;
     
     ngx_str_t            sdch_dumpdir;
+    
+    ngx_flag_t           enable_quasi;
 } tr_conf_t;
 
 typedef struct {
@@ -216,6 +218,14 @@ static ngx_command_t  tr_filter_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, types_keys),
       &ngx_http_html_default_types[0] },
+
+    { ngx_string("sdch_quasi"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(tr_conf_t, enable_quasi),
+      NULL },
 
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
@@ -597,7 +607,7 @@ tr_header_filter(ngx_http_request_t *r)
     }
 
     unsigned int ctxstore = 0;
-    if (ngx_strcmp(val.data, "AUTOAUTO") == 0) {
+    if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
         ctxstore = 1;
 
         ngx_table_elt_t *h = ngx_list_push(&r->headers_out.headers);
@@ -1432,6 +1442,8 @@ tr_create_conf(ngx_conf_t *cf)
     conf->min_length = NGX_CONF_UNSET;
 #endif
 
+    conf->enable_quasi = NGX_CONF_UNSET;
+
     return conf;
 }
 
@@ -1503,6 +1515,8 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
     ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
+
+    ngx_conf_merge_value(conf->enable_quasi, prev->enable_quasi, 1);
 
     return NGX_CONF_OK;
 }
