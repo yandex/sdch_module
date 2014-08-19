@@ -1515,14 +1515,19 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (conf->dicts == NGX_CONF_UNSET_PTR)
         conf->dicts = prev->dicts;
 
-    conf->dict_data = ngx_array_create(cf->pool, conf->dicts->nelts, sizeof(struct sdch_dict));
-    unsigned i;
-    ngx_str_t *sdch_dicts = conf->dicts->elts;
-    for (i = 0; i < conf->dicts->nelts; i++) {
-        struct sdch_dict *data = ngx_array_push(conf->dict_data);
-        char *p = init_dict_data(cf, &sdch_dicts[i], data);
-        if (p != NGX_CONF_OK)
-            return p;
+    ngx_uint_t ndicts = 0;
+    if (conf->dicts != NGX_CONF_UNSET_PTR)
+        ndicts = conf->dicts->nelts;
+    conf->dict_data = ngx_array_create(cf->pool, ndicts, sizeof(struct sdch_dict));
+    if (ndicts > 0) {
+        unsigned i;
+        ngx_str_t *sdch_dicts = conf->dicts->elts;
+        for (i = 0; i < ndicts; i++) {
+            struct sdch_dict *data = ngx_array_push(conf->dict_data);
+            char *p = init_dict_data(cf, &sdch_dicts[i], data);
+            if (p != NGX_CONF_OK)
+                return p;
+        }
     }
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
