@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 #include <google/vcencoder.h>
 
