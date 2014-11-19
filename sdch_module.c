@@ -42,6 +42,7 @@ typedef struct {
     ngx_array_t          *dict_data;
 
     ngx_str_t            sdch_url;
+    ngx_http_complex_value_t sdch_urlcv;
 
     ngx_uint_t           sdch_proxied;
     
@@ -531,7 +532,9 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 
     h->hash = 1;
     ngx_str_set(&h->key, "Get-Dictionary");
-    h->value = conf->sdch_url;
+    if (ngx_http_complex_value(r, &conf->sdch_urlcv, &h->value) != NGX_OK) {
+        return NGX_ERROR;
+    }
     return NGX_OK;
 }
 
@@ -1531,6 +1534,14 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
+    ngx_http_compile_complex_value_t ccv;
+    ngx_memzero(&ccv, sizeof(ccv));
+    ccv.cf = cf;
+    ccv.value = &conf->sdch_url;
+    ccv.complex_value = &conf->sdch_urlcv;
+    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+        return "ngx_http_compile_complex_value sdch_url failed";
+    }
     ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
 
     ngx_conf_merge_value(conf->enable_quasi, prev->enable_quasi, 1);
