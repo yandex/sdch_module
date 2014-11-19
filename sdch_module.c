@@ -43,6 +43,8 @@ typedef struct {
 
     ngx_str_t            sdch_url;
     ngx_http_complex_value_t sdch_urlcv;
+    
+    ngx_uint_t           sdch_maxnoadv;
 
     ngx_uint_t           sdch_proxied;
     
@@ -201,6 +203,15 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_url),
+      NULL },
+
+    { ngx_string("sdch_maxnoadv"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(tr_conf_t, sdch_maxnoadv),
       NULL },
 
     { ngx_string("sdch_dumpdir"),
@@ -652,7 +663,9 @@ tr_header_filter(ngx_http_request_t *r)
             l = val.len;
         val.data += l; val.len -= l;
     }
-    if (dictnum > 0) {
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+        "dictnum: %d maxnoadv:%d", dictnum, conf->sdch_maxnoadv);
+    if (dictnum > ((conf->sdch_maxnoadv == NGX_CONF_UNSET_UINT) ? 0 : conf->sdch_maxnoadv)) {
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
@@ -1458,6 +1471,7 @@ tr_create_conf(ngx_conf_t *cf)
 #endif
 
     conf->enable_quasi = NGX_CONF_UNSET;
+    conf->sdch_maxnoadv = NGX_CONF_UNSET;
 
     return conf;
 }
@@ -1542,6 +1556,9 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
         return "ngx_http_compile_complex_value sdch_url failed";
     }
+
+    ngx_conf_merge_value(conf->sdch_maxnoadv, prev->sdch_maxnoadv, 0);
+
     ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
 
     ngx_conf_merge_value(conf->enable_quasi, prev->enable_quasi, 1);
