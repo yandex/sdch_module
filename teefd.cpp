@@ -29,7 +29,9 @@ void *make_teefd(const char *fn, void *coo)
 pssize_type write_teefd(void *coo, const void *buf, psize_type len)
 {
     teefd_obj *to = (teefd_obj *)coo;
-    (void)write(to->fd, buf, len); // XXX
+    if ((psize_type)write(to->fd, buf, len) != len) {
+        // XXX
+    }
     return do_write(to->coonext, buf, len);
 }
 
