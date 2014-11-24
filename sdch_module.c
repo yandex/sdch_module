@@ -101,8 +101,7 @@ typedef struct {
 
 static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
 static closefunc tr_filter_close;
-static void tr_filter_memory(ngx_http_request_t *r,
-    tr_ctx_t *ctx);
+//static void tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx);
 static ngx_int_t tr_filter_buffer(tr_ctx_t *ctx,
     ngx_chain_t *in);
 static ngx_int_t tr_filter_out_buf_out(tr_ctx_t *ctx);
@@ -706,7 +705,7 @@ tr_header_filter(ngx_http_request_t *r)
     ctx->pzh.wf = tr_filter_write;
     ctx->pzh.cf = tr_filter_close;
 
-    tr_filter_memory(r, ctx);
+    //tr_filter_memory(r, ctx);
 
     if (ctx->dict != NULL) {
         h = ngx_list_push(&r->headers_out.headers);
@@ -906,6 +905,7 @@ failed:
 }
 
 
+#if 0
 static void
 tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx)
 {
@@ -913,6 +913,7 @@ tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx)
 
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
 }
+#endif
 
 
 static ngx_int_t
