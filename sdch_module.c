@@ -1036,7 +1036,9 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
 static ngx_int_t
 tr_filter_add_data(tr_ctx_t *ctx)
 {
+#if (NGX_DEBUG)
     ngx_http_request_t *r = ctx->request;
+#endif
     if (ctx->zstream.avail_in || ctx->flush != Z_NO_FLUSH || ctx->redo) {
         return NGX_OK;
     }
