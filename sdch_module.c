@@ -28,6 +28,9 @@ typedef struct {
     ngx_flag_t           no_buffer;
 
     ngx_hash_t           types;
+    
+    ngx_str_t            sdch_disablecv_s;
+    ngx_http_complex_value_t sdch_disablecv;
 
     ngx_bufs_t           bufs;
 
@@ -177,6 +180,15 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, enable),
+      NULL },
+
+    { ngx_string("sdch_disablecv"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(tr_conf_t, sdch_disablecv_s),
       NULL },
 
     { ngx_string("sdch_buffers"),
@@ -564,6 +576,19 @@ x_sdch_encode_0_header(ngx_http_request_t *r)
 }
 
 static ngx_int_t
+expand_disable(ngx_http_request_t *r, tr_conf_t *conf)
+{
+    ngx_str_t dv;
+    if (ngx_http_complex_value(r, &conf->sdch_disablecv, &dv) != NGX_OK) {
+        return 0;
+    }
+    if (dv.len != 0 && dv.data[0] != '0') {
+        return 1;
+    }
+    return 0;
+}
+
+static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
@@ -591,7 +616,8 @@ tr_header_filter(ngx_http_request_t *r)
             && r->headers_out.content_encoding->value.len)
         || (r->headers_out.content_length_n != -1
             && r->headers_out.content_length_n < conf->min_length)
-        || ngx_http_test_content_type(r, &conf->types) == NULL)
+        || ngx_http_test_content_type(r, &conf->types) == NULL
+        || expand_disable(r, conf))
     {
         ngx_int_t e = x_sdch_encode_0_header(r);
         if (e)
@@ -1503,10 +1529,21 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     tr_conf_t *prev = parent;
     tr_conf_t *conf = child;
+    ngx_http_compile_complex_value_t ccv;
 
     ngx_conf_merge_value(conf->enable, prev->enable, 0);
     ngx_conf_merge_bufs_value(conf->bufs, prev->bufs,
                               (128 * 1024) / ngx_pagesize, ngx_pagesize);
+
+    ngx_conf_merge_str_value(conf->sdch_disablecv_s, prev->sdch_disablecv_s, "");
+    ngx_memzero(&ccv, sizeof(ccv));
+    ccv.cf = cf;
+    ccv.value = &conf->sdch_disablecv_s;
+    ccv.complex_value = &conf->sdch_disablecv;
+    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+        return "ngx_http_compile_complex_value sdch_disablecv failed";
+    }
+
 #if 0
     ngx_conf_merge_value(conf->no_buffer, prev->no_buffer, 0);
 
@@ -1551,9 +1588,6 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
-    ngx_http_compile_complex_value_t ccv;
-    ngx_memzero(&ccv, sizeof(ccv));
-    ccv.cf = cf;
     ccv.value = &conf->sdch_url;
     ccv.complex_value = &conf->sdch_urlcv;
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
