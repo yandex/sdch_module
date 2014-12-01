@@ -607,6 +607,7 @@ tr_header_filter(ngx_http_request_t *r)
     if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
         ngx_str_set(&val, "");
     }
+    int sdch_expected = (val.len > 0);
 
     if (!conf->enable
         || (r->headers_out.status != NGX_HTTP_OK
@@ -619,6 +620,8 @@ tr_header_filter(ngx_http_request_t *r)
         || ngx_http_test_content_type(r, &conf->types) == NULL
         || expand_disable(r, conf))
     {
+        if (!sdch_expected)
+            return ngx_http_next_header_filter(r);
         ngx_int_t e = x_sdch_encode_0_header(r);
         if (e)
             return e;
@@ -696,7 +699,8 @@ tr_header_filter(ngx_http_request_t *r)
     	if (e)
     	    return e;
         if (dictnum >= 1000 && quasidict_blob == NULL) {
-            e = x_sdch_encode_0_header(r);
+            if (sdch_expected)
+                e = x_sdch_encode_0_header(r);
             if (e)
                 return e;
             if (ctxstore == 0)
