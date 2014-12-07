@@ -673,15 +673,16 @@ tr_header_filter(ngx_http_request_t *r)
 
     unsigned int dictnum = 1000;
     blob_type quasidict_blob = NULL;
-    struct sv *ctxstuc;
+    struct sv *ctxstuc = NULL;
     while (val.len >= 8) {
         unsigned int d = find_dict(val.data, conf);
         if (d < dictnum)
             dictnum = d;
-        if (quasidict_blob == NULL)
+        if (quasidict_blob == NULL) {
             quasidict_blob = find_quasidict(val.data, &ctxstuc);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "find_quasidict %.8s -> %p", val.data, quasidict_blob);
+        }
         val.data += 8; val.len -= 8;
         unsigned l = strspn((char*)val.data, " \t,");
         if (l > val.len)
