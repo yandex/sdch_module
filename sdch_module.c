@@ -561,8 +561,10 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 }
 
 static ngx_int_t
-x_sdch_encode_0_header(ngx_http_request_t *r)
+x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
 {
+    if (!ins)
+        return NGX_OK;
     ngx_table_elt_t *h = ngx_list_push(&r->headers_out.headers);
     if (h == NULL) {
         return NGX_ERROR;
@@ -620,9 +622,7 @@ tr_header_filter(ngx_http_request_t *r)
         || ngx_http_test_content_type(r, &conf->types) == NULL
         || expand_disable(r, conf))
     {
-        if (!sdch_expected)
-            return ngx_http_next_header_filter(r);
-        ngx_int_t e = x_sdch_encode_0_header(r);
+        ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected);
         if (e)
             return e;
         return ngx_http_next_header_filter(r);
@@ -699,8 +699,7 @@ tr_header_filter(ngx_http_request_t *r)
     	if (e)
     	    return e;
         if (dictnum >= 1000 && quasidict_blob == NULL) {
-            if (sdch_expected)
-                e = x_sdch_encode_0_header(r);
+            e = x_sdch_encode_0_header(r, sdch_expected);
             if (e)
                 return e;
             if (ctxstore == 0)
