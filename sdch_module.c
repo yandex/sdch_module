@@ -565,9 +565,15 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 static ngx_int_t
 x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
 {
-    if (!ins)
+    ngx_table_elt_t *h = header_find(&r->headers_out.headers,
+        "x-sdch-encode", NULL);
+    if (!ins) {
+        if (h != NULL) {
+            h->hash = 0;
+            h->value.len = 0;
+        }
         return NGX_OK;
-    ngx_table_elt_t *h = header_find(&r->headers_out.headers, "x-sdch-encode", NULL);
+    }
     if (h == NULL) {
         h = ngx_list_push(&r->headers_out.headers);
     }
