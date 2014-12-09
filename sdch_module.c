@@ -390,7 +390,9 @@ header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 			i = 0;
 		}
 		if (data[i].key.len == keylen && ngx_strncasecmp(data[i].key.data, (u_char*)key, keylen) == 0) {
-			*value = data[i].value;
+                        if (value) {
+                        	*value = data[i].value;
+			}
 			return &data[i];
 		}
 	}
@@ -565,7 +567,10 @@ x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
 {
     if (!ins)
         return NGX_OK;
-    ngx_table_elt_t *h = ngx_list_push(&r->headers_out.headers);
+    ngx_table_elt_t *h = header_find(&r->headers_out.headers, "x-sdch-encode", NULL);
+    if (h == NULL) {
+        h = ngx_list_push(&r->headers_out.headers);
+    }
     if (h == NULL) {
         return NGX_ERROR;
     }
