@@ -370,7 +370,7 @@ backtrace_log(ngx_log_t *log)
 }
 #endif
 
-static int
+static ngx_table_elt_t*
 header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 {
 	size_t keylen = strlen(key);
@@ -391,7 +391,7 @@ header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 		}
 		if (data[i].key.len == keylen && ngx_strncasecmp(data[i].key.data, (u_char*)key, keylen) == 0) {
 			*value = data[i].value;
-			return 1;
+			return &data[i];
 		}
 	}
 	return 0;
