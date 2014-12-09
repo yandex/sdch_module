@@ -758,6 +758,10 @@ tr_header_filter(ngx_http_request_t *r)
         ngx_str_set(&h->key, "Content-Encoding");
         ngx_str_set(&h->value, "sdch");
         r->headers_out.content_encoding = h;
+        ngx_int_t e = x_sdch_encode_0_header(r, 0);
+        if (e) {
+            return e;
+        }
     }
 
     r->main_filter_need_in_memory = 1;
