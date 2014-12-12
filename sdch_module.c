@@ -548,6 +548,14 @@ find_quasidict(u_char *h, struct sv **v)
 static ngx_int_t
 get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 {
+    ngx_str_t val;
+    if (ngx_http_complex_value(r, &conf->sdch_urlcv, &val) != NGX_OK) {
+        return NGX_ERROR;
+    }
+    if (val.len == 0) {
+        return NGX_OK;
+    }
+
     ngx_table_elt_t *h;
     h = ngx_list_push(&r->headers_out.headers);
     if (h == NULL) {
@@ -556,9 +564,7 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 
     h->hash = 1;
     ngx_str_set(&h->key, "Get-Dictionary");
-    if (ngx_http_complex_value(r, &conf->sdch_urlcv, &h->value) != NGX_OK) {
-        return NGX_ERROR;
-    }
+    h->value = val;
     return NGX_OK;
 }
 
