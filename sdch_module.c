@@ -41,7 +41,6 @@ typedef struct {
 
     ngx_array_t         *types_keys;
     
-    ngx_array_t          *dicts;
     ngx_array_t          *dict_data;
 
     ngx_str_t            sdch_url;
@@ -133,6 +132,9 @@ static char *tr_merge_conf(ngx_conf_t *cf,
 static void *tr_create_main_conf(ngx_conf_t *cf);
 static char *tr_init_main_conf(ngx_conf_t *cf, void *conf);
 
+static char *tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
+
 static void get_dict_ids(const char *buf, size_t buflen,
 	unsigned char user_dictid[9], unsigned char server_dictid[9]);
 #if 0
@@ -202,9 +204,9 @@ static ngx_command_t  tr_filter_commands[] = {
    	  NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE1,
-	  ngx_conf_set_str_array_slot,
+	  tr_set_sdch_dict,
 	  NGX_HTTP_LOC_CONF_OFFSET,
-	  offsetof(tr_conf_t, dicts),
+	  0,
 	  NULL },
 
     { ngx_string("sdch_url"),
@@ -1512,7 +1514,6 @@ tr_create_conf(ngx_conf_t *cf)
 
     conf->enable = NGX_CONF_UNSET;
     
-    conf->dicts = NGX_CONF_UNSET_PTR;
     conf->dict_data = NULL;
 #if 0
     conf->no_buffer = NGX_CONF_UNSET;
@@ -1530,11 +1531,13 @@ tr_create_conf(ngx_conf_t *cf)
     return conf;
 }
 
-static char *
+static const char *
 init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
 {
     blob_create(&data->dict);
-    read_file((const char*)dict->data, data->dict);
+    const char * p = read_file((const char*)dict->data, data->dict);
+    if (p != NULL)
+        return p;
     if (get_hashed_dict(blob_data_begin(data->dict),
             (char*)blob_data_begin(data->dict)+blob_data_size(data->dict),
             0, &data->hashed_dict)) {
@@ -1548,6 +1551,30 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
     return NGX_CONF_OK;
 }
 
+
+static char *
+tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
+{
+    tr_conf_t *conf = cnf;
+
+    if (cf->args->nelts != 2) {
+        return NGX_CONF_ERROR;
+    }
+    if (conf->dict_data == NULL) {
+        conf->dict_data = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
+    }
+    ngx_str_t *value = cf->args->elts;
+    struct sdch_dict *data = ngx_array_push(conf->dict_data);
+    const char *p = init_dict_data(cf, &value[1], data);
+    if (p != NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "%s", p);
+        return NGX_CONF_ERROR;        
+    }
+
+    return NGX_CONF_OK;
+}
+    
 
 static char *
 tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
@@ -1593,24 +1620,8 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (!conf->enable)
     	return NGX_CONF_OK;
 
-    //ngx_conf_merge_str_value(conf->dict, prev->dict, "");
-    if (conf->dicts == NGX_CONF_UNSET_PTR)
-        conf->dicts = prev->dicts;
-
-    ngx_uint_t ndicts = 0;
-    if (conf->dicts != NGX_CONF_UNSET_PTR)
-        ndicts = conf->dicts->nelts;
-    conf->dict_data = ngx_array_create(cf->pool, ndicts, sizeof(struct sdch_dict));
-    if (ndicts > 0) {
-        unsigned i;
-        ngx_str_t *sdch_dicts = conf->dicts->elts;
-        for (i = 0; i < ndicts; i++) {
-            struct sdch_dict *data = ngx_array_push(conf->dict_data);
-            char *p = init_dict_data(cf, &sdch_dicts[i], data);
-            if (p != NGX_CONF_OK)
-                return p;
-        }
-    }
+    if (conf->dict_data == NULL)
+        conf->dict_data = prev->dict_data;
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
     ccv.value = &conf->sdch_url;

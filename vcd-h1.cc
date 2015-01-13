@@ -30,18 +30,19 @@ public:
     ~fdholder() {close(fd);}
 };
 
-void read_file(const char *fn, blob_type cn)
+const char *read_file(const char *fn, blob_type cn)
 {
     cn->data.clear();
     fdholder fd(open(fn, O_RDONLY));
     if (fd == -1)
-        throw std::runtime_error(std::string("can not open: ") + fn);
+        return "can not open dictionary";
     struct stat st;
     if (fstat(fd, &st) == -1)
-        throw std::runtime_error("fstat");
+        return "dictionary fstat error";
     cn->data.resize(st.st_size);
     if (read(fd, &cn->data[0], cn->data.size()) != (ssize_t)cn->data.size())
-        throw std::runtime_error("read");
+        return "dictionary read error";
+    return 0;
 }
 
 const char *get_dict_payload(const char *dictbegin, const char *dictend)
