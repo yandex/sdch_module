@@ -616,7 +616,7 @@ tr_header_filter(ngx_http_request_t *r)
     tr_ctx_t   *ctx = NULL;
     tr_conf_t  *conf;
 
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter header 000");
 
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
@@ -796,7 +796,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     ctx = ngx_http_get_module_ctx(r, sdch_module);
 
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter body 000");
 
     if (ctx == NULL || ctx->done || r->header_only) {
