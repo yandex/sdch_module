@@ -24,6 +24,13 @@ struct sdch_dict {
 };
 
 typedef struct {
+    ngx_str_t            groupname;
+    ngx_uint_t           priority;
+    int                  best;
+    struct sdch_dict    *dict;
+} sdch_dict_conf;
+
+typedef struct {
     ngx_flag_t           enable;
     ngx_flag_t           no_buffer;
 
@@ -41,7 +48,12 @@ typedef struct {
 
     ngx_array_t         *types_keys;
     
-    ngx_array_t          *dict_data;
+    ngx_array_t         *dict_storage;
+    ngx_array_t         *dict_conf_storage;
+    ngx_int_t            confdictnum;
+
+    ngx_str_t            sdch_group;
+    ngx_http_complex_value_t sdch_groupcv;
 
     ngx_str_t            sdch_url;
     ngx_http_complex_value_t sdch_urlcv;
@@ -203,11 +215,20 @@ static ngx_command_t  tr_filter_commands[] = {
     { ngx_string("sdch_dict"),
    	  NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
-                        |NGX_CONF_TAKE1,
+                        |NGX_CONF_TAKE123,
 	  tr_set_sdch_dict,
 	  NGX_HTTP_LOC_CONF_OFFSET,
 	  0,
 	  NULL },
+
+    { ngx_string("sdch_group"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_HTTP_LIF_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(tr_conf_t, sdch_group),
+      NULL },
 
     { ngx_string("sdch_url"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -521,18 +542,18 @@ ok:
     return NGX_OK;
 }
 
-static unsigned int
+static sdch_dict_conf *
 find_dict(u_char *h, tr_conf_t *conf)
 {
     unsigned int i;
-    struct sdch_dict *dict_data;
+    sdch_dict_conf *dict_conf;
     
-    dict_data = conf->dict_data->elts;
-    for (i = 0; i < conf->dict_data->nelts; i++) {
-        if (ngx_strncmp(h, dict_data[i].user_dictid, 8) == 0)
-            return i;
+    dict_conf = conf->dict_conf_storage->elts;
+    for (i = 0; i < conf->dict_conf_storage->nelts; i++) {
+        if (ngx_strncmp(h, dict_conf[i].dict->user_dictid, 8) == 0)
+            return &dict_conf[i];
     }
-    return (unsigned int)(-1);
+    return NULL;
 }
 
 static blob_type
@@ -607,6 +628,25 @@ expand_disable(ngx_http_request_t *r, tr_conf_t *conf)
         return 1;
     }
     return 0;
+}
+
+static sdch_dict_conf *
+choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group)
+{
+    if (old == NULL)
+        return n;
+    if (n == NULL)
+        return old;
+    
+    int om = (ngx_strcmp(old->groupname.data, group) == 0);
+    int nm = (ngx_strcmp(n->groupname.data, group) == 0);
+    if (om && !nm)
+        return old;
+    if (nm && !om)
+        return n;
+    if (n->priority < old->priority)
+        return n;
+    return old;
 }
 
 static ngx_int_t
@@ -693,14 +733,17 @@ tr_header_filter(ngx_http_request_t *r)
         ngx_str_set(&h->value, "1");
     }
 
-    unsigned int dictnum = 1000;
+    ngx_str_t group;
+    if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
+        return NGX_ERROR;
+    }
+    sdch_dict_conf *bestdict = NULL;
     blob_type quasidict_blob = NULL;
     struct sv *ctxstuc = NULL;
     while (val.len >= 8) {
-        unsigned int d = find_dict(val.data, conf);
-        if (d < dictnum)
-            dictnum = d;
-        if (quasidict_blob == NULL) {
+        sdch_dict_conf *d = find_dict(val.data, conf);
+        bestdict = choose_bestdict(bestdict, d, group.data);
+        if (quasidict_blob == NULL && d == NULL) {
             quasidict_blob = find_quasidict(val.data, &ctxstuc);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "find_quasidict %.8s -> %p", val.data, quasidict_blob);
@@ -711,13 +754,20 @@ tr_header_filter(ngx_http_request_t *r)
             l = val.len;
         val.data += l; val.len -= l;
     }
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-        "dictnum: %d maxnoadv:%d", dictnum, conf->sdch_maxnoadv);
-    if (dictnum > ((conf->sdch_maxnoadv == NGX_CONF_UNSET_UINT) ? 0 : conf->sdch_maxnoadv)) {
+    if (bestdict != NULL) {
+        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+            "group: %s prio: %d best: %d", bestdict->groupname.data,
+            bestdict->priority, bestdict->best);
+    } else {
+        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+            "nobestdict");
+    }
+    if (bestdict == NULL || ngx_memn2cmp(bestdict->groupname.data, group.data, 
+            bestdict->groupname.len, group.len) || !bestdict->best) {
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
-        if (dictnum >= 1000 && quasidict_blob == NULL) {
+        if (bestdict == NULL && quasidict_blob == NULL) {
             e = x_sdch_encode_0_header(r, sdch_expected);
             if (e)
                 return e;
@@ -736,9 +786,8 @@ tr_header_filter(ngx_http_request_t *r)
 
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
-    if (dictnum < 1000) {
-        struct sdch_dict *dict_data = conf->dict_data->elts;
-        ctx->dict = &dict_data[dictnum];
+    if (bestdict != NULL) {
+        ctx->dict = bestdict->dict;
     } else if (quasidict_blob != NULL) {
         ctx->dict = &ctx->fdict;
         ctx->fdict.dict = quasidict_blob;
@@ -1514,7 +1563,7 @@ tr_create_conf(ngx_conf_t *cf)
 
     conf->enable = NGX_CONF_UNSET;
     
-    conf->dict_data = NULL;
+    //conf->dict_data = NULL;
 #if 0
     conf->no_buffer = NGX_CONF_UNSET;
 
@@ -1551,30 +1600,64 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
     return NGX_CONF_OK;
 }
 
-
 static char *
 tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 {
     tr_conf_t *conf = cnf;
 
-    if (cf->args->nelts != 2) {
+    if (cf->args->nelts < 2 || cf->args->nelts > 4) {
         return NGX_CONF_ERROR;
     }
-    if (conf->dict_data == NULL) {
-        conf->dict_data = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
+    if (conf->dict_storage == NULL) {
+        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
+    }
+    if (conf->dict_conf_storage == NULL) {
+        conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
     }
     ngx_str_t *value = cf->args->elts;
-    struct sdch_dict *data = ngx_array_push(conf->dict_data);
+    ngx_str_t groupname;
+    ngx_str_set(&groupname, "default");
+    if (cf->args->nelts >= 3) {
+        groupname = value[2];
+    }
+    ngx_int_t prio = conf->confdictnum++;
+    if (cf->args->nelts >= 4) {
+        prio = ngx_atoi(value[3].data, value[3].len);
+        if (prio == NGX_ERROR) {
+            return NGX_CONF_ERROR;
+        }
+    }
+    struct sdch_dict *data = ngx_array_push(conf->dict_storage);
     const char *p = init_dict_data(cf, &value[1], data);
     if (p != NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%s", p);
         return NGX_CONF_ERROR;        
     }
+    sdch_dict_conf *sdc = ngx_array_push(conf->dict_conf_storage);
+    sdc->groupname.len = groupname.len++;
+    sdc->groupname.data = ngx_pstrdup(cf->pool, &groupname);
+    sdc->priority = prio;
+    sdc->dict = data;
+    sdc->best = 0;
 
     return NGX_CONF_OK;
 }
-    
+
+int
+compare_dict_conf(const void *a, const void *b)
+{
+    const sdch_dict_conf *A = a;
+    const sdch_dict_conf *B = b;
+    ngx_int_t c = ngx_strcmp(A->groupname.data, B->groupname.data);
+    if (c != 0)
+        return c;
+    if (A->priority < B->priority)
+        return -1;
+    if (A->priority > B->priority)
+        return 1;
+    return 0;
+}
 
 static char *
 tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
@@ -1620,8 +1703,36 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (!conf->enable)
     	return NGX_CONF_OK;
 
-    if (conf->dict_data == NULL)
-        conf->dict_data = prev->dict_data;
+    if (conf->dict_conf_storage != NULL) {
+        sdch_dict_conf *dse = conf->dict_conf_storage->elts;
+        qsort(conf->dict_conf_storage->elts, conf->dict_conf_storage->nelts,
+            sizeof(sdch_dict_conf), compare_dict_conf);
+        if (conf->dict_conf_storage->nelts > 0) {
+            dse[0].best = 1;
+        }
+        unsigned int i;
+        for (i = 1; i < conf->dict_conf_storage->nelts; i++) {
+            if (ngx_strcmp(dse[i-1].groupname.data, dse[i].groupname.data)) {
+                dse[i].best = 1;
+            }
+        }
+    } else {
+        conf->dict_conf_storage = prev->dict_conf_storage;
+        conf->dict_storage = prev->dict_storage;
+    }
+    if (conf->dict_storage == NULL) {
+        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
+    }
+    if (conf->dict_conf_storage == NULL) {
+        conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
+    }
+
+    ngx_conf_merge_str_value(conf->sdch_group, prev->sdch_group, "default");
+    ccv.value = &conf->sdch_group;
+    ccv.complex_value = &conf->sdch_groupcv;
+    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+        return "ngx_http_compile_complex_value sdch_group failed";
+    }
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
     ccv.value = &conf->sdch_url;
