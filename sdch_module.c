@@ -631,15 +631,18 @@ expand_disable(ngx_http_request_t *r, tr_conf_t *conf)
 }
 
 static sdch_dict_conf *
-choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group)
+choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group,
+    u_int grl)
 {
     if (old == NULL)
         return n;
     if (n == NULL)
         return old;
-    
-    int om = (ngx_strcmp(old->groupname.data, group) == 0);
-    int nm = (ngx_strcmp(n->groupname.data, group) == 0);
+
+    int om = (ngx_memn2cmp(old->groupname.data, group,
+        old->groupname.len, grl) == 0);
+    int nm = (ngx_memn2cmp(n->groupname.data, group,
+        n->groupname.len, grl) == 0);
     if (om && !nm)
         return old;
     if (nm && !om)
@@ -742,7 +745,7 @@ tr_header_filter(ngx_http_request_t *r)
     struct sv *ctxstuc = NULL;
     while (val.len >= 8) {
         sdch_dict_conf *d = find_dict(val.data, conf);
-        bestdict = choose_bestdict(bestdict, d, group.data);
+        bestdict = choose_bestdict(bestdict, d, group.data, group.len);
         if (quasidict_blob == NULL && d == NULL) {
             quasidict_blob = find_quasidict(val.data, &ctxstuc);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
