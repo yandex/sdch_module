@@ -86,6 +86,30 @@ THE DICTIONARY
 GET /sdch HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
+--- response_headers
+Get-Dictionary: /sdch/dict1.dict
+! X-Sdch-Encode
+--- response
+FOO
+
+=== TEST 5: Offer dictionary (old dictionary)
+--- config
+location /sdch {
+  sdch on;
+  sdch_dict $TEST_NGINX_SERVROOT/html/sdch/dict1.dict;
+  sdch_url /sdch/dict1.dict;
+  default_type text/html;
+  return 200 "FOO";
+}
+
+--- user_files
+>>> sdch/dict1.dict
+THE DICTIONARY
+
+--- request
+GET /sdch HTTP/1.1
+--- more_headers
+Accept-Encoding: gzip, deflate, sdch
 Avail-Dictionary: foobar1
 --- response_headers
 Get-Dictionary: /sdch/dict1.dict
