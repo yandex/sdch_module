@@ -22,8 +22,6 @@ repeat_each(2);
 no_shuffle();
 run_tests();
 
-done_testing();
-
 __DATA__
 
 === TEST 1: Sanity
