@@ -1,8 +1,22 @@
 use Test::Nginx::Socket no_plan;
 use Test::More;
 
-print "ServRoot: ", $Test::Nginx::Socket::ServRoot, "\n";
-$ENV{TEST_NGINX_SERVROOT} = $Test::Nginx::Socket::ServRoot;
+my $servroot = $Test::Nginx::Socket::ServRoot;
+$ENV{TEST_NGINX_SERVROOT} = $servroot;
+
+add_block_preprocessor(sub {
+    my $block = shift;
+    $block->set_value('http_config',
+      "
+        client_body_temp_path $servroot/client_temp;
+        proxy_temp_path $servroot/proxy_temp;
+        fastcgi_temp_path $servroot/fastcgi_temp;
+        uwsgi_temp_path $servroot/uwsgi_temp;
+        scgi_temp_path $servroot/scgi_temp;
+      ");
+    return $block;
+  });
+
 
 repeat_each(2);
 no_shuffle();
