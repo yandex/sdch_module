@@ -652,6 +652,53 @@ choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group,
     return old;
 }
 
+// Check should we process request at all
+static ngx_int_t should_process(ngx_http_request_t* r, tr_conf_t* conf) {
+  if (!conf->enable) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "sdch header: not enabled");
+
+    return NGX_HTTP_FORBIDDEN;
+  }
+
+  if (r->headers_out.status != NGX_HTTP_OK
+    && r->headers_out.status != NGX_HTTP_FORBIDDEN
+    && r->headers_out.status != NGX_HTTP_NOT_FOUND) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "sdch header: unsupported status");
+
+    return NGX_HTTP_FORBIDDEN;
+  }
+
+  if (r->headers_out.content_encoding
+    && r->headers_out.content_encoding->value.len) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "sdch header: content is already encoded");
+    return NGX_HTTP_FORBIDDEN;
+  }
+
+  if (r->headers_out.content_length_n != -1
+    && r->headers_out.content_length_n < conf->min_length) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "sdch header: content is too small");
+    return NGX_HTTP_FORBIDDEN;
+  }
+
+  if (ngx_http_test_content_type(r, &conf->types) == NULL) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "sdch header: unsupported content type");
+    return NGX_HTTP_FORBIDDEN;
+  }
+
+  if (expand_disable(r, conf)) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "sdch header: CV disabled");
+    return NGX_HTTP_FORBIDDEN;
+  }
+
+  return NGX_OK;
+}
+
 static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
@@ -659,31 +706,27 @@ tr_header_filter(ngx_http_request_t *r)
     tr_ctx_t   *ctx = NULL;
     tr_conf_t  *conf;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter header 000");
 
     conf = ngx_http_get_module_loc_conf(r, sdch_module);
 
     ngx_str_t val;
     if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
-    	ngx_strstrn(val.data, "sdch", val.len) == 0)
-    	return ngx_http_next_header_filter(r);
+        ngx_strstrn(val.data, "sdch", val.len) == 0) {
+        ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http sdch filter header: no sdch in accept-encoding");
+        return ngx_http_next_header_filter(r);
+    }
     if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
         ngx_str_set(&val, "");
     }
     int sdch_expected = (val.len > 0);
 
-    if (!conf->enable
-        || (r->headers_out.status != NGX_HTTP_OK
-            && r->headers_out.status != NGX_HTTP_FORBIDDEN
-            && r->headers_out.status != NGX_HTTP_NOT_FOUND)
-        || (r->headers_out.content_encoding
-            && r->headers_out.content_encoding->value.len)
-        || (r->headers_out.content_length_n != -1
-            && r->headers_out.content_length_n < conf->min_length)
-        || ngx_http_test_content_type(r, &conf->types) == NULL
-        || expand_disable(r, conf))
+    if (should_process(r, conf) != NGX_OK)
     {
+        ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "http sdch filter header: skipping request");
         ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected);
         if (e)
             return e;
