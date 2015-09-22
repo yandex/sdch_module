@@ -65,7 +65,10 @@ int get_hashed_dict(const char *dictbegin, const char *dictend, int quasi, hashe
 		hashed_dictionary_s *h = new hashed_dictionary_s;
 		const char *dict_payload = quasi ? dictbegin : get_dict_payload(dictbegin, dictend);
 		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, dictend-dict_payload));
-		h->hashed_dict->Init();
+		if (!h->hashed_dict->Init()) {
+      delete h;
+      return 1;
+    }
 		*d = h;
 		return 0;
 	} catch (...) {
