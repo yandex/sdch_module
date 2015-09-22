@@ -1748,6 +1748,10 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (!conf->enable)
     	return NGX_CONF_OK;
 
+    if (conf->dict_conf_storage == NULL) {
+        conf->dict_conf_storage = prev->dict_conf_storage;
+        conf->dict_storage = prev->dict_storage;
+    }
     if (conf->dict_conf_storage != NULL) {
         sdch_dict_conf *dse = conf->dict_conf_storage->elts;
         qsort(conf->dict_conf_storage->elts, conf->dict_conf_storage->nelts,
@@ -1761,10 +1765,8 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
                 dse[i].best = 1;
             }
         }
-    } else {
-        conf->dict_conf_storage = prev->dict_conf_storage;
-        conf->dict_storage = prev->dict_storage;
     }
+
     if (conf->dict_storage == NULL) {
         conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
     }
