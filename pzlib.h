@@ -11,12 +11,12 @@ struct pz {
     closefunc *cf;
 };
 
-inline pssize_type do_write(void *cookie, const void *buf, psize_type len) {
+static inline pssize_type do_write(void *cookie, const void *buf, psize_type len) {
     struct pz* p = (struct pz*)cookie;
     return (p->wf)(cookie, buf, len);
 }
 
-inline void do_close(void *cookie) {
+static inline void do_close(void *cookie) {
     struct pz* p = (struct pz*)cookie;
     (p->cf)(cookie);
 }
