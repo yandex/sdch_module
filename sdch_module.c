@@ -1636,12 +1636,12 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
     if (get_hashed_dict(blob_data_begin(data->dict),
             (char*)blob_data_begin(data->dict)+blob_data_size(data->dict),
             0, &data->hashed_dict)) {
-    	ngx_conf_log_error(NGX_LOG_ERR, cf, 0, "get_hashed_dict %s failed", dict->data);
+    	ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", dict->data);
     	return NGX_CONF_ERROR;
     }
     get_dict_ids(blob_data_begin(data->dict), blob_data_size(data->dict),
     		data->user_dictid, data->server_dictid);
-    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "dictionary ids: user %s server %s",
+    ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "dictionary ids: user %s server %s",
     		data->user_dictid, data->server_dictid);
     return NGX_CONF_OK;
 }
@@ -1676,9 +1676,8 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     struct sdch_dict *data = ngx_array_push(conf->dict_storage);
     const char *p = init_dict_data(cf, &value[1], data);
     if (p != NULL) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "%s", p);
-        return NGX_CONF_ERROR;        
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
+        return NGX_CONF_ERROR;
     }
     sdch_dict_conf *sdc = ngx_array_push(conf->dict_conf_storage);
     sdc->groupname.len = groupname.len++;
@@ -1806,8 +1805,7 @@ tr_filter_init(ngx_conf_t *cf)
     ngx_http_next_body_filter = ngx_http_top_body_filter;
     ngx_http_top_body_filter = tr_body_filter;
 
-    ngx_conf_log_error(NGX_LOG_INFO, cf, 0,
-                   "http sdch filter init");
+    ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "http sdch filter init");
     return NGX_OK;
 }
 
