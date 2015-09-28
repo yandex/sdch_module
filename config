@@ -34,6 +34,13 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+                $ngx_addon_dir/blobstore.h \
+                $ngx_addon_dir/ngoustr.h \
+                $ngx_addon_dir/pool_alloc.h \
+                $ngx_addon_dir/pzlib.h \
+                $ngx_addon_dir/storage.h \
+                $ngx_addon_dir/teefd.h \
+                $ngx_addon_dir/vcd-h1.h \
                 "
 
 
