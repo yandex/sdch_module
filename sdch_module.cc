@@ -15,52 +15,16 @@ extern "C" {
 }
 
 #include "sdch_module.h"
+
+#include "sdch_config.h"
 #include "sdch_request_context.h"
 
 namespace sdch {
 
 typedef struct {
-    ngx_flag_t           enable;
-    ngx_flag_t           no_buffer;
-
-    ngx_hash_t           types;
-    
-    ngx_str_t            sdch_disablecv_s;
-    ngx_http_complex_value_t sdch_disablecv;
-
-    ngx_bufs_t           bufs;
-
-    size_t               postpone_gzipping;
-    ngx_int_t            level;
-    size_t               memlevel;
-    ssize_t              min_length;
-
-    ngx_array_t         *types_keys;
-    
-    ngx_array_t         *dict_storage;
-    ngx_array_t         *dict_conf_storage;
-    ngx_int_t            confdictnum;
-
-    ngx_str_t            sdch_group;
-    ngx_http_complex_value_t sdch_groupcv;
-
-    ngx_str_t            sdch_url;
-    ngx_http_complex_value_t sdch_urlcv;
-    
-    ngx_uint_t           sdch_maxnoadv;
-
-    ngx_uint_t           sdch_proxied;
-    
-    ngx_str_t            sdch_dumpdir;
-    
-    ngx_flag_t           enable_quasi;
-} tr_conf_t;
-
-typedef struct {
     ngx_uint_t           stor_size;
 } tr_main_conf_t;
 
-static tr_conf_t* tr_get_config(ngx_http_request_t* r);
 static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
 static closefunc tr_filter_close;
 //static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
@@ -140,7 +104,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, enable),
+      offsetof(Config, enable),
       nullptr },
 
     { ngx_string("sdch_disablecv"),
@@ -149,14 +113,14 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, sdch_disablecv_s),
+      offsetof(Config, sdch_disablecv_s),
       nullptr },
 
     { ngx_string("sdch_buffers"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
       ngx_conf_set_bufs_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, bufs),
+      offsetof(Config, bufs),
       nullptr },
 
     { ngx_string("sdch_dict"),
@@ -174,7 +138,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, sdch_group),
+      offsetof(Config, sdch_group),
       nullptr },
 
     { ngx_string("sdch_url"),
@@ -183,7 +147,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, sdch_url),
+      offsetof(Config, sdch_url),
       nullptr },
 
     { ngx_string("sdch_maxnoadv"),
@@ -192,7 +156,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, sdch_maxnoadv),
+      offsetof(Config, sdch_maxnoadv),
       nullptr },
 
     { ngx_string("sdch_dumpdir"),
@@ -201,7 +165,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, sdch_dumpdir),
+      offsetof(Config, sdch_dumpdir),
       nullptr },
 
     { ngx_string("sdch_proxied"),
@@ -210,7 +174,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_1MORE,
       ngx_conf_set_bitmask_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, sdch_proxied),
+      offsetof(Config, sdch_proxied),
       &ngx_http_sdch_proxied_mask },
 
 
@@ -220,7 +184,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_1MORE,
       ngx_http_types_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, types_keys),
+      offsetof(Config, types_keys),
       &ngx_http_html_default_types[0] },
 
     { ngx_string("sdch_quasi"),
@@ -229,7 +193,7 @@ static ngx_command_t  tr_filter_commands[] = {
                         |NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(tr_conf_t, enable_quasi),
+      offsetof(Config, enable_quasi),
       nullptr },
 
     { ngx_string("sdch_stor_size"),
@@ -325,10 +289,6 @@ backtrace_log(ngx_log_t *log)
 }
 #endif
 
-static tr_conf_t* tr_get_config(ngx_http_request_t* r) {
-  return static_cast<tr_conf_t*>(ngx_http_get_module_loc_conf(r, sdch_module));
-}
-
 static ngx_table_elt_t*
 header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 {
@@ -365,13 +325,13 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
     ngx_uint_t                 p;
     ngx_array_t               *cc;
     ngx_table_elt_t           *e, *d;
-    tr_conf_t                 *clcf;
+    Config                 *clcf;
 
     if (r != r->main) {
         return NGX_DECLINED;
     }
 
-    clcf = tr_get_config(r);
+    clcf = Config::get(r);
 
     if (r->headers_in.via == nullptr) {
         goto ok;
@@ -470,7 +430,7 @@ ok:
 }
 
 static sdch_dict_conf *
-find_dict(u_char *h, tr_conf_t *conf)
+find_dict(u_char *h, Config *conf)
 {
     unsigned int i;
     sdch_dict_conf *dict_conf;
@@ -496,7 +456,7 @@ find_quasidict(u_char *h, struct sv **v)
 }
 
 static ngx_int_t
-get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
+get_dictionary_header(ngx_http_request_t *r, Config *conf)
 {
     ngx_str_t val;
     if (ngx_http_complex_value(r, &conf->sdch_urlcv, &val) != NGX_OK) {
@@ -545,7 +505,7 @@ x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
 }
 
 static ngx_int_t
-expand_disable(ngx_http_request_t *r, tr_conf_t *conf)
+expand_disable(ngx_http_request_t *r, Config *conf)
 {
     ngx_str_t dv;
     if (ngx_http_complex_value(r, &conf->sdch_disablecv, &dv) != NGX_OK) {
@@ -580,7 +540,7 @@ choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group,
 }
 
 // Check should we process request at all
-static ngx_int_t should_process(ngx_http_request_t* r, tr_conf_t* conf) {
+static ngx_int_t should_process(ngx_http_request_t* r, Config* conf) {
   if (!conf->enable) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: not enabled");
@@ -631,12 +591,12 @@ tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
     RequestContext   *ctx = nullptr;
-    tr_conf_t  *conf;
+    Config  *conf;
 
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter header 000");
 
-    conf = tr_get_config(r);
+    conf = Config::get(r);
 
     ngx_str_t val;
     if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
@@ -973,7 +933,7 @@ tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in)
     ngx_buf_t             *b, *buf;
     ngx_chain_t           *cl, **ll;
     ngx_http_request_t    *r;
-    tr_conf_t  *conf;
+    Config  *conf;
 
     r = ctx->request;
 
@@ -990,7 +950,7 @@ tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in)
         ll = &cl->next;
     }
 
-    conf = tr_get_config(r);
+    conf = Config::get(r);
 
     while (in) {
         cl = ngx_alloc_chain_link(r->pool);
@@ -1042,9 +1002,9 @@ tr_filter_deflate_start(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
     //int                    rc;
-    tr_conf_t  *conf;
+    Config  *conf;
 
-    conf = tr_get_config(r);
+    conf = Config::get(r);
 
     ctx->started = 1;
 
@@ -1145,11 +1105,11 @@ static ngx_int_t
 tr_filter_get_buf(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
-    tr_conf_t  *conf;
+    Config  *conf;
 
     assert (ctx->zstream.avail_out == 0);
 
-    conf = tr_get_config(r);
+    conf = Config::get(r);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "tr_filter_get_buf");
@@ -1246,7 +1206,7 @@ tr_filter_deflate(RequestContext *ctx)
     int                    rc;
     ngx_buf_t             *b;
     ngx_chain_t           *cl;
-    tr_conf_t  *conf;
+    Config  *conf;
 
     ngx_log_debug6(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                  "deflate in: ni:%p no:%p ai:%ud ao:%ud fl:%d redo:%d",
@@ -1329,7 +1289,7 @@ tr_filter_deflate(RequestContext *ctx)
         return NGX_OK;
     }
 
-    conf = tr_get_config(r);
+    conf = Config::get(r);
 
     if (conf->no_buffer && ctx->in == nullptr) {
         return tr_filter_out_buf_out(ctx);
@@ -1485,7 +1445,7 @@ tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 static void *
 tr_create_conf(ngx_conf_t *cf)
 {
-    tr_conf_t *conf = static_cast<tr_conf_t*>(ngx_pcalloc(cf->pool, sizeof(tr_conf_t)));
+    Config *conf = static_cast<Config*>(ngx_pcalloc(cf->pool, sizeof(Config)));
     if (conf == nullptr) {
         return nullptr;
     }
@@ -1540,7 +1500,7 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
 static char *
 tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 {
-    tr_conf_t *conf = static_cast<tr_conf_t*>(cnf);
+    Config *conf = static_cast<Config*>(cnf);
 
     if (cf->args->nelts < 2 || cf->args->nelts > 4) {
         return const_cast<char*>("Wrong number of arguments");
@@ -1598,8 +1558,8 @@ compare_dict_conf(const void *a, const void *b)
 static char *
 tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 {
-    tr_conf_t *prev = static_cast<tr_conf_t*>(parent);
-    tr_conf_t *conf = static_cast<tr_conf_t*>(child);
+    Config *prev = static_cast<Config*>(parent);
+    Config *conf = static_cast<Config*>(child);
     ngx_http_compile_complex_value_t ccv;
 
     ngx_conf_merge_value(conf->enable, prev->enable, 0);
