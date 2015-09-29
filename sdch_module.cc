@@ -437,18 +437,9 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
     ngx_table_elt_t           *e, *d;
     tr_conf_t                 *clcf;
 
-//    r->gzip_tested = 1;
-
     if (r != r->main) {
         return NGX_DECLINED;
     }
-
-#if (NGX_HTTP_SPDY)
-    //if (r->spdy_stream) {
-    //    r->gzip_ok = 1;
-    //    return NGX_OK;
-    //}
-#endif
 
     clcf = tr_get_config(r);
 
@@ -757,16 +748,6 @@ tr_header_filter(ngx_http_request_t *r)
     }
 #endif
 
-#if 0
-    if (!r->gzip_tested) {
-        if (ngx_http_gzip_ok(r) != NGX_OK) {
-            return ngx_http_next_header_filter(r);
-        }
-
-    } else if (!r->gzip_ok) {
-        return ngx_http_next_header_filter(r);
-    }
-#else
     if (ngx_http_sdch_ok(r) != NGX_OK) {
     	return ngx_http_next_header_filter(r);
     }
@@ -827,7 +808,6 @@ tr_header_filter(ngx_http_request_t *r)
                 return ngx_http_next_header_filter(r);
         }
     }
-#endif
 
     ctx = static_cast<tr_ctx_t*>(ngx_pcalloc(r->pool, sizeof(tr_ctx_t)));
     if (ctx == NULL) {
@@ -1056,18 +1036,6 @@ failed:
     return NGX_ERROR;
 }
 
-
-#if 0
-static void
-tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx)
-{
-    tr_conf_t  *conf;
-
-    conf = ngx_http_get_module_loc_conf(r, sdch_module);
-}
-#endif
-
-
 static ngx_int_t
 tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
 {
@@ -1171,13 +1139,6 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     if (ctx->store) {
         ctx->coo = make_blobstore(ctx->coo, &ctx->blob);
     }
-#if 0
-    if (rc != Z_OK) {
-        ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                      "deflateInit2() failed: %d", rc);
-        return NGX_ERROR;
-    }
-#endif
 
 //    r->connection->buffered |= NGX_HTTP_GZIP_BUFFERED;
 
@@ -1609,7 +1570,7 @@ tr_create_conf(ngx_conf_t *cf)
      */
 
     conf->enable = NGX_CONF_UNSET;
-    
+
     //conf->dict_data = NULL;
 #if 0
     conf->no_buffer = NGX_CONF_UNSET;
