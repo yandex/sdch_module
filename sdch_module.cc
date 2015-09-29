@@ -16,8 +16,6 @@ extern "C" {
 
 #include "sdch_module.h"
 
-extern ngx_module_t sdch_module;
-
 namespace sdch {
 
 typedef struct {

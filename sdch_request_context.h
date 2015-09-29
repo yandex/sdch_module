@@ -22,7 +22,11 @@ class Handler;
 // Context used inside nginx to keep relevant data.
 struct RequestContext {
  public:
+  // Create RequestContext.
   RequestContext(ngx_http_request_t* r);
+
+  // Fetch RequestContext associated with nginx request
+  static RequestContext* get(ngx_http_request_t* r);
 
   ngx_http_request_t* request;
 

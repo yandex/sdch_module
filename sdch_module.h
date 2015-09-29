@@ -9,6 +9,8 @@
 #include "vcd-h1.h"
 #include "zlib.h"
 
+extern ngx_module_t sdch_module;
+
 namespace sdch {
 
 struct sdch_dict {
