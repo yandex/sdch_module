@@ -18,6 +18,11 @@ typedef struct vcd_encoder_s *vcd_encoder_p;
 
 #include <memory>
 
+namespace open_vcdiff {
+class HashedDictionary;
+class VCDiffStreamingEncoder;
+}
+
 struct hashed_dictionary_s {
 	std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict;
 };
