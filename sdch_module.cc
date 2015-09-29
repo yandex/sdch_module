@@ -7,10 +7,12 @@
 
 #include <assert.h>
 
+extern "C" {
 #include <ngx_config.h>
 #include <nginx.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+}
 
 #include "zlib.h"
 #include "vcd-h1.h"
@@ -112,7 +114,7 @@ typedef struct {
     struct sv            *stuc;
 } tr_ctx_t;
 
-
+static tr_conf_t* tr_get_config(ngx_http_request_t* r);
 static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
 static closefunc tr_filter_close;
 //static void tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx);
@@ -147,7 +149,7 @@ static char *tr_init_main_conf(ngx_conf_t *cf, void *conf);
 static char *tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
-static void get_dict_ids(const char *buf, size_t buflen,
+static void get_dict_ids(const void *buf, size_t buflen,
 	unsigned char user_dictid[9], unsigned char server_dictid[9]);
 #if 0
 static char *ngx_http_gzip_window(ngx_conf_t *cf, void *post, void *data);
@@ -393,12 +395,16 @@ backtrace_log(ngx_log_t *log)
 }
 #endif
 
+static tr_conf_t* tr_get_config(ngx_http_request_t* r) {
+  return static_cast<tr_conf_t*>(ngx_http_get_module_loc_conf(r, sdch_module));
+}
+
 static ngx_table_elt_t*
 header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 {
 	size_t keylen = strlen(key);
 	ngx_list_part_t *part = &headers->part;
-	ngx_table_elt_t* data = part->elts;
+	ngx_table_elt_t* data = static_cast<ngx_table_elt_t*>(part->elts);
 	unsigned i;
 
 	for (i = 0 ;; i++) {
@@ -409,7 +415,7 @@ header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 			}
 
 			part = part->next;
-			data = part->elts;
+			data = static_cast<ngx_table_elt_t*>(part->elts);
 			i = 0;
 		}
 		if (data[i].key.len == keylen && ngx_strncasecmp(data[i].key.data, (u_char*)key, keylen) == 0) {
@@ -444,7 +450,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
     //}
 #endif
 
-    clcf = ngx_http_get_module_loc_conf(r, sdch_module);
+    clcf = tr_get_config(r);
 
     if (r->headers_in.via == NULL) {
         goto ok;
@@ -547,8 +553,8 @@ find_dict(u_char *h, tr_conf_t *conf)
 {
     unsigned int i;
     sdch_dict_conf *dict_conf;
-    
-    dict_conf = conf->dict_conf_storage->elts;
+
+    dict_conf = static_cast<sdch_dict_conf*>(conf->dict_conf_storage->elts);
     for (i = 0; i < conf->dict_conf_storage->nelts; i++) {
         if (ngx_strncmp(h, dict_conf[i].dict->user_dictid, 8) == 0)
             return &dict_conf[i];
@@ -580,7 +586,7 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
     }
 
     ngx_table_elt_t *h;
-    h = ngx_list_push(&r->headers_out.headers);
+    h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
     if (h == NULL) {
         return NGX_ERROR;
     }
@@ -604,7 +610,7 @@ x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
         return NGX_OK;
     }
     if (h == NULL) {
-        h = ngx_list_push(&r->headers_out.headers);
+        h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
     }
     if (h == NULL) {
         return NGX_ERROR;
@@ -709,11 +715,11 @@ tr_header_filter(ngx_http_request_t *r)
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter header 000");
 
-    conf = ngx_http_get_module_loc_conf(r, sdch_module);
+    conf = tr_get_config(r);
 
     ngx_str_t val;
     if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
-        ngx_strstrn(val.data, "sdch", val.len) == 0) {
+        ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) == 0) {
         ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http sdch filter header: no sdch in accept-encoding");
         return ngx_http_next_header_filter(r);
@@ -769,7 +775,7 @@ tr_header_filter(ngx_http_request_t *r)
     if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
         ctxstore = 1;
 
-        ngx_table_elt_t *h = ngx_list_push(&r->headers_out.headers);
+        ngx_table_elt_t *h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
         if (h == NULL) {
             return NGX_ERROR;
         }
@@ -823,7 +829,7 @@ tr_header_filter(ngx_http_request_t *r)
     }
 #endif
 
-    ctx = ngx_pcalloc(r->pool, sizeof(tr_ctx_t));
+    ctx = static_cast<tr_ctx_t*>(ngx_pcalloc(r->pool, sizeof(tr_ctx_t)));
     if (ctx == NULL) {
         return NGX_ERROR;
     }
@@ -838,8 +844,8 @@ tr_header_filter(ngx_http_request_t *r)
         ctx->dict = &ctx->fdict;
         ctx->fdict.dict = quasidict_blob;
         size_t sz = blob_data_size(quasidict_blob)-8;
-        memcpy(ctx->fdict.server_dictid, (const char*)blob_data_begin(quasidict_blob)+sz, 8);
-        get_hashed_dict(blob_data_begin(quasidict_blob), (const char*)blob_data_begin(quasidict_blob)+sz,
+        memcpy(ctx->fdict.server_dictid, blob_data_begin(quasidict_blob)+sz, 8);
+        get_hashed_dict(blob_data_begin(quasidict_blob), blob_data_begin(quasidict_blob)+sz,
             1, &ctx->fdict.hashed_dict);
     } else {
         ctx->dict = NULL;
@@ -852,7 +858,7 @@ tr_header_filter(ngx_http_request_t *r)
     //tr_filter_memory(r, ctx);
 
     if (ctx->dict != NULL) {
-        h = ngx_list_push(&r->headers_out.headers);
+        h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
         if (h == NULL) {
             return NGX_ERROR;
         }
@@ -887,9 +893,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
     int                   rc;
     ngx_chain_t          *cl;
-    tr_ctx_t  *ctx;
-
-    ctx = ngx_http_get_module_ctx(r, sdch_module);
+    tr_ctx_t  *ctx = static_cast<tr_ctx_t*>(ngx_http_get_module_ctx(r, sdch_module));
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter body 000");
@@ -1088,7 +1092,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
         ll = &cl->next;
     }
 
-    conf = ngx_http_get_module_loc_conf(r, sdch_module);
+    conf = tr_get_config(r);
 
     while (in) {
         cl = ngx_alloc_chain_link(r->pool);
@@ -1142,7 +1146,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     //int                    rc;
     tr_conf_t  *conf;
 
-    conf = ngx_http_get_module_loc_conf(r, sdch_module);
+    conf = tr_get_config(r);
 
     ctx->started = 1;
 
@@ -1156,7 +1160,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
         ctx->coo = ctx->enc;
     }
     if (conf->sdch_dumpdir.len > 0) {
-        char *fn = ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30);
+        char *fn = static_cast<char*>(ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30));
         sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
         ctx->coo = make_teefd(fn, ctx->coo);
         if (ctx->coo == NULL) {
@@ -1254,7 +1258,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
 
     assert (ctx->zstream.avail_out == 0);
 
-    conf = ngx_http_get_module_loc_conf(r, sdch_module);
+    conf = tr_get_config(r);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "tr_filter_get_buf");
@@ -1314,8 +1318,8 @@ tr_filter_close(void *c)
 pssize_type
 tr_filter_write(void *ctx0, const void *buf, psize_type len)
 {
-    tr_ctx_t *ctx = ctx0;
-    const char *buff = buf;
+    tr_ctx_t *ctx = static_cast<tr_ctx_t*>(ctx0);
+    const char *buff = static_cast<const char*>(buf);
     int rlen = 0;
     
     while (len > 0) {
@@ -1406,7 +1410,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
 
         if (ngx_buf_size(b) == 0) {
 
-            b = ngx_calloc_buf(ctx->request->pool);
+            b = static_cast<ngx_buf_t*>(ngx_calloc_buf(ctx->request->pool));
             if (b == NULL) {
                 return NGX_ERROR;
             }
@@ -1434,7 +1438,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
         return NGX_OK;
     }
 
-    conf = ngx_http_get_module_loc_conf(r, sdch_module);
+    conf = tr_get_config(r);
 
     if (conf->no_buffer && ctx->in == NULL) {
         return tr_filter_out_buf_out(ctx);
@@ -1527,20 +1531,19 @@ tr_ratio_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
 {
     ngx_uint_t            zint, zfrac;
-    tr_ctx_t  *ctx;
+    tr_ctx_t  *ctx = static_cast<tr_ctx_t*>(ngx_http_get_module_ctx(r, sdch_module));
 
     v->valid = 1;
     v->no_cacheable = 0;
     v->not_found = 0;
 
-    ctx = ngx_http_get_module_ctx(r, sdch_module);
 
     if (ctx == NULL || ctx->zout == 0) {
         v->not_found = 1;
         return NGX_OK;
     }
 
-    v->data = ngx_pnalloc(r->pool, NGX_INT32_LEN + 3);
+    v->data = static_cast<u_char*>(ngx_pnalloc(r->pool, NGX_INT32_LEN + 3));
     if (v->data == NULL) {
         return NGX_ERROR;
     }
@@ -1570,7 +1573,7 @@ tr_create_main_conf(ngx_conf_t *cf)
 {
     tr_main_conf_t  *conf;
 
-    conf = ngx_pcalloc(cf->pool, sizeof(tr_main_conf_t));
+    conf = static_cast<tr_main_conf_t*>(ngx_pcalloc(cf->pool, sizeof(tr_main_conf_t)));
     if (conf == NULL) {
         return NULL;
     }
@@ -1583,7 +1586,7 @@ tr_create_main_conf(ngx_conf_t *cf)
 static char *
 tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 {
-    tr_main_conf_t *conf = cnf;
+    tr_main_conf_t *conf = static_cast<tr_main_conf_t*>(cnf);
     if (conf->stor_size != NGX_CONF_UNSET_SIZE)
         max_stor_size = conf->stor_size;
     return NGX_CONF_OK;
@@ -1592,9 +1595,7 @@ tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 static void *
 tr_create_conf(ngx_conf_t *cf)
 {
-    tr_conf_t  *conf;
-
-    conf = ngx_pcalloc(cf->pool, sizeof(tr_conf_t));
+    tr_conf_t *conf = static_cast<tr_conf_t*>(ngx_pcalloc(cf->pool, sizeof(tr_conf_t)));
     if (conf == NULL) {
         return NULL;
     }
@@ -1634,10 +1635,10 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
     if (p != NULL)
         return p;
     if (get_hashed_dict(blob_data_begin(data->dict),
-            (char*)blob_data_begin(data->dict)+blob_data_size(data->dict),
+            blob_data_begin(data->dict)+blob_data_size(data->dict),
             0, &data->hashed_dict)) {
     	ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", dict->data);
-    	return NGX_CONF_ERROR;
+    	return "Get hashed dict failed";
     }
     get_dict_ids(blob_data_begin(data->dict), blob_data_size(data->dict),
     		data->user_dictid, data->server_dictid);
@@ -1649,10 +1650,10 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
 static char *
 tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 {
-    tr_conf_t *conf = cnf;
+    tr_conf_t *conf = static_cast<tr_conf_t*>(cnf);
 
     if (cf->args->nelts < 2 || cf->args->nelts > 4) {
-        return NGX_CONF_ERROR;
+        return const_cast<char*>("Wrong number of arguments");
     }
     if (conf->dict_storage == NULL) {
         conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
@@ -1660,7 +1661,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     if (conf->dict_conf_storage == NULL) {
         conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
     }
-    ngx_str_t *value = cf->args->elts;
+    ngx_str_t *value = static_cast<ngx_str_t*>(cf->args->elts);
     ngx_str_t groupname;
     ngx_str_set(&groupname, "default");
     if (cf->args->nelts >= 3) {
@@ -1670,16 +1671,16 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     if (cf->args->nelts >= 4) {
         prio = ngx_atoi(value[3].data, value[3].len);
         if (prio == NGX_ERROR) {
-            return NGX_CONF_ERROR;
+            return const_cast<char*>("Can't convert to number");
         }
     }
-    struct sdch_dict *data = ngx_array_push(conf->dict_storage);
+    struct sdch_dict *data = static_cast<sdch_dict*>(ngx_array_push(conf->dict_storage));
     const char *p = init_dict_data(cf, &value[1], data);
     if (p != NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
-        return NGX_CONF_ERROR;
+        return const_cast<char*>(p);
     }
-    sdch_dict_conf *sdc = ngx_array_push(conf->dict_conf_storage);
+    sdch_dict_conf *sdc = static_cast<sdch_dict_conf*>(ngx_array_push(conf->dict_conf_storage));
     sdc->groupname.len = groupname.len++;
     sdc->groupname.data = ngx_pstrdup(cf->pool, &groupname);
     sdc->priority = prio;
@@ -1692,8 +1693,8 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 int
 compare_dict_conf(const void *a, const void *b)
 {
-    const sdch_dict_conf *A = a;
-    const sdch_dict_conf *B = b;
+    const sdch_dict_conf *A = static_cast<const sdch_dict_conf*>(a);
+    const sdch_dict_conf *B = static_cast<const sdch_dict_conf*>(b);
     ngx_int_t c = ngx_strcmp(A->groupname.data, B->groupname.data);
     if (c != 0)
         return c;
@@ -1707,8 +1708,8 @@ compare_dict_conf(const void *a, const void *b)
 static char *
 tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 {
-    tr_conf_t *prev = parent;
-    tr_conf_t *conf = child;
+    tr_conf_t *prev = static_cast<tr_conf_t*>(parent);
+    tr_conf_t *conf = static_cast<tr_conf_t*>(child);
     ngx_http_compile_complex_value_t ccv;
 
     ngx_conf_merge_value(conf->enable, prev->enable, 0);
@@ -1721,7 +1722,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ccv.value = &conf->sdch_disablecv_s;
     ccv.complex_value = &conf->sdch_disablecv;
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
-        return "ngx_http_compile_complex_value sdch_disablecv failed";
+        return const_cast<char*>("ngx_http_compile_complex_value sdch_disablecv failed");
     }
 
 #if 0
@@ -1742,7 +1743,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
                              ngx_http_html_default_types)
         != NGX_OK)
     {
-        return NGX_CONF_ERROR;
+        return const_cast<char*>("Can't merge config");
     }
 
     if (!conf->enable)
@@ -1753,7 +1754,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->dict_storage = prev->dict_storage;
     }
     if (conf->dict_conf_storage != NULL) {
-        sdch_dict_conf *dse = conf->dict_conf_storage->elts;
+        sdch_dict_conf *dse = static_cast<sdch_dict_conf*>(conf->dict_conf_storage->elts);
         qsort(conf->dict_conf_storage->elts, conf->dict_conf_storage->nelts,
             sizeof(sdch_dict_conf), compare_dict_conf);
         if (conf->dict_conf_storage->nelts > 0) {
@@ -1778,14 +1779,14 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ccv.value = &conf->sdch_group;
     ccv.complex_value = &conf->sdch_groupcv;
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
-        return "ngx_http_compile_complex_value sdch_group failed";
+        return const_cast<char*>("ngx_http_compile_complex_value sdch_group failed");
     }
 
     ngx_conf_merge_str_value(conf->sdch_url, prev->sdch_url, "");
     ccv.value = &conf->sdch_url;
     ccv.complex_value = &conf->sdch_urlcv;
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
-        return "ngx_http_compile_complex_value sdch_url failed";
+        return const_cast<char*>("ngx_http_compile_complex_value sdch_url failed");
     }
 
     ngx_conf_merge_uint_value(conf->sdch_maxnoadv, prev->sdch_maxnoadv, 0);
@@ -1830,7 +1831,7 @@ ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
 #include <openssl/sha.h>
 
 static void
-get_dict_ids(const char *buf, size_t buflen, unsigned char user_dictid[9], unsigned char server_dictid[9])
+get_dict_ids(const void *buf, size_t buflen, unsigned char user_dictid[9], unsigned char server_dictid[9])
 {
 	SHA256_CTX ctx;
 	SHA256_Init(&ctx);
