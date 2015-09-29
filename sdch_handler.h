@@ -20,6 +20,9 @@ class Handler {
   // Almost every Handler should call next_->on_data() to keep chain.
   virtual void on_data(const char* buf, size_t len) = 0;
 
+  // Called when request processing finished.
+  virtual void on_finish() = 0;
+
  protected:
   Handler* next_;
 };
