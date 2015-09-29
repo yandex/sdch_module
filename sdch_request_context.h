@@ -13,48 +13,50 @@ extern "C" {
 
 }
 
+#include "sdch_module.h"  // TODO Remove. We need proper sdch::Dictionary
+
 namespace sdch {
 
 class Handler;
 
 // Context used inside nginx to keep relevant data.
 struct RequestContext {
-    ngx_http_request_t  *request;
+ public:
+  RequestContext(ngx_http_request_t* r);
 
-    ngx_chain_t         *in;
-    ngx_chain_t         *free;
-    ngx_chain_t         *busy;
-    ngx_chain_t         *out;
-    ngx_chain_t        **last_out;
+  ngx_http_request_t* request;
 
-    ngx_chain_t         *copied;
-    ngx_chain_t         *copy_buf;
+  ngx_chain_t* in;
+  ngx_chain_t* free;
+  ngx_chain_t* busy;
+  ngx_chain_t* out;
+  ngx_chain_t** last_out;
 
-    ngx_buf_t           *in_buf;
-    ngx_buf_t           *out_buf;
-    ngx_int_t            bufs;
+  ngx_chain_t* copied;
+  ngx_chain_t* copy_buf;
 
-    struct sdch_dict    *dict;
-    struct sdch_dict     fdict;
+  ngx_buf_t* in_buf;
+  ngx_buf_t* out_buf;
+  ngx_int_t bufs;
 
-    unsigned             started:1;
-    unsigned             flush:4;
-    unsigned             redo:1;
-    unsigned             done:1;
-    unsigned             nomem:1;
-    unsigned             buffering:1;
+  struct sdch_dict* dict;
+  struct sdch_dict fdict;
 
-    unsigned             store:1;
+  unsigned started : 1;
+  unsigned flush : 4;
+  unsigned redo : 1;
+  unsigned done : 1;
+  unsigned nomem : 1;
+  unsigned buffering : 1;
 
-    size_t               zin;
-    size_t               zout;
+  unsigned store : 1;
 
-    z_stream             zstream;
+  size_t zin;
+  size_t zout;
 
-    struct sv            *stuc;
-};
+  z_stream zstream;
 
- private:
+  struct sv* stuc;
 };
 
 
