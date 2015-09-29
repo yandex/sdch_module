@@ -184,7 +184,7 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, enable),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_disablecv"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -193,14 +193,14 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_disablecv_s),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_buffers"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
       ngx_conf_set_bufs_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, bufs),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_dict"),
    	  NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -209,7 +209,7 @@ static ngx_command_t  tr_filter_commands[] = {
 	  tr_set_sdch_dict,
 	  NGX_HTTP_LOC_CONF_OFFSET,
 	  0,
-	  NULL },
+	  nullptr },
 
     { ngx_string("sdch_group"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -218,7 +218,7 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_group),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_url"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -227,7 +227,7 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_url),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_maxnoadv"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -236,7 +236,7 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_num_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_maxnoadv),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_dumpdir"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -245,7 +245,7 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, sdch_dumpdir),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_proxied"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -273,7 +273,7 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(tr_conf_t, enable_quasi),
-      NULL },
+      nullptr },
 
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
@@ -311,21 +311,21 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_size_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_gzip_conf_t, postpone_gzipping),
-      NULL },
+      nullptr },
 
     { ngx_string("gzip_no_buffer"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_gzip_conf_t, no_buffer),
-      NULL },
+      nullptr },
 
     { ngx_string("gzip_min_length"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_size_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_gzip_conf_t, min_length),
-      NULL },
+      nullptr },
 #endif
 
       ngx_null_command
@@ -339,8 +339,8 @@ static ngx_http_module_t  sdch_module_ctx = {
     tr_create_main_conf,                   /* create main configuration */
     tr_init_main_conf,                     /* init main configuration */
 
-    NULL,                                  /* create server configuration */
-    NULL,                                  /* merge server configuration */
+    nullptr,                                  /* create server configuration */
+    nullptr,                                  /* merge server configuration */
 
     tr_create_conf,             /* create location configuration */
     tr_merge_conf               /* merge location configuration */
@@ -383,7 +383,7 @@ header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
 	for (i = 0 ;; i++) {
 
 		if (i >= part->nelts) {
-			if (part->next == NULL) {
+			if (part->next == nullptr) {
 				break;
 			}
 
@@ -416,7 +416,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
 
     clcf = tr_get_config(r);
 
-    if (r->headers_in.via == NULL) {
+    if (r->headers_in.via == nullptr) {
         goto ok;
     }
 
@@ -472,7 +472,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
 
         if ((p & NGX_HTTP_GZIP_PROXIED_NO_CACHE)
             && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_no_cache,
-                                                 NULL)
+                                                 nullptr)
                >= 0)
         {
             goto ok;
@@ -480,7 +480,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
 
         if ((p & NGX_HTTP_GZIP_PROXIED_NO_STORE)
             && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_no_store,
-                                                 NULL)
+                                                 nullptr)
                >= 0)
         {
             goto ok;
@@ -488,7 +488,7 @@ ngx_http_sdch_ok(ngx_http_request_t *r)
 
         if ((p & NGX_HTTP_GZIP_PROXIED_PRIVATE)
             && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_private,
-                                                 NULL)
+                                                 nullptr)
                >= 0)
         {
             goto ok;
@@ -523,7 +523,7 @@ find_dict(u_char *h, tr_conf_t *conf)
         if (ngx_strncmp(h, dict_conf[i].dict->user_dictid, 8) == 0)
             return &dict_conf[i];
     }
-    return NULL;
+    return nullptr;
 }
 
 static blob_type
@@ -533,7 +533,7 @@ find_quasidict(u_char *h, struct sv **v)
     nm[8] = 0;
     memcpy(nm, h, 8);
 
-    blob_type b = NULL;
+    blob_type b = nullptr;
     stor_find(nm, &b, v);
     return b;
 }
@@ -551,7 +551,7 @@ get_dictionary_header(ngx_http_request_t *r, tr_conf_t *conf)
 
     ngx_table_elt_t *h;
     h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-    if (h == NULL) {
+    if (h == nullptr) {
         return NGX_ERROR;
     }
 
@@ -565,18 +565,18 @@ static ngx_int_t
 x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
 {
     ngx_table_elt_t *h = header_find(&r->headers_out.headers,
-        "x-sdch-encode", NULL);
+        "x-sdch-encode", nullptr);
     if (!ins) {
-        if (h != NULL) {
+        if (h != nullptr) {
             h->hash = 0;
             h->value.len = 0;
         }
         return NGX_OK;
     }
-    if (h == NULL) {
+    if (h == nullptr) {
         h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
     }
-    if (h == NULL) {
+    if (h == nullptr) {
         return NGX_ERROR;
     }
 
@@ -604,9 +604,9 @@ static sdch_dict_conf *
 choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group,
     u_int grl)
 {
-    if (old == NULL)
+    if (old == nullptr)
         return n;
-    if (n == NULL)
+    if (n == nullptr)
         return old;
 
     int om = (ngx_memn2cmp(old->groupname.data, group,
@@ -654,7 +654,7 @@ static ngx_int_t should_process(ngx_http_request_t* r, tr_conf_t* conf) {
     return NGX_HTTP_FORBIDDEN;
   }
 
-  if (ngx_http_test_content_type(r, &conf->types) == NULL) {
+  if (ngx_http_test_content_type(r, &conf->types) == nullptr) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: unsupported content type");
     return NGX_HTTP_FORBIDDEN;
@@ -673,7 +673,7 @@ static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
-    tr_ctx_t   *ctx = NULL;
+    tr_ctx_t   *ctx = nullptr;
     tr_conf_t  *conf;
 
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -730,7 +730,7 @@ tr_header_filter(ngx_http_request_t *r)
         ctxstore = 1;
 
         ngx_table_elt_t *h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-        if (h == NULL) {
+        if (h == nullptr) {
             return NGX_ERROR;
         }
 
@@ -743,13 +743,13 @@ tr_header_filter(ngx_http_request_t *r)
     if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
         return NGX_ERROR;
     }
-    sdch_dict_conf *bestdict = NULL;
-    blob_type quasidict_blob = NULL;
-    struct sv *ctxstuc = NULL;
+    sdch_dict_conf *bestdict = nullptr;
+    blob_type quasidict_blob = nullptr;
+    struct sv *ctxstuc = nullptr;
     while (val.len >= 8) {
         sdch_dict_conf *d = find_dict(val.data, conf);
         bestdict = choose_bestdict(bestdict, d, group.data, group.len);
-        if (quasidict_blob == NULL && d == NULL) {
+        if (quasidict_blob == nullptr && d == nullptr) {
             quasidict_blob = find_quasidict(val.data, &ctxstuc);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "find_quasidict %.8s -> %p", val.data, quasidict_blob);
@@ -760,7 +760,7 @@ tr_header_filter(ngx_http_request_t *r)
             l = val.len;
         val.data += l; val.len -= l;
     }
-    if (bestdict != NULL) {
+    if (bestdict != nullptr) {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "group: %s prio: %d best: %d", bestdict->groupname.data,
             bestdict->priority, bestdict->best);
@@ -768,12 +768,12 @@ tr_header_filter(ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "nobestdict");
     }
-    if (bestdict == NULL || ngx_memn2cmp(bestdict->groupname.data, group.data, 
+    if (bestdict == nullptr || ngx_memn2cmp(bestdict->groupname.data, group.data, 
             bestdict->groupname.len, group.len) || !bestdict->best) {
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
-        if (bestdict == NULL && quasidict_blob == NULL) {
+        if (bestdict == nullptr && quasidict_blob == nullptr) {
             e = x_sdch_encode_0_header(r, sdch_expected);
             if (e)
                 return e;
@@ -783,7 +783,7 @@ tr_header_filter(ngx_http_request_t *r)
     }
 
     ctx = static_cast<tr_ctx_t*>(ngx_pcalloc(r->pool, sizeof(tr_ctx_t)));
-    if (ctx == NULL) {
+    if (ctx == nullptr) {
         return NGX_ERROR;
     }
 
@@ -791,9 +791,9 @@ tr_header_filter(ngx_http_request_t *r)
 
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
-    if (bestdict != NULL) {
+    if (bestdict != nullptr) {
         ctx->dict = bestdict->dict;
-    } else if (quasidict_blob != NULL) {
+    } else if (quasidict_blob != nullptr) {
         ctx->dict = &ctx->fdict;
         ctx->fdict.dict = quasidict_blob;
         size_t sz = blob_data_size(quasidict_blob)-8;
@@ -801,7 +801,7 @@ tr_header_filter(ngx_http_request_t *r)
         get_hashed_dict(blob_data_begin(quasidict_blob), blob_data_begin(quasidict_blob)+sz,
             1, &ctx->fdict.hashed_dict);
     } else {
-        ctx->dict = NULL;
+        ctx->dict = nullptr;
     }
     ctx->store = ctxstore;
     ctx->stuc = ctxstuc;
@@ -810,9 +810,9 @@ tr_header_filter(ngx_http_request_t *r)
 
     //tr_filter_memory(r, ctx);
 
-    if (ctx->dict != NULL) {
+    if (ctx->dict != nullptr) {
         h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-        if (h == NULL) {
+        if (h == nullptr) {
             return NGX_ERROR;
         }
 
@@ -851,7 +851,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter body 000");
 
-    if (ctx == NULL || ctx->done || r->header_only) {
+    if (ctx == nullptr || ctx->done || r->header_only) {
         return ngx_http_next_body_filter(r, in);
     }
 
@@ -877,7 +877,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                 return NGX_OK;
 
             case NGX_DONE:
-                in = NULL;
+                in = nullptr;
                 break;
 
             default:  /* NGX_ERROR */
@@ -908,11 +908,11 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
         /* flush busy buffers */
 
-        if (ngx_http_next_body_filter(r, NULL) == NGX_ERROR) {
+        if (ngx_http_next_body_filter(r, nullptr) == NGX_ERROR) {
             goto failed;
         }
 
-        cl = NULL;
+        cl = nullptr;
 
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &cl,
                                 (ngx_buf_tag_t) &sdch_module);
@@ -956,7 +956,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http sdch filter loop1 exit");
-        if (ctx->out == NULL) {
+        if (ctx->out == nullptr) {
             ngx_http_gzip_filter_free_copy_buf(r, ctx);
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1037,7 +1037,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
 
     while (in) {
         cl = ngx_alloc_chain_link(r->pool);
-        if (cl == NULL) {
+        if (cl == nullptr) {
             return NGX_ERROR;
         }
 
@@ -1053,7 +1053,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
         if (ctx->buffering && size) {
 
             buf = ngx_create_temp_buf(r->pool, size);
-            if (buf == NULL) {
+            if (buf == nullptr) {
                 return NGX_ERROR;
             }
 
@@ -1074,7 +1074,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
         in = in->next;
     }
 
-    *ll = NULL;
+    *ll = nullptr;
 
     return ctx->buffering ? NGX_OK : NGX_DONE;
 }
@@ -1095,7 +1095,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
     ctx->last_out = &ctx->out;
     
     ctx->coo = ctx;
-    if (ctx->dict != NULL) {
+    if (ctx->dict != nullptr) {
         tr_filter_write(ctx, ctx->dict->server_dictid, 9);
         get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
         ctx->coo = ctx->enc;
@@ -1104,7 +1104,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
         char *fn = static_cast<char*>(ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30));
         sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
         ctx->coo = make_teefd(fn, ctx->coo);
-        if (ctx->coo == NULL) {
+        if (ctx->coo == nullptr) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
             return NGX_ERROR;
         }
@@ -1132,7 +1132,7 @@ tr_filter_add_data(tr_ctx_t *ctx)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch in: %p", ctx->in);
 
-    if (ctx->in == NULL) {
+    if (ctx->in == nullptr) {
         return NGX_DECLINED;
     }
 
@@ -1145,7 +1145,7 @@ tr_filter_add_data(tr_ctx_t *ctx)
 
         ctx->copy_buf->next = ctx->copied;
         ctx->copied = ctx->copy_buf;
-        ctx->copy_buf = NULL;
+        ctx->copy_buf = nullptr;
     }
 
     ctx->in_buf = ctx->in->buf;
@@ -1204,7 +1204,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
     } else if (1 /* ctx->bufs < conf->bufs.num */) {
 
         ctx->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
-        if (ctx->out_buf == NULL) {
+        if (ctx->out_buf == nullptr) {
             return NGX_ERROR;
         }
 
@@ -1229,16 +1229,16 @@ tr_filter_out_buf_out(tr_ctx_t *ctx)
     ctx->out_buf->last = ctx->zstream.next_out;
     assert(ctx->out_buf->last != ctx->out_buf->pos);
     ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
-    if (cl == NULL) {
+    if (cl == nullptr) {
         return NGX_ERROR;
     }
 
     cl->buf = ctx->out_buf;
-    cl->next = NULL;
+    cl->next = nullptr;
     *ctx->last_out = cl;
     ctx->last_out = &cl->next;
     
-    ctx->out_buf = NULL;
+    ctx->out_buf = nullptr;
     ctx->zstream.avail_out = 0;
 
     return NGX_OK;
@@ -1323,7 +1323,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
         ctx->in_buf->pos = ctx->zstream.next_in;
 
         if (ctx->zstream.avail_in == 0) {
-            ctx->zstream.next_in = NULL;
+            ctx->zstream.next_in = nullptr;
         }
     }
 
@@ -1336,7 +1336,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
         ctx->flush = Z_NO_FLUSH;
 
         cl = ngx_alloc_chain_link(r->pool);
-        if (cl == NULL) {
+        if (cl == nullptr) {
             return NGX_ERROR;
         }
 
@@ -1345,7 +1345,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
         if (ngx_buf_size(b) == 0) {
 
             b = static_cast<ngx_buf_t*>(ngx_calloc_buf(ctx->request->pool));
-            if (b == NULL) {
+            if (b == nullptr) {
                 return NGX_ERROR;
             }
 
@@ -1356,7 +1356,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
         b->flush = 1;
 
         cl->buf = b;
-        cl->next = NULL;
+        cl->next = nullptr;
         *ctx->last_out = cl;
         ctx->last_out = &cl->next;
 
@@ -1374,7 +1374,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
 
     conf = tr_get_config(r);
 
-    if (conf->no_buffer && ctx->in == NULL) {
+    if (conf->no_buffer && ctx->in == nullptr) {
         return tr_filter_out_buf_out(ctx);
     }
 
@@ -1438,7 +1438,7 @@ ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
         ngx_pfree(r->pool, cl->buf->start);
     }
 
-    ctx->copied = NULL;
+    ctx->copied = nullptr;
 }
 
 
@@ -1450,7 +1450,7 @@ tr_add_variables(ngx_conf_t *cf)
     ngx_http_variable_t  *var;
 
     var = ngx_http_add_variable(cf, &tr_ratio, NGX_HTTP_VAR_NOHASH);
-    if (var == NULL) {
+    if (var == nullptr) {
         return NGX_ERROR;
     }
 
@@ -1472,13 +1472,13 @@ tr_ratio_variable(ngx_http_request_t *r,
     v->not_found = 0;
 
 
-    if (ctx == NULL || ctx->zout == 0) {
+    if (ctx == nullptr || ctx->zout == 0) {
         v->not_found = 1;
         return NGX_OK;
     }
 
     v->data = static_cast<u_char*>(ngx_pnalloc(r->pool, NGX_INT32_LEN + 3));
-    if (v->data == NULL) {
+    if (v->data == nullptr) {
         return NGX_ERROR;
     }
 
@@ -1508,8 +1508,8 @@ tr_create_main_conf(ngx_conf_t *cf)
     tr_main_conf_t  *conf;
 
     conf = static_cast<tr_main_conf_t*>(ngx_pcalloc(cf->pool, sizeof(tr_main_conf_t)));
-    if (conf == NULL) {
-        return NULL;
+    if (conf == nullptr) {
+        return nullptr;
     }
     
     conf->stor_size = NGX_CONF_UNSET_SIZE;
@@ -1530,21 +1530,21 @@ static void *
 tr_create_conf(ngx_conf_t *cf)
 {
     tr_conf_t *conf = static_cast<tr_conf_t*>(ngx_pcalloc(cf->pool, sizeof(tr_conf_t)));
-    if (conf == NULL) {
-        return NULL;
+    if (conf == nullptr) {
+        return nullptr;
     }
 
     /*
      * set by ngx_pcalloc():
      *
      *     conf->bufs.num = 0;
-     *     conf->types = { NULL };
-     *     conf->types_keys = NULL;
+     *     conf->types = { nullptr };
+     *     conf->types_keys = nullptr;
      */
 
     conf->enable = NGX_CONF_UNSET;
 
-    //conf->dict_data = NULL;
+    //conf->dict_data = nullptr;
 #if 0
     conf->no_buffer = NGX_CONF_UNSET;
 
@@ -1566,7 +1566,7 @@ init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
 {
     blob_create(&data->dict);
     const char * p = read_file((const char*)dict->data, data->dict);
-    if (p != NULL)
+    if (p != nullptr)
         return p;
     if (get_hashed_dict(blob_data_begin(data->dict),
             blob_data_begin(data->dict)+blob_data_size(data->dict),
@@ -1589,10 +1589,10 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     if (cf->args->nelts < 2 || cf->args->nelts > 4) {
         return const_cast<char*>("Wrong number of arguments");
     }
-    if (conf->dict_storage == NULL) {
+    if (conf->dict_storage == nullptr) {
         conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
     }
-    if (conf->dict_conf_storage == NULL) {
+    if (conf->dict_conf_storage == nullptr) {
         conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
     }
     ngx_str_t *value = static_cast<ngx_str_t*>(cf->args->elts);
@@ -1610,7 +1610,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     }
     struct sdch_dict *data = static_cast<sdch_dict*>(ngx_array_push(conf->dict_storage));
     const char *p = init_dict_data(cf, &value[1], data);
-    if (p != NULL) {
+    if (p != nullptr) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
         return const_cast<char*>(p);
     }
@@ -1683,11 +1683,11 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (!conf->enable)
     	return NGX_CONF_OK;
 
-    if (conf->dict_conf_storage == NULL) {
+    if (conf->dict_conf_storage == nullptr) {
         conf->dict_conf_storage = prev->dict_conf_storage;
         conf->dict_storage = prev->dict_storage;
     }
-    if (conf->dict_conf_storage != NULL) {
+    if (conf->dict_conf_storage != nullptr) {
         sdch_dict_conf *dse = static_cast<sdch_dict_conf*>(conf->dict_conf_storage->elts);
         qsort(conf->dict_conf_storage->elts, conf->dict_conf_storage->nelts,
             sizeof(sdch_dict_conf), compare_dict_conf);
@@ -1702,10 +1702,10 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
         }
     }
 
-    if (conf->dict_storage == NULL) {
+    if (conf->dict_storage == nullptr) {
         conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
     }
-    if (conf->dict_conf_storage == NULL) {
+    if (conf->dict_conf_storage == nullptr) {
         conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
     }
 
@@ -1839,16 +1839,16 @@ ngx_http_gzip_hash(ngx_conf_t *cf, void *post, void *data)
 // It should be outside namespace
 ngx_module_t  sdch_module = {
     NGX_MODULE_V1,
-    &sdch::sdch_module_ctx,      /* module context */
+    &sdch::sdch_module_ctx,           /* module context */
     sdch::tr_filter_commands,         /* module directives */
-    NGX_HTTP_MODULE,                       /* module type */
-    NULL,                                  /* init master */
-    NULL,                                  /* init module */
-    NULL,                                  /* init process */
-    NULL,                                  /* init thread */
-    NULL,                                  /* exit thread */
-    NULL,                                  /* exit process */
-    NULL,                                  /* exit master */
+    NGX_HTTP_MODULE,                  /* module type */
+    nullptr,                          /* init master */
+    nullptr,                          /* init module */
+    nullptr,                          /* init process */
+    nullptr,                          /* init thread */
+    nullptr,                          /* exit thread */
+    nullptr,                          /* exit process */
+    nullptr,                          /* exit master */
     NGX_MODULE_V1_PADDING
 };
 
