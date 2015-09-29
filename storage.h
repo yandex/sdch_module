@@ -18,7 +18,7 @@ typedef struct blob_s *blob_type;
 int blob_create(blob_type *obj);
 int blob_append(blob_type obj, const void *s, int len);
 int blob_destroy(blob_type obj);
-const void *blob_data_begin(blob_type obj);
+const char *blob_data_begin(blob_type obj);
 size_t blob_data_size(blob_type obj);
 
 struct sv;

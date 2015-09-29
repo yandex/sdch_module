@@ -17,7 +17,7 @@ int blob_destroy(blob_s *obj) {
     return 0;
 }
 
-const void *blob_data_begin(blob_s *obj) {
+const char *blob_data_begin(blob_s *obj) {
     return &obj->data[0];
 }
 
