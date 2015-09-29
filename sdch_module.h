@@ -9,7 +9,7 @@
 #include "vcd-h1.h"
 #include "zlib.h"
 
-// TODO namespace sdch {
+namespace sdch {
 
 struct sdch_dict {
     blob_type dict;
@@ -25,7 +25,7 @@ typedef struct {
 } sdch_dict_conf;
 
 
-// TODO }  // namespace sdch
+}  // namespace sdch
 
 #endif  // SDCH_MODULE_H_
 

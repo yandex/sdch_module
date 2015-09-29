@@ -16,6 +16,10 @@ extern "C" {
 
 #include "sdch_module.h"
 
+extern ngx_module_t sdch_module;
+
+namespace sdch {
+
 typedef struct {
     ngx_flag_t           enable;
     ngx_flag_t           no_buffer;
@@ -342,21 +346,6 @@ static ngx_http_module_t  sdch_module_ctx = {
     tr_merge_conf               /* merge location configuration */
 };
 
-
-ngx_module_t  sdch_module = {
-    NGX_MODULE_V1,
-    &sdch_module_ctx,      /* module context */
-    tr_filter_commands,         /* module directives */
-    NGX_HTTP_MODULE,                       /* module type */
-    NULL,                                  /* init master */
-    NULL,                                  /* init module */
-    NULL,                                  /* init process */
-    NULL,                                  /* init thread */
-    NULL,                                  /* exit thread */
-    NULL,                                  /* exit process */
-    NULL,                                  /* exit master */
-    NGX_MODULE_V1_PADDING
-};
 
 //static ngx_str_t  ngx_http_gzip_ratio = ngx_string("gzip_ratio");
 
@@ -1844,3 +1833,22 @@ ngx_http_gzip_hash(ngx_conf_t *cf, void *post, void *data)
     return "must be 512, 1k, 2k, 4k, 8k, 16k, 32k, 64k, or 128k";
 }
 #endif
+
+}  // namespace sdch
+
+// It should be outside namespace
+ngx_module_t  sdch_module = {
+    NGX_MODULE_V1,
+    &sdch::sdch_module_ctx,      /* module context */
+    sdch::tr_filter_commands,         /* module directives */
+    NGX_HTTP_MODULE,                       /* module type */
+    NULL,                                  /* init master */
+    NULL,                                  /* init module */
+    NULL,                                  /* init process */
+    NULL,                                  /* init thread */
+    NULL,                                  /* exit thread */
+    NULL,                                  /* exit process */
+    NULL,                                  /* exit master */
+    NGX_MODULE_V1_PADDING
+};
+
