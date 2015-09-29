@@ -15,6 +15,7 @@ extern "C" {
 }
 
 #include "sdch_module.h"
+#include "sdch_request_context.h"
 
 namespace sdch {
 
@@ -59,59 +60,17 @@ typedef struct {
     ngx_uint_t           stor_size;
 } tr_main_conf_t;
 
-typedef struct {
-    struct pz            pzh;
-    ngx_chain_t         *in;
-    ngx_chain_t         *free;
-    ngx_chain_t         *busy;
-    ngx_chain_t         *out;
-    ngx_chain_t        **last_out;
-
-    ngx_chain_t         *copied;
-    ngx_chain_t         *copy_buf;
-
-    ngx_buf_t           *in_buf;
-    ngx_buf_t           *out_buf;
-    ngx_int_t            bufs;
-    
-    struct sdch_dict    *dict;
-    struct sdch_dict     fdict;
-
-    unsigned             started:1;
-    unsigned             flush:4;
-    unsigned             redo:1;
-    unsigned             done:1;
-    unsigned             nomem:1;
-    unsigned             buffering:1;
-    
-    unsigned             store:1;
-
-    size_t               zin;
-    size_t               zout;
-
-    z_stream             zstream;
-    ngx_http_request_t  *request;
-    
-    //writerfunc          *wf;
-    void                *coo;
-    vcd_encoder_p       enc;
-    
-    blob_type            blob;
-    struct sv            *stuc;
-} tr_ctx_t;
-
 static tr_conf_t* tr_get_config(ngx_http_request_t* r);
 static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
 static closefunc tr_filter_close;
-//static void tr_filter_memory(ngx_http_request_t *r, tr_ctx_t *ctx);
-static ngx_int_t tr_filter_buffer(tr_ctx_t *ctx,
-    ngx_chain_t *in);
-static ngx_int_t tr_filter_out_buf_out(tr_ctx_t *ctx);
-static ngx_int_t tr_filter_deflate_start(tr_ctx_t *ctx);
-static ngx_int_t tr_filter_add_data(tr_ctx_t *ctx);
-static ngx_int_t tr_filter_get_buf(tr_ctx_t *ctx);
-static ngx_int_t tr_filter_deflate(tr_ctx_t *ctx);
-static ngx_int_t tr_filter_deflate_end(tr_ctx_t *ctx);
+//static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
+static ngx_int_t tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in);
+static ngx_int_t tr_filter_out_buf_out(RequestContext *ctx);
+static ngx_int_t tr_filter_deflate_start(RequestContext *ctx);
+static ngx_int_t tr_filter_add_data(RequestContext *ctx);
+static ngx_int_t tr_filter_get_buf(RequestContext *ctx);
+static ngx_int_t tr_filter_deflate(RequestContext *ctx);
+static ngx_int_t tr_filter_deflate_end(RequestContext *ctx);
 
 #if 0
 static void *ngx_http_gzip_filter_alloc(void *opaque, u_int items,
@@ -119,7 +78,7 @@ static void *ngx_http_gzip_filter_alloc(void *opaque, u_int items,
 static void ngx_http_gzip_filter_free(void *opaque, void *address);
 #endif
 static void ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
-    tr_ctx_t *ctx);
+    RequestContext *ctx);
 
 static ngx_int_t tr_add_variables(ngx_conf_t *cf);
 static ngx_int_t tr_ratio_variable(ngx_http_request_t *r,
@@ -671,7 +630,7 @@ static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
     ngx_table_elt_t       *h;
-    tr_ctx_t   *ctx = nullptr;
+    RequestContext   *ctx = nullptr;
     tr_conf_t  *conf;
 
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -780,7 +739,7 @@ tr_header_filter(ngx_http_request_t *r)
         }
     }
 
-    ctx = static_cast<tr_ctx_t*>(ngx_pcalloc(r->pool, sizeof(tr_ctx_t)));
+    ctx = static_cast<RequestContext*>(ngx_pcalloc(r->pool, sizeof(RequestContext)));
     if (ctx == nullptr) {
         return NGX_ERROR;
     }
@@ -844,7 +803,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
     int                   rc;
     ngx_chain_t          *cl;
-    tr_ctx_t  *ctx = static_cast<tr_ctx_t*>(ngx_http_get_module_ctx(r, sdch_module));
+    RequestContext  *ctx = RequestContext::get(r);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter body 000");
@@ -1008,7 +967,7 @@ failed:
 }
 
 static ngx_int_t
-tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
+tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in)
 {
     size_t                 size, buffered;
     ngx_buf_t             *b, *buf;
@@ -1079,7 +1038,7 @@ tr_filter_buffer(tr_ctx_t *ctx, ngx_chain_t *in)
 
 
 static ngx_int_t
-tr_filter_deflate_start(tr_ctx_t *ctx)
+tr_filter_deflate_start(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
     //int                    rc;
@@ -1118,7 +1077,7 @@ tr_filter_deflate_start(tr_ctx_t *ctx)
 
 
 static ngx_int_t
-tr_filter_add_data(tr_ctx_t *ctx)
+tr_filter_add_data(RequestContext *ctx)
 {
 #if (NGX_DEBUG)
     ngx_http_request_t *r = ctx->request;
@@ -1183,7 +1142,7 @@ tr_filter_add_data(tr_ctx_t *ctx)
 
 
 static ngx_int_t
-tr_filter_get_buf(tr_ctx_t *ctx)
+tr_filter_get_buf(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
     tr_conf_t  *conf;
@@ -1222,7 +1181,7 @@ tr_filter_get_buf(tr_ctx_t *ctx)
 }
 
 static ngx_int_t
-tr_filter_out_buf_out(tr_ctx_t *ctx)
+tr_filter_out_buf_out(RequestContext *ctx)
 {
     ctx->out_buf->last = ctx->zstream.next_out;
     assert(ctx->out_buf->last != ctx->out_buf->pos);
@@ -1250,7 +1209,7 @@ tr_filter_close(void *c)
 pssize_type
 tr_filter_write(void *ctx0, const void *buf, psize_type len)
 {
-    tr_ctx_t *ctx = static_cast<tr_ctx_t*>(ctx0);
+    RequestContext *ctx = static_cast<RequestContext*>(ctx0);
     const char *buff = static_cast<const char*>(buf);
     int rlen = 0;
     
@@ -1281,7 +1240,7 @@ tr_filter_write(void *ctx0, const void *buf, psize_type len)
 }
 
 static ngx_int_t
-tr_filter_deflate(tr_ctx_t *ctx)
+tr_filter_deflate(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
     int                    rc;
@@ -1381,7 +1340,7 @@ tr_filter_deflate(tr_ctx_t *ctx)
 
 
 static ngx_int_t
-tr_filter_deflate_end(tr_ctx_t *ctx)
+tr_filter_deflate_end(RequestContext *ctx)
 {
 
     ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0,
@@ -1427,8 +1386,7 @@ tr_filter_deflate_end(tr_ctx_t *ctx)
 
 
 static void
-ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
-    tr_ctx_t *ctx)
+ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r, RequestContext *ctx)
 {
     ngx_chain_t  *cl;
 
@@ -1463,7 +1421,7 @@ tr_ratio_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
 {
     ngx_uint_t            zint, zfrac;
-    tr_ctx_t  *ctx = static_cast<tr_ctx_t*>(ngx_http_get_module_ctx(r, sdch_module));
+    RequestContext  *ctx = RequestContext::get(r);
 
     v->valid = 1;
     v->no_cacheable = 0;
