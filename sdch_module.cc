@@ -14,23 +14,7 @@ extern "C" {
 #include <ngx_http.h>
 }
 
-#include "zlib.h"
-#include "vcd-h1.h"
-#include "teefd.h"
-#include "blobstore.h"
-
-struct sdch_dict {
-    blob_type dict;
-    hashed_dictionary_p  hashed_dict;
-    unsigned char user_dictid[9], server_dictid[9];
-};
-
-typedef struct {
-    ngx_str_t            groupname;
-    ngx_uint_t           priority;
-    int                  best;
-    struct sdch_dict    *dict;
-} sdch_dict_conf;
+#include "sdch_module.h"
 
 typedef struct {
     ngx_flag_t           enable;
