@@ -4,6 +4,8 @@
 #ifndef SDCH_HANDLER_H_
 #define SDCH_HANDLER_H_
 
+#include <cstring>  // For size_t
+
 namespace sdch {
 
 // SDCH Handler chain.
