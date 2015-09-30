@@ -4,6 +4,13 @@
 #ifndef POOL_ALLOC_H_
 #define POOL_ALLOC_H_
 
+extern "C" {
+#include <ngx_core.h>  // For ngx_pool_t declaration
+}
+
+#include <type_traits>  // std::enable_if
+#include <utility>      // std::forward
+
 namespace sdch {
 
 template<typename Type>
