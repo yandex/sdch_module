@@ -29,8 +29,6 @@ struct RequestContext {
   static RequestContext* get(ngx_http_request_t* r);
 
   // TODO Remove
-  void                *coo;
-  vcd_encoder_p        enc;
   blob_type            blob;
 
   ngx_http_request_t* request;

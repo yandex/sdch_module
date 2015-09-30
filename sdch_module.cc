@@ -1001,12 +1001,10 @@ tr_filter_deflate_start(RequestContext *ctx)
     if (ctx->handler == nullptr)
       return NGX_ERROR;
 
-    ctx->coo = ctx;
     if (ctx->dict != nullptr) {
       ctx->handler = pool_alloc<EncodingHandler>(r, ctx, ctx->handler);
       if (ctx->handler == nullptr)
         return NGX_ERROR;
-      ctx->coo = ctx->enc;
     }
     if (conf->sdch_dumpdir.len > 0) {
       ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
@@ -1199,7 +1197,8 @@ tr_filter_deflate(RequestContext *ctx)
                  ctx->zstream.avail_in, ctx->zstream.avail_out,
                  ctx->flush, ctx->redo);
 
-    int l0 = do_write(ctx->coo, ctx->zstream.next_in, ctx->zstream.avail_in);
+    int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->zstream.next_in),
+                                   ctx->zstream.avail_in);
     ctx->zstream.next_in += l0;
     ctx->zstream.avail_in -= l0;
     ctx->zin += l0;
@@ -1290,7 +1289,9 @@ tr_filter_deflate_end(RequestContext *ctx)
 
     ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0,
         "closing ctx");
-    do_close(ctx->coo);
+    ctx->handler->on_finish();
+#if 0
+    FIXME It should go into corresponding Handler::on_finish implementation
     if (ctx->store && !ctx->blob) {
         ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
             "storing quasidict: no blob");
@@ -1311,6 +1312,7 @@ tr_filter_deflate_end(RequestContext *ctx)
     if (ctx->stuc) {
         stor_unlock(ctx->stuc);
     }
+#endif
 
     //ngx_pfree(r->pool, ctx->preallocated);
 
