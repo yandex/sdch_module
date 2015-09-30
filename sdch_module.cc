@@ -17,14 +17,11 @@ extern "C" {
 #include "sdch_module.h"
 
 #include "sdch_config.h"
+#include "sdch_main_config.h"
 #include "sdch_pool_alloc.h"
 #include "sdch_request_context.h"
 
 namespace sdch {
-
-typedef struct {
-    ngx_uint_t           stor_size;
-} tr_main_conf_t;
 
 static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
 static closefunc tr_filter_close;
@@ -201,7 +198,7 @@ static ngx_command_t  tr_filter_commands[] = {
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
-      offsetof(tr_main_conf_t, stor_size),
+      offsetof(MainConfig, stor_size),
       &tr_stor_size_bounds },
 
 #if 0
@@ -1422,22 +1419,13 @@ tr_ratio_variable(ngx_http_request_t *r,
 static void *
 tr_create_main_conf(ngx_conf_t *cf)
 {
-    tr_main_conf_t  *conf;
-
-    conf = static_cast<tr_main_conf_t*>(ngx_pcalloc(cf->pool, sizeof(tr_main_conf_t)));
-    if (conf == nullptr) {
-        return nullptr;
-    }
-    
-    conf->stor_size = NGX_CONF_UNSET_SIZE;
-
-    return conf;
+    return pool_alloc<MainConfig>(cf);
 }
 
 static char *
 tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 {
-    tr_main_conf_t *conf = static_cast<tr_main_conf_t*>(cnf);
+    MainConfig *conf = static_cast<MainConfig*>(cnf);
     if (conf->stor_size != NGX_CONF_UNSET_SIZE)
         max_stor_size = conf->stor_size;
     return NGX_CONF_OK;
