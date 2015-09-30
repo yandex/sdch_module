@@ -8,6 +8,8 @@
 
 namespace sdch {
 
+class RequestContext;
+
 // Create YaSDCH dictionary 
 class AutoautoHandler : public Handler {
  public:

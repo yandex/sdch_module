@@ -21,7 +21,8 @@ class Handler {
   virtual ssize_t on_data(const char* buf, size_t len) = 0;
 
   // Called when request processing finished.
-  virtual void on_finish() = 0;
+  // Default implementation just invokes next_->on_finish();
+  virtual void on_finish();
 
  protected:
   Handler* next_;

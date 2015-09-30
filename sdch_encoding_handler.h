@@ -8,6 +8,8 @@
 
 namespace sdch {
 
+class RequestContext;
+
 // Actual VCDiff encoding handler
 class EncodingHandler : public Handler {
  public:

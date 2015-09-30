@@ -7,9 +7,15 @@
 
 namespace sdch {
 
-EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next) {
+EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
+    : Handler(next) {
   assert(next_);
+
+  // tr_filter_write(ctx, ctx->dict->server_dictid, 9);
+  // get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
 }
+
+EncodingHandler::~EncodingHandler() {}
 
 ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
   // TODO Implement it
@@ -17,6 +23,7 @@ ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
 }
 
 void EncodingHandler::on_finish() {
+  // TODO Implement it
   return next_->on_finish();
 }
 

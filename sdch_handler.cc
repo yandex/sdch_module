@@ -6,6 +6,12 @@
 namespace sdch {
 
 Handler::Handler(Handler* next) : next_(next) {}
+
 Handler::~Handler() {}
+
+void Handler::on_finish() {
+  if (next_)
+    next_->on_finish();
+}
 
 }  // namespace sdch

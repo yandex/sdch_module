@@ -8,6 +8,8 @@
 
 namespace sdch {
 
+class RequestContext;
+
 // Dumps data into temporary directory
 class DumpHandler : public Handler {
  public:

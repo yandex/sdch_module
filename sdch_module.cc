@@ -17,6 +17,8 @@ extern "C" {
 #include "sdch_module.h"
 
 #include "sdch_config.h"
+#include "sdch_dump_handler.h"
+#include "sdch_encoding_handler.h"
 #include "sdch_main_config.h"
 #include "sdch_output_handler.h"
 #include "sdch_pool_alloc.h"

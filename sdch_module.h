@@ -13,6 +13,8 @@ extern ngx_module_t sdch_module;
 
 namespace sdch {
 
+class RequestContext;
+
 struct sdch_dict {
     blob_type dict;
     hashed_dictionary_p  hashed_dict;
