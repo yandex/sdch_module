@@ -21,16 +21,8 @@ static inline void do_close(void *cookie) {
     (p->cf)(cookie);
 }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void *make_fd(int fd);
 extern writerfunc write_fd;
 extern closefunc free_fd;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
