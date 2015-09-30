@@ -1650,55 +1650,6 @@ get_dict_ids(const void *buf, size_t buflen, unsigned char user_dictid[9], unsig
 	server_dictid[8] = 0;
 }
 
-#if 0
-static char *
-ngx_http_gzip_window(ngx_conf_t *cf, void *post, void *data)
-{
-    size_t *np = data;
-
-    size_t  wbits, wsize;
-
-    wbits = 15;
-
-    for (wsize = 32 * 1024; wsize > 256; wsize >>= 1) {
-
-        if (wsize == *np) {
-            *np = wbits;
-
-            return NGX_CONF_OK;
-        }
-
-        wbits--;
-    }
-
-    return "must be 512, 1k, 2k, 4k, 8k, 16k, or 32k";
-}
-
-
-static char *
-ngx_http_gzip_hash(ngx_conf_t *cf, void *post, void *data)
-{
-    size_t *np = data;
-
-    size_t  memlevel, hsize;
-
-    memlevel = 9;
-
-    for (hsize = 128 * 1024; hsize > 256; hsize >>= 1) {
-
-        if (hsize == *np) {
-            *np = memlevel;
-
-            return NGX_CONF_OK;
-        }
-
-        memlevel--;
-    }
-
-    return "must be 512, 1k, 2k, 4k, 8k, 16k, 32k, 64k, or 128k";
-}
-#endif
-
 }  // namespace sdch
 
 // It should be outside namespace
