@@ -14,7 +14,6 @@ extern "C" {
 }
 
 #include "blobstore.h"
-#include "teefd.h"
 #include "vcd-h1.h"
 #include "zlib.h"
 

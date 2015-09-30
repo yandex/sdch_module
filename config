@@ -36,7 +36,6 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/sdch_output_handler.cc \
                 $ngx_addon_dir/sdch_request_context.cc \
                 $ngx_addon_dir/storage.cc \
-                $ngx_addon_dir/teefd.cpp \
                 $ngx_addon_dir/vcd-h1.cc \
                 "
 
@@ -54,7 +53,6 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/sdch_pool_alloc.h \
                 $ngx_addon_dir/sdch_request_context.h \
                 $ngx_addon_dir/storage.h \
-                $ngx_addon_dir/teefd.h \
                 $ngx_addon_dir/vcd-h1.h \
                 "
 
