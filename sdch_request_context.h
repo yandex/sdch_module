@@ -28,7 +28,7 @@ struct RequestContext {
   // Fetch RequestContext associated with nginx request
   static RequestContext* get(ngx_http_request_t* r);
 
-  struct pz            pzh;  // TODO Remove
+  // TODO Remove
   void                *coo;
   vcd_encoder_p        enc;
   blob_type            blob;
