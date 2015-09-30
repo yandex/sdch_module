@@ -7,13 +7,6 @@
 
 #include <assert.h>
 
-extern "C" {
-#include <ngx_config.h>
-#include <nginx.h>
-#include <ngx_core.h>
-#include <ngx_http.h>
-}
-
 #include "sdch_module.h"
 
 #include "sdch_autoauto_handler.h"
@@ -27,7 +20,6 @@ extern "C" {
 
 namespace sdch {
 
-static pssize_type tr_filter_write(void *ctx0, const void *buf, psize_type len);
 static closefunc tr_filter_close;
 //static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
 static ngx_int_t tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in);
@@ -641,7 +633,7 @@ tr_header_filter(ngx_http_request_t *r)
 #endif
 
     if (ngx_http_sdch_ok(r) != NGX_OK) {
-    	return ngx_http_next_header_filter(r);
+      return ngx_http_next_header_filter(r);
     }
 
     unsigned int ctxstore = 0;
@@ -724,10 +716,6 @@ tr_header_filter(ngx_http_request_t *r)
     }
     ctx->store = ctxstore;
     ctx->stuc = ctxstuc;
-    ctx->pzh.wf = tr_filter_write;
-    ctx->pzh.cf = tr_filter_close;
-
-    //tr_filter_memory(r, ctx);
 
     if (ctx->dict != nullptr) {
         h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
@@ -1167,37 +1155,35 @@ tr_filter_close(void *c)
 {
 }
 
-pssize_type
-tr_filter_write(void *ctx0, const void *buf, psize_type len)
+ssize_t
+tr_filter_write(RequestContext *ctx, const char *buf, size_t len)
 {
-    RequestContext *ctx = static_cast<RequestContext*>(ctx0);
-    const char *buff = static_cast<const char*>(buf);
-    int rlen = 0;
-    
-    while (len > 0) {
-        unsigned l0 = len;
-        if (ctx->zstream.avail_out < l0)
-            l0 = ctx->zstream.avail_out;
-        if (l0 > 0) {
-            memcpy(ctx->zstream.next_out, buff, l0);
-            len -= l0;
-            buff += l0;
-            ctx->zstream.avail_out -= l0;
-            ctx->zstream.next_out += l0;
-            rlen += l0;
-        }
-        if (len > 0) {
-            if (ctx->out_buf) {
-                int rc = tr_filter_out_buf_out(ctx);
-                if (rc != NGX_OK)
-                    return rc;
-            }
+  int rlen = 0;
 
-            tr_filter_get_buf(ctx);
-        }
+  while (len > 0) {
+    unsigned l0 = len;
+    if (ctx->zstream.avail_out < l0)
+      l0 = ctx->zstream.avail_out;
+    if (l0 > 0) {
+      memcpy(ctx->zstream.next_out, buf, l0);
+      len -= l0;
+      buf += l0;
+      ctx->zstream.avail_out -= l0;
+      ctx->zstream.next_out += l0;
+      rlen += l0;
     }
-    ctx->zout += rlen;
-    return rlen;
+    if (len > 0) {
+      if (ctx->out_buf) {
+        int rc = tr_filter_out_buf_out(ctx);
+        if (rc != NGX_OK)
+          return rc;
+      }
+
+      tr_filter_get_buf(ctx);
+    }
+  }
+  ctx->zout += rlen;
+  return rlen;
 }
 
 static ngx_int_t

@@ -4,6 +4,15 @@
 #ifndef SDCH_MODULE_H_
 #define SDCH_MODULE_H_
 
+#include <sys/types.h>
+
+extern "C" {
+#include <ngx_config.h>
+#include <nginx.h>
+#include <ngx_core.h>
+#include <ngx_http.h>
+}
+
 #include "blobstore.h"
 #include "teefd.h"
 #include "vcd-h1.h"
@@ -28,6 +37,8 @@ typedef struct {
     struct sdch_dict    *dict;
 } sdch_dict_conf;
 
+//  It will be needed by OutputHandler
+ssize_t tr_filter_write(RequestContext* ctx, const char *buf, size_t len);
 
 }  // namespace sdch
 
