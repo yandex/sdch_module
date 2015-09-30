@@ -54,21 +54,6 @@ static char *tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd,
 
 static void get_dict_ids(const void *buf, size_t buflen,
 	unsigned char user_dictid[9], unsigned char server_dictid[9]);
-#if 0
-static char *ngx_http_gzip_window(ngx_conf_t *cf, void *post, void *data);
-static char *ngx_http_gzip_hash(ngx_conf_t *cf, void *post, void *data);
-#endif
-
-
-#if 0
-static ngx_conf_num_bounds_t  ngx_http_gzip_comp_level_bounds = {
-    ngx_conf_check_num_bounds, 1, 9
-};
-
-static ngx_conf_post_handler_pt  ngx_http_gzip_window_p = ngx_http_gzip_window;
-static ngx_conf_post_handler_pt  ngx_http_gzip_hash_p = ngx_http_gzip_hash;
-#endif
-
 
 static ngx_conf_bitmask_t  ngx_http_sdch_proxied_mask[] = {
     { ngx_string("off"), NGX_HTTP_GZIP_PROXIED_OFF },
@@ -118,7 +103,7 @@ static ngx_command_t  tr_filter_commands[] = {
       nullptr },
 
     { ngx_string("sdch_dict"),
-   	  NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE123,
 	  tr_set_sdch_dict,
@@ -197,65 +182,19 @@ static ngx_command_t  tr_filter_commands[] = {
       offsetof(MainConfig, stor_size),
       &tr_stor_size_bounds },
 
-#if 0
-    { ngx_string("gzip_comp_level"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, level),
-      &ngx_http_gzip_comp_level_bounds },
-
-#if 0
-    { ngx_string("gzip_window"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_size_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, wbits),
-      &ngx_http_gzip_window_p },
-#endif
-
-    { ngx_string("gzip_hash"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_size_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, memlevel),
-      &ngx_http_gzip_hash_p },
-
-    { ngx_string("postpone_gzipping"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_size_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, postpone_gzipping),
-      nullptr },
-
-    { ngx_string("gzip_no_buffer"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
-      ngx_conf_set_flag_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, no_buffer),
-      nullptr },
-
-    { ngx_string("gzip_min_length"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_size_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_gzip_conf_t, min_length),
-      nullptr },
-#endif
-
       ngx_null_command
 };
 
 
 static ngx_http_module_t  sdch_module_ctx = {
-    tr_add_variables,                                  /* preconfiguration */
+    tr_add_variables,           /* preconfiguration */
     tr_filter_init,             /* postconfiguration */
 
-    tr_create_main_conf,                   /* create main configuration */
-    tr_init_main_conf,                     /* init main configuration */
+    tr_create_main_conf,        /* create main configuration */
+    tr_init_main_conf,          /* init main configuration */
 
-    nullptr,                                  /* create server configuration */
-    nullptr,                                  /* merge server configuration */
+    nullptr,                    /* create server configuration */
+    nullptr,                    /* merge server configuration */
 
     tr_create_conf,             /* create location configuration */
     tr_merge_conf               /* merge location configuration */
@@ -494,7 +433,7 @@ x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
     h->hash = 1;
     ngx_str_set(&h->key, "X-Sdch-Encode");
     ngx_str_set(&h->value, "0");
-    
+
     return NGX_OK;
 }
 
@@ -899,14 +838,6 @@ failed:
 
     ctx->done = 1;
 
-#if 0
-    if (ctx->preallocated) {
-        deflateEnd(&ctx->zstream);
-
-        ngx_pfree(r->pool, ctx->preallocated);
-    }
-#endif
-
     ngx_http_gzip_filter_free_copy_buf(r, ctx);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1139,7 +1070,7 @@ tr_filter_out_buf_out(RequestContext *ctx)
     cl->next = nullptr;
     *ctx->last_out = cl;
     ctx->last_out = &cl->next;
-    
+
     ctx->out_buf = nullptr;
     ctx->zstream.avail_out = 0;
 
@@ -1524,29 +1455,16 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
         return const_cast<char*>("ngx_http_compile_complex_value sdch_disablecv failed");
     }
 
-#if 0
-    ngx_conf_merge_value(conf->no_buffer, prev->no_buffer, 0);
-
-
-    ngx_conf_merge_size_value(conf->postpone_gzipping, prev->postpone_gzipping,
-                              0);
-    ngx_conf_merge_value(conf->level, prev->level, 1);
-    ngx_conf_merge_size_value(conf->wbits, prev->wbits, MAX_WBITS);
-    ngx_conf_merge_size_value(conf->memlevel, prev->memlevel,
-                              MAX_MEM_LEVEL - 1);
-    ngx_conf_merge_value(conf->min_length, prev->min_length, 20);
-#endif
-
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->types,
                              &prev->types_keys, &prev->types,
                              ngx_http_html_default_types)
-        != NGX_OK)
-    {
+        != NGX_OK) {
         return const_cast<char*>("Can't merge config");
     }
 
+    // FIXME Should we still merge it?
     if (!conf->enable)
-    	return NGX_CONF_OK;
+      return NGX_CONF_OK;
 
     if (conf->dict_conf_storage == nullptr) {
         conf->dict_conf_storage = prev->dict_conf_storage;
