@@ -23,7 +23,7 @@ class Handler;
 struct RequestContext {
  public:
   // Create RequestContext.
-  RequestContext(ngx_http_request_t* r);
+  explicit RequestContext(ngx_http_request_t* r);
 
   // Fetch RequestContext associated with nginx request
   static RequestContext* get(ngx_http_request_t* r);
