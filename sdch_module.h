@@ -13,7 +13,6 @@ extern "C" {
 #include <ngx_http.h>
 }
 
-#include "blobstore.h"
 #include "vcd-h1.h"
 #include "zlib.h"
 

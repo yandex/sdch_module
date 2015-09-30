@@ -20,7 +20,6 @@
 
 namespace sdch {
 
-static closefunc tr_filter_close;
 //static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
 static ngx_int_t tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in);
 static ngx_int_t tr_filter_out_buf_out(RequestContext *ctx);
@@ -833,7 +832,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     /* unreachable */
-
 failed:
 
     ctx->done = 1;
@@ -1075,11 +1073,6 @@ tr_filter_out_buf_out(RequestContext *ctx)
     ctx->zstream.avail_out = 0;
 
     return NGX_OK;
-}
-
-void
-tr_filter_close(void *c)
-{
 }
 
 ssize_t

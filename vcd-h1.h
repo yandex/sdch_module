@@ -3,7 +3,6 @@
 
 #include <memory>
 
-#include "pzlib.h"
 #include "storage.h"
 
 struct hashed_dictionary_s;

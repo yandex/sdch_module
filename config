@@ -25,7 +25,6 @@ HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES sdch_module"
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/blob.cc \
-                $ngx_addon_dir/blobstore.cc \
                 $ngx_addon_dir/sdch_config.cc \
                 $ngx_addon_dir/sdch_autoauto_handler.cc \
                 $ngx_addon_dir/sdch_dump_handler.cc \
@@ -40,8 +39,6 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
-                $ngx_addon_dir/blobstore.h \
-                $ngx_addon_dir/pzlib.h \
                 $ngx_addon_dir/sdch_config.h \
                 $ngx_addon_dir/sdch_autoauto_handler.h \
                 $ngx_addon_dir/sdch_dump_handler.h \
