@@ -12,6 +12,10 @@ AutoautoHandler::AutoautoHandler(RequestContext* ctx, Handler* next)
 
 AutoautoHandler::~AutoautoHandler() {}
 
+bool AutoautoHandler::init(RequestContext* ctx) {
+  return true;
+}
+
 ssize_t AutoautoHandler::on_data(const char* buf, size_t len) {
   ssize_t res = 0;
   // TODO Implement it

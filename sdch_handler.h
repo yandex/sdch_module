@@ -8,6 +8,8 @@
 
 namespace sdch {
 
+class RequestContext;
+
 // SDCH Handler chain.
 class Handler {
  public:
@@ -15,6 +17,10 @@ class Handler {
   // We don't own this pointer. It's owned by nginx pool.
   explicit Handler(Handler* next);
   virtual ~Handler();
+
+  // Called after constructor to avoid exceptions
+  // Should return true if inited successfully
+  virtual bool init(RequestContext* ctx) = 0;
 
   // Handle chunk of data. For example encode it with VCDIFF.
   // Almost every Handler should call next_->on_data() to keep chain.

@@ -16,9 +16,12 @@ class DumpHandler : public Handler {
   DumpHandler(RequestContext* ctx, Handler* next);
   ~DumpHandler();
 
+  bool init(RequestContext* ctx) override;
+
   ssize_t on_data(const char* buf, size_t len) override;
 
   void on_finish() override;
+
  private:
 };
 

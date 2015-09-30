@@ -929,22 +929,22 @@ tr_filter_deflate_start(RequestContext *ctx)
 
     // Last will be OutputHandler.
     ctx->handler = pool_alloc<OutputHandler>(r, ctx, nullptr);
-    if (ctx->handler == nullptr)
+    if (ctx->handler == nullptr || !ctx->handler->init(ctx))
       return NGX_ERROR;
 
     if (ctx->dict != nullptr) {
       ctx->handler = pool_alloc<EncodingHandler>(r, ctx, ctx->handler);
-      if (ctx->handler == nullptr)
+      if (ctx->handler == nullptr || !ctx->handler->init(ctx))
         return NGX_ERROR;
     }
     if (conf->sdch_dumpdir.len > 0) {
       ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
-      if (ctx->handler == nullptr)
+      if (ctx->handler == nullptr || !ctx->handler->init(ctx))
         return NGX_ERROR;
     }
     if (ctx->store) {
       ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
-      if (ctx->handler == nullptr)
+      if (ctx->handler == nullptr || !ctx->handler->init(ctx))
         return NGX_ERROR;
     }
 

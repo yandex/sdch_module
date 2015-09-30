@@ -9,8 +9,11 @@ namespace sdch {
 
 DumpHandler::DumpHandler(RequestContext* ctx, Handler* next) : Handler(next) {
   assert(next_);
+}
 
+DumpHandler::~DumpHandler() {}
 
+bool DumpHandler::init(RequestContext* ctx) {
   // char *fn = static_cast<char*>(ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30));
   // sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
   // ctx->coo = make_teefd(fn, ctx->coo);
@@ -18,9 +21,8 @@ DumpHandler::DumpHandler(RequestContext* ctx, Handler* next) : Handler(next) {
   // ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
   // return NGX_ERROR;
   // }
+  return true;
 }
-
-DumpHandler::~DumpHandler() {}
 
 ssize_t DumpHandler::on_data(const char* buf, size_t len) {
   ssize_t res = 0;

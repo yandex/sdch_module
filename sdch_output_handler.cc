@@ -12,6 +12,8 @@ OutputHandler::OutputHandler(RequestContext* ctx, Handler* next)
 
 OutputHandler::~OutputHandler() {}
 
+bool OutputHandler::init(RequestContext* ctx) { return true; }
+
 ssize_t OutputHandler::on_data(const char* buf, size_t len) {
   ssize_t res = tr_filter_write(ctx_, buf, len);
   // TODO Implement it

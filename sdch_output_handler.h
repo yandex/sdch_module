@@ -16,6 +16,8 @@ class OutputHandler : public Handler {
   OutputHandler(RequestContext* ctx, Handler* next);
   ~OutputHandler();
 
+  bool init(RequestContext* ctx) override;
+
   ssize_t on_data(const char* buf, size_t len) override;
 
  private:

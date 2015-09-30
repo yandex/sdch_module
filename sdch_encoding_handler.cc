@@ -28,6 +28,10 @@ EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
 
 EncodingHandler::~EncodingHandler() {}
 
+bool EncodingHandler::init(RequestContext* ctx) {
+  return true;
+}
+
 ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
   // It will call ".append" which will pass it to the next_
   auto oldsize = cursize_;
