@@ -17,7 +17,6 @@
 #include <google/vcencoder.h>
 
 #include "vcd-h1.h"
-#include "ngoustr.h"
 
 class fdholder
 {
@@ -76,33 +75,3 @@ int get_hashed_dict(const char *dictbegin, const char *dictend, int quasi, hashe
 	}
 }
 
-static writerfunc vcdwriter;
-static closefunc vcdclose;
-
-vcd_encoder_s::vcd_encoder_s(void *cookie) :
-		outstr(cookie)
-{
-        ph.wf = vcdwriter;
-        ph.cf = vcdclose;
-}
-
-pssize_type vcdwriter(void *cookie, const void *buf, psize_type len)
-{
-	vcd_encoder_s *e = (vcd_encoder_s*)cookie;
-	e->enc->EncodeChunkToInterface((const char *)buf, len, &e->outstr);
-	return len;
-}
-
-void vcdclose(void *cookie) {
-	vcd_encoder_s *e = (vcd_encoder_s*)cookie;
-	e->enc->FinishEncodingToInterface(&e->outstr);
-	delete e;
-}
-
-void get_vcd_encoder(hashed_dictionary_p d, void *cookie, vcd_encoder_p *e) {
-	vcd_encoder_s *en = new vcd_encoder_s(cookie);
-	en->enc.reset(new open_vcdiff::VCDiffStreamingEncoder(d->hashed_dict.get(),
-        open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM, 0));
-	en->enc.get()->StartEncodingToInterface(&en->outstr);
-	*e = en;
-}

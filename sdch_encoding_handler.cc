@@ -11,16 +11,6 @@
 
 namespace sdch {
 
-class NgOuStr : public open_vcdiff::OutputStringInterface {
- public:
-  NgOuStr(Handler* h) : h_(h) {}
-
- private:
-  size_t cursize_;
-  Handler* h_;
-};
-
-
 EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
     : Handler(next), ctx_(ctx), cursize_(0) {
   assert(next_);

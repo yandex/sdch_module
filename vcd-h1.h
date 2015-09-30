@@ -20,18 +20,10 @@ typedef struct vcd_encoder_s *vcd_encoder_p;
 
 namespace open_vcdiff {
 class HashedDictionary;
-class VCDiffStreamingEncoder;
 }
 
 struct hashed_dictionary_s {
 	std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict;
-};
-struct vcd_encoder_s {
-	struct pz ph;
-	std::unique_ptr<open_vcdiff::VCDiffStreamingEncoder> enc;
-	NgOuStr outstr;
-
-	vcd_encoder_s(void *c);
 };
 
 extern "C" {
@@ -40,7 +32,6 @@ extern "C" {
 const char *read_file(const char *fn, blob_type cn);
 int get_hashed_dict(const char *dictbegin, const char *dictend, int quasi, hashed_dictionary_p *d);
 
-void get_vcd_encoder(hashed_dictionary_p d, void *cookie, vcd_encoder_p *e);
 
 #ifdef __cplusplus
 }
