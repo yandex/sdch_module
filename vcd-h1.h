@@ -4,10 +4,6 @@
 #include "pzlib.h"
 #include "storage.h"
 
-#ifdef __cplusplus
-#include "ngoustr.h"
-#endif
-
 struct hashed_dictionary_s;
 struct vcd_encoder_s;
 
