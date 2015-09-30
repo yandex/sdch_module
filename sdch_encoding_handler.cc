@@ -15,20 +15,25 @@ EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
     : Handler(next), ctx_(ctx), cursize_(0) {
   assert(next_);
 
-  // Output Dictionary server_id first
-  next_->on_data(reinterpret_cast<const char*>(ctx_->dict->server_dictid), 9);
-
-  enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
-      ctx_->request,
-      ctx_->dict->hashed_dict->hashed_dict.get(),
-      open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
-      false);
-	enc_->StartEncodingToInterface(this);
 }
 
 EncodingHandler::~EncodingHandler() {}
 
 bool EncodingHandler::init(RequestContext* ctx) {
+  enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
+      ctx_->request,
+      ctx_->dict->hashed_dict->hashed_dict.get(),
+      open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
+      false);
+  if (enc_ == nullptr)
+    return false;
+
+	if (!enc_->StartEncodingToInterface(this))
+    return false;
+
+  // Output Dictionary server_id first
+  next_->on_data(reinterpret_cast<const char*>(ctx_->dict->server_dictid), 9);
+
   return true;
 }
 
