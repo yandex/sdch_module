@@ -5,6 +5,7 @@
 
 namespace sdch {
 
+Handler::Handler(Handler* next) : next_(next) {}
 Handler::~Handler() {}
 
 }  // namespace sdch

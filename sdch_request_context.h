@@ -34,6 +34,8 @@ struct RequestContext {
   blob_type            blob;
 
   ngx_http_request_t* request;
+  Handler             *handler;
+
 
   ngx_chain_t* in;
   ngx_chain_t* free;

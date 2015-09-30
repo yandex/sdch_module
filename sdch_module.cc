@@ -18,6 +18,7 @@ extern "C" {
 
 #include "sdch_config.h"
 #include "sdch_main_config.h"
+#include "sdch_output_handler.h"
 #include "sdch_pool_alloc.h"
 #include "sdch_request_context.h"
 
@@ -999,15 +1000,15 @@ static ngx_int_t
 tr_filter_deflate_start(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
-    //int                    rc;
-    Config  *conf;
-
-    conf = Config::get(r);
+    Config             *conf = Config::get(r);
 
     ctx->started = 1;
 
 //INIT
     ctx->last_out = &ctx->out;
+
+    // Last will be OutputHandler
+    ctx->handler = pool_alloc<OutputHandler>(r, ctx, nullptr);
     
     ctx->coo = ctx;
     if (ctx->dict != nullptr) {

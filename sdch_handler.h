@@ -4,7 +4,7 @@
 #ifndef SDCH_HANDLER_H_
 #define SDCH_HANDLER_H_
 
-#include <cstring>  // For size_t
+#include <sys/types.h>  // For size_t and ssize_t
 
 namespace sdch {
 
@@ -13,12 +13,12 @@ class Handler {
  public:
   // Construct Handler with pointer to the next Handler.
   // We don't own this pointer. It's owned by nginx pool.
-  explicit Handler(Handler* next) : next_(next) {}
+  explicit Handler(Handler* next);
   virtual ~Handler();
 
   // Handle chunk of data. For example encode it with VCDIFF.
   // Almost every Handler should call next_->on_data() to keep chain.
-  virtual void on_data(const char* buf, size_t len) = 0;
+  virtual ssize_t on_data(const char* buf, size_t len) = 0;
 
   // Called when request processing finished.
   virtual void on_finish() = 0;
