@@ -8,6 +8,7 @@
 namespace sdch {
 
 RequestContext::RequestContext(ngx_http_request_t* r) : request(r) {
+  ngx_http_set_ctx(r, this, sdch_module);
 }
 
 RequestContext* RequestContext::get(ngx_http_request_t* r) {

@@ -693,12 +693,10 @@ tr_header_filter(ngx_http_request_t *r)
         }
     }
 
-    ctx = static_cast<RequestContext*>(ngx_pcalloc(r->pool, sizeof(RequestContext)));
+    ctx = pool_alloc<RequestContext>(r, r);
     if (ctx == nullptr) {
         return NGX_ERROR;
     }
-
-    ngx_http_set_ctx(r, ctx, sdch_module);
 
     ctx->request = r;
     ctx->buffering = (conf->postpone_gzipping != 0);
