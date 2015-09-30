@@ -23,6 +23,7 @@ class DumpHandler : public Handler {
   void on_finish() override;
 
  private:
+  int fd_;
 };
 
 

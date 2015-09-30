@@ -4,6 +4,8 @@
 #include "sdch_dump_handler.h"
 
 #include <cassert>
+#include "sdch_config.h"
+#include "sdch_request_context.h"
 
 namespace sdch {
 
@@ -14,19 +16,41 @@ DumpHandler::DumpHandler(RequestContext* ctx, Handler* next) : Handler(next) {
 DumpHandler::~DumpHandler() {}
 
 bool DumpHandler::init(RequestContext* ctx) {
-  // char *fn = static_cast<char*>(ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30));
-  // sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
-  // ctx->coo = make_teefd(fn, ctx->coo);
-  // if (ctx->coo == nullptr) {
-  // ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
-  // return NGX_ERROR;
-  // }
+  auto* conf = Config::get(ctx->request);
+  char fn[conf->sdch_dumpdir.len + 30];
+
+  sprintf(fn,
+          "%s/%08lx-%08lx-%08lx",
+          conf->sdch_dumpdir.data,
+          random(),
+          random(),
+          random());
+
+  fd_ = open(fn, O_WRONLY | O_CREAT | O_EXCL, 0666);
+  if (fd_ == -1) {
+    ngx_log_error(NGX_LOG_ERR,
+                  ctx->request->connection->log,
+                  0,
+                  "dump open error %s",
+                  fn);
+    return false;
+  }
+
+  ngx_log_error(NGX_LOG_DEBUG,
+                ctx->request->connection->log,
+                0,
+                "dump open file %s",
+                fn);
   return true;
 }
 
 ssize_t DumpHandler::on_data(const char* buf, size_t len) {
   ssize_t res = 0;
-  // TODO Implement it
+
+  if ((res = write(fd_, buf, len)) != static_cast<ssize_t>(len)) {
+    // XXX
+  }
+
   if (next_)
     res = next_->on_data(buf, len);
   return res;
@@ -34,6 +58,7 @@ ssize_t DumpHandler::on_data(const char* buf, size_t len) {
 
 void DumpHandler::on_finish() {
   // TODO Implement it
+  close(fd_);
   next_->on_finish();
 }
 
