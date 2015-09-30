@@ -5,26 +5,67 @@
 
 #include <cassert>
 
+
+#include "sdch_pool_alloc.h"
+#include "sdch_request_context.h"
+
 namespace sdch {
 
+class NgOuStr : public open_vcdiff::OutputStringInterface {
+ public:
+  NgOuStr(Handler* h) : h_(h) {}
+
+ private:
+  size_t cursize_;
+  Handler* h_;
+};
+
+
 EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
-    : Handler(next) {
+    : Handler(next), ctx_(ctx), cursize_(0) {
   assert(next_);
 
-  // tr_filter_write(ctx, ctx->dict->server_dictid, 9);
-  // get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
+  next_->on_data(reinterpret_cast<const char*>(ctx_->dict->server_dictid), 9);
+  // get_vcd_encoder(ctx_->dict->hashed_dict, ctx_, &enc_);
+
+  enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
+      ctx_->request,
+      ctx_->dict->hashed_dict->hashed_dict.get(),
+      open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
+      false);
+	enc_->StartEncodingToInterface(this);
 }
 
 EncodingHandler::~EncodingHandler() {}
 
 ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
-  // TODO Implement it
-  return next_->on_data(buf, len);
+  // It will call ".append" which will pass it to the next_
+  auto oldsize = cursize_;
+  enc_->EncodeChunkToInterface(buf, len, this);
+  return cursize_ - oldsize;
 }
 
 void EncodingHandler::on_finish() {
-  // TODO Implement it
+  enc_->FinishEncodingToInterface(this);
   return next_->on_finish();
 }
+
+
+open_vcdiff::OutputStringInterface& EncodingHandler::append(const char* s,
+                                                            size_t n) {
+  next_->on_data(s, n);
+  cursize_ += n;
+  return *this;
+}
+
+void EncodingHandler::clear() { cursize_ = 0; }
+
+void EncodingHandler::push_back(char c) { append(&c, 1); }
+
+void EncodingHandler::ReserveAdditionalBytes(size_t res_arg) {
+  // NOOP
+}
+
+size_t EncodingHandler::size() const { return cursize_; }
 
 }  // namespace sdch
