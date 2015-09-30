@@ -7,6 +7,7 @@
 extern "C" {
 #include <ngx_core.h>
 #include <ngx_http.h>
+#include <ngx_config.h>
 }
 
 namespace sdch {
@@ -18,7 +19,7 @@ class Config {
 
   static Config* get(ngx_http_request_t* r);
 
-  ngx_flag_t enable;
+  ngx_flag_t enable     = NGX_CONF_UNSET;
   ngx_flag_t no_buffer;
 
   ngx_hash_t types;
@@ -45,13 +46,13 @@ class Config {
   ngx_str_t sdch_url;
   ngx_http_complex_value_t sdch_urlcv;
 
-  ngx_uint_t sdch_maxnoadv;
+  ngx_uint_t sdch_maxnoadv    = NGX_CONF_UNSET;
 
   ngx_uint_t sdch_proxied;
 
   ngx_str_t sdch_dumpdir;
 
-  ngx_flag_t enable_quasi;
+  ngx_flag_t enable_quasi     = NGX_CONF_UNSET;
 };
 
 

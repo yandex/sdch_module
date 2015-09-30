@@ -17,6 +17,7 @@ extern "C" {
 #include "sdch_module.h"
 
 #include "sdch_config.h"
+#include "sdch_pool_alloc.h"
 #include "sdch_request_context.h"
 
 namespace sdch {
@@ -1445,36 +1446,7 @@ tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 static void *
 tr_create_conf(ngx_conf_t *cf)
 {
-    Config *conf = static_cast<Config*>(ngx_pcalloc(cf->pool, sizeof(Config)));
-    if (conf == nullptr) {
-        return nullptr;
-    }
-
-    /*
-     * set by ngx_pcalloc():
-     *
-     *     conf->bufs.num = 0;
-     *     conf->types = { nullptr };
-     *     conf->types_keys = nullptr;
-     */
-
-    conf->enable = NGX_CONF_UNSET;
-
-    //conf->dict_data = nullptr;
-#if 0
-    conf->no_buffer = NGX_CONF_UNSET;
-
-    conf->postpone_gzipping = NGX_CONF_UNSET_SIZE;
-    conf->level = NGX_CONF_UNSET;
-    conf->wbits = NGX_CONF_UNSET_SIZE;
-    conf->memlevel = NGX_CONF_UNSET_SIZE;
-    conf->min_length = NGX_CONF_UNSET;
-#endif
-
-    conf->enable_quasi = NGX_CONF_UNSET;
-    conf->sdch_maxnoadv = NGX_CONF_UNSET;
-
-    return conf;
+  return pool_alloc<Config>(cf);
 }
 
 static const char *

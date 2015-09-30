@@ -3,10 +3,6 @@
 
 #include "sdch_config.h"
 
-extern "C" {
-#include <ngx_config.h>
-}
-
 #include "sdch_module.h"
 
 namespace sdch {
