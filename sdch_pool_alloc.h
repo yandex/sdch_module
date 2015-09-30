@@ -4,7 +4,7 @@
 #ifndef POOL_ALLOC_H_
 #define POOL_ALLOC_H_
 
-namespace ngx {
+namespace sdch {
 
 template<typename Type>
 void pool_cleanup(void* data) {
