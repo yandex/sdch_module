@@ -16,6 +16,7 @@ extern "C" {
 
 #include "sdch_module.h"
 
+#include "sdch_autoauto_handler.h"
 #include "sdch_config.h"
 #include "sdch_dump_handler.h"
 #include "sdch_encoding_handler.h"
@@ -1009,29 +1010,28 @@ tr_filter_deflate_start(RequestContext *ctx)
 //INIT
     ctx->last_out = &ctx->out;
 
-    // Last will be OutputHandler
+    // Last will be OutputHandler.
     ctx->handler = pool_alloc<OutputHandler>(r, ctx, nullptr);
-    
+    if (ctx->handler == nullptr)
+      return NGX_ERROR;
+
     ctx->coo = ctx;
     if (ctx->dict != nullptr) {
-        tr_filter_write(ctx, ctx->dict->server_dictid, 9);
-        get_vcd_encoder(ctx->dict->hashed_dict, ctx, &ctx->enc);
-        ctx->coo = ctx->enc;
+      ctx->handler = pool_alloc<EncodingHandler>(r, ctx, ctx->handler);
+      if (ctx->handler == nullptr)
+        return NGX_ERROR;
+      ctx->coo = ctx->enc;
     }
     if (conf->sdch_dumpdir.len > 0) {
-        char *fn = static_cast<char*>(ngx_palloc(r->pool, conf->sdch_dumpdir.len + 30));
-        sprintf(fn, "%s/%08lx-%08lx-%08lx", conf->sdch_dumpdir.data, random(), random(), random());
-        ctx->coo = make_teefd(fn, ctx->coo);
-        if (ctx->coo == nullptr) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "dump open error %s", fn);
-            return NGX_ERROR;
-        }
+      ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
+      if (ctx->handler == nullptr)
+        return NGX_ERROR;
     }
     if (ctx->store) {
-        ctx->coo = make_blobstore(ctx->coo, &ctx->blob);
+      ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
+      if (ctx->handler == nullptr)
+        return NGX_ERROR;
     }
-
-//    r->connection->buffered |= NGX_HTTP_GZIP_BUFFERED;
 
     return NGX_OK;
 }
