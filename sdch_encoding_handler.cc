@@ -15,8 +15,8 @@ EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
     : Handler(next), ctx_(ctx), cursize_(0) {
   assert(next_);
 
+  // Output Dictionary server_id first
   next_->on_data(reinterpret_cast<const char*>(ctx_->dict->server_dictid), 9);
-  // get_vcd_encoder(ctx_->dict->hashed_dict, ctx_, &enc_);
 
   enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
       ctx_->request,

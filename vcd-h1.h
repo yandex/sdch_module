@@ -5,10 +5,8 @@
 #include "storage.h"
 
 struct hashed_dictionary_s;
-struct vcd_encoder_s;
 
 typedef struct hashed_dictionary_s* hashed_dictionary_p;
-typedef struct vcd_encoder_s *vcd_encoder_p;
 
 #ifdef __cplusplus
 
