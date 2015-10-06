@@ -92,6 +92,8 @@ location /sdch {
 
 --- user_files
 >>> sdch/dict1.dict
+Host: example.com
+
 THE DICTIONARY
 
 --- request
@@ -116,6 +118,8 @@ location /sdch {
 
 --- user_files
 >>> sdch/dict1.dict
+Host: example.com
+
 THE DICTIONARY
 
 --- request

@@ -36,13 +36,15 @@ location /sdch {
 }
 --- user_files
 >>> sdch/dict1.dict
+Host: example.com
+
 THE DICTIONARY
 
 --- request
 GET /sdch HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: EDjWxKYz
+Avail-Dictionary: WSsxLmBh
 
 --- grep_error_log chop
 dump open file
