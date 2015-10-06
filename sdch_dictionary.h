@@ -16,12 +16,16 @@ namespace sdch {
 class Dictionary {
  public:
   Dictionary();
+  ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
   bool init(const char* begin, const char* end, bool is_quasi);
 
  private:
-	std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
+
+  // It's not really good. We should integrate with nginx's pool allocations.
+  // But this will do for now.
+  std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
 };
 
 
