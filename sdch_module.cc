@@ -51,9 +51,6 @@ static char *tr_init_main_conf(ngx_conf_t *cf, void *conf);
 static char *tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
-static void get_dict_ids(const void *buf, size_t buflen,
-	unsigned char user_dictid[9], unsigned char server_dictid[9]);
-
 static ngx_conf_bitmask_t  ngx_http_sdch_proxied_mask[] = {
     { ngx_string("off"), NGX_HTTP_GZIP_PROXIED_OFF },
     { ngx_string("expired"), NGX_HTTP_GZIP_PROXIED_EXPIRED },
@@ -1527,45 +1524,6 @@ tr_filter_init(ngx_conf_t *cf)
 
     ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "http sdch filter init");
     return NGX_OK;
-}
-
-#if nginx_version < 1006000
-static void
-ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
-{
-	ngx_encode_base64(dst, src);
-	unsigned i;
-
-	for (i = 0; i < dst->len; i++) {
-		if (dst->data[i] == '+')
-			dst->data[i] = '-';
-		if (dst->data[i] == '/')
-			dst->data[i] = '_';
-	}
-}
-#endif
-
-#include <openssl/sha.h>
-
-static void
-get_dict_ids(const void *buf, size_t buflen, unsigned char user_dictid[9], unsigned char server_dictid[9])
-{
-	SHA256_CTX ctx;
-	SHA256_Init(&ctx);
-	SHA256_Update(&ctx, buf, buflen);
-	unsigned char sha[32];
-	SHA256_Final(sha, &ctx);
-
-	ngx_str_t src = {6, sha};
-	ngx_str_t dst = {8, user_dictid};
-	ngx_encode_base64url(&dst, &src);
-
-	src.data = sha+6;
-	dst.len = 8; dst.data = server_dictid;
-	ngx_encode_base64url(&dst, &src);
-
-	user_dictid[8] = 0;
-	server_dictid[8] = 0;
 }
 
 }  // namespace sdch
