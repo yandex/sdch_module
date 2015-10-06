@@ -22,7 +22,7 @@ EncodingHandler::~EncodingHandler() {}
 bool EncodingHandler::init(RequestContext* ctx) {
   enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
       ctx_->request,
-      ctx_->dict->hashed_dict->hashed_dict.get(),
+      ctx_->dict->hashed_dict(),
       open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
       false);
   if (enc_ == nullptr)
@@ -32,7 +32,7 @@ bool EncodingHandler::init(RequestContext* ctx) {
     return false;
 
   // Output Dictionary server_id first
-  next_->on_data(reinterpret_cast<const char*>(ctx_->dict->server_dictid), 9);
+  next_->on_data(ctx_->dict->server_id().c_str(), 9);
 
   return true;
 }

@@ -14,19 +14,18 @@
 #include <string>
 #include <cstring>
 
-#include <google/vcencoder.h>
-
 #include "vcd-h1.h"
 
-class fdholder
-{
-private:
-    int fd;
-    fdholder &operator =(const fdholder&);
-public:
-    operator int() {return fd;}
-    explicit fdholder(int d): fd(d) {}
-    ~fdholder() {close(fd);}
+class fdholder {
+ public:
+  explicit fdholder(int d) : fd(d) {}
+  ~fdholder() { close(fd); }
+
+  operator int() { return fd; }
+
+ private:
+  int fd;
+  fdholder& operator=(const fdholder&);
 };
 
 const char *read_file(const char *fn, blob_type cn)
@@ -44,34 +43,5 @@ const char *read_file(const char *fn, blob_type cn)
     return 0;
 }
 
-const char *get_dict_payload(const char *dictbegin, const char *dictend)
-{
-	const char *nl = dictbegin;
-	while (nl < dictend) {
-		if (*nl == '\n')
-			return nl+1;
-		nl = (const char*)memchr(nl, '\n', dictend-nl);
-		if (nl == dictend)
-			return nl;
-		++nl;
-	}
-	return dictend;
-}
 
-int get_hashed_dict(const char *dictbegin, const char *dictend, int quasi, hashed_dictionary_p *d)
-{
-	try {
-		hashed_dictionary_s *h = new hashed_dictionary_s;
-		const char *dict_payload = quasi ? dictbegin : get_dict_payload(dictbegin, dictend);
-		h->hashed_dict.reset(new open_vcdiff::HashedDictionary(dict_payload, dictend-dict_payload));
-		if (!h->hashed_dict->Init()) {
-      delete h;
-      return 1;
-    }
-		*d = h;
-		return 0;
-	} catch (...) {
-		return 1;
-	}
-}
 

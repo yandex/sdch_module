@@ -20,19 +20,14 @@ extern ngx_module_t sdch_module;
 
 namespace sdch {
 
+class Dictionary;
 class RequestContext;
-
-struct sdch_dict {
-    blob_type dict;
-    hashed_dictionary_p  hashed_dict;
-    unsigned char user_dictid[9], server_dictid[9];
-};
 
 typedef struct {
     ngx_str_t            groupname;
     ngx_uint_t           priority;
     int                  best;
-    struct sdch_dict    *dict;
+    Dictionary          *dict;
 } sdch_dict_conf;
 
 //  It will be needed by OutputHandler

@@ -5,15 +5,15 @@
 #define SDCH_REQUEST_CONTEXT_H_
 
 extern "C" {
-
 #include <ngx_config.h>
 #include <nginx.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-
 }
 
-#include "sdch_module.h"  // TODO Remove. We need proper sdch::Dictionary
+#include "sdch_module.h"
+
+#include "sdch_dictionary.h"
 
 namespace sdch {
 
@@ -48,8 +48,8 @@ struct RequestContext {
   ngx_buf_t* out_buf;
   ngx_int_t bufs;
 
-  struct sdch_dict* dict;
-  struct sdch_dict fdict;
+  struct Dictionary* dict;
+  struct Dictionary fdict;
 
   unsigned started : 1;
   unsigned flush : 4;

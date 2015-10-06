@@ -369,7 +369,7 @@ find_dict(u_char *h, Config *conf)
 
     dict_conf = static_cast<sdch_dict_conf*>(conf->dict_conf_storage->elts);
     for (i = 0; i < conf->dict_conf_storage->nelts; i++) {
-        if (ngx_strncmp(h, dict_conf[i].dict->user_dictid, 8) == 0)
+        if (ngx_strncmp(h, dict_conf[i].dict->client_id().c_str(), 8) == 0)
             return &dict_conf[i];
     }
     return nullptr;
@@ -641,12 +641,14 @@ tr_header_filter(ngx_http_request_t *r)
     if (bestdict != nullptr) {
         ctx->dict = bestdict->dict;
     } else if (quasidict_blob != nullptr) {
+#if 0  // FIXME
         ctx->dict = &ctx->fdict;
         ctx->fdict.dict = quasidict_blob;
         size_t sz = blob_data_size(quasidict_blob)-8;
         memcpy(ctx->fdict.server_dictid, blob_data_begin(quasidict_blob)+sz, 8);
         get_hashed_dict(blob_data_begin(quasidict_blob), blob_data_begin(quasidict_blob)+sz,
             1, &ctx->fdict.hashed_dict);
+#endif
     } else {
         ctx->dict = nullptr;
     }
@@ -1350,24 +1352,29 @@ tr_create_conf(ngx_conf_t *cf)
   return pool_alloc<Config>(cf);
 }
 
+// FIXME Remove
 static const char *
-init_dict_data(ngx_conf_t *cf, ngx_str_t *dict, struct sdch_dict *data)
+init_dict_data(ngx_conf_t *cf, ngx_str_t *file_name, Dictionary *dict)
 {
-    blob_create(&data->dict);
-    const char * p = read_file((const char*)dict->data, data->dict);
-    if (p != nullptr)
-        return p;
-    if (get_hashed_dict(blob_data_begin(data->dict),
-            blob_data_begin(data->dict)+blob_data_size(data->dict),
-            0, &data->hashed_dict)) {
-    	ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", dict->data);
-    	return "Get hashed dict failed";
-    }
-    get_dict_ids(blob_data_begin(data->dict), blob_data_size(data->dict),
-    		data->user_dictid, data->server_dictid);
-    ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "dictionary ids: user %s server %s",
-    		data->user_dictid, data->server_dictid);
-    return NGX_CONF_OK;
+  assert(dict != nullptr);
+  blob_s blob;
+  const char* p = read_file((const char*)file_name->data, &blob);
+  if (p != nullptr)
+    return p;
+  if (!dict->init(blob_data_begin(&blob),
+                  blob_data_begin(&blob) + blob_data_size(&blob),
+                  false)) {
+    ngx_conf_log_error(
+        NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", file_name->data);
+    return "Get hashed dict failed";
+  }
+  ngx_conf_log_error(NGX_LOG_NOTICE,
+                     cf,
+                     0,
+                     "dictionary ids: user %s server %s",
+                     dict->client_id().c_str(),
+                     dict->server_id().c_str());
+  return NGX_CONF_OK;
 }
 
 static char *
@@ -1379,7 +1386,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
         return const_cast<char*>("Wrong number of arguments");
     }
     if (conf->dict_storage == nullptr) {
-        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
+        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(Dictionary));
     }
     if (conf->dict_conf_storage == nullptr) {
         conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
@@ -1397,7 +1404,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
             return const_cast<char*>("Can't convert to number");
         }
     }
-    struct sdch_dict *data = static_cast<sdch_dict*>(ngx_array_push(conf->dict_storage));
+    Dictionary *data = static_cast<Dictionary*>(ngx_array_push(conf->dict_storage));
     const char *p = init_dict_data(cf, &value[1], data);
     if (p != nullptr) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
@@ -1479,7 +1486,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
     if (conf->dict_storage == nullptr) {
-        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(struct sdch_dict));
+        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(Dictionary));
     }
     if (conf->dict_conf_storage == nullptr) {
         conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
