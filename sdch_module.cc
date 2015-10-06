@@ -20,6 +20,23 @@
 
 namespace sdch {
 
+namespace {
+
+// Simple RAII holder for opened files.
+class fdholder {
+ public:
+  explicit fdholder(int d) : fd(d) {}
+  ~fdholder() { close(fd); }
+
+  operator int() { return fd; }
+
+ private:
+  int fd;
+  fdholder& operator=(const fdholder&);
+};
+
+}  // namespace
+
 //static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
 static ngx_int_t tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in);
 static ngx_int_t tr_filter_out_buf_out(RequestContext *ctx);
@@ -1347,6 +1364,22 @@ static void *
 tr_create_conf(ngx_conf_t *cf)
 {
   return pool_alloc<Config>(cf);
+}
+
+
+const char *read_file(const char *fn, blob_type cn)
+{
+    cn->data.clear();
+    fdholder fd(open(fn, O_RDONLY));
+    if (fd == -1)
+        return "can not open dictionary";
+    struct stat st;
+    if (fstat(fd, &st) == -1)
+        return "dictionary fstat error";
+    cn->data.resize(st.st_size);
+    if (read(fd, &cn->data[0], cn->data.size()) != (ssize_t)cn->data.size())
+        return "dictionary read error";
+    return 0;
 }
 
 // FIXME Remove
