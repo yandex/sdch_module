@@ -609,18 +609,18 @@ tr_header_filter(ngx_http_request_t *r)
     return NGX_ERROR;
   }
   sdch_dict_conf* bestdict = nullptr;
-  ctx->quasidict = nullptr;
+  Storage::Value* quasidict = nullptr;
   while (val.len >= 8) {
     sdch_dict_conf* d = find_dict(val.data, conf);
     bestdict = choose_bestdict(bestdict, d, group.data, group.len);
-    if (ctx->quasidict == nullptr && d == nullptr) {
-      ctx->quasidict = find_quasidict(r, val.data);
+    if (quasidict == nullptr && d == nullptr) {
+      quasidict = find_quasidict(r, val.data);
       ngx_log_error(NGX_LOG_INFO,
                     r->connection->log,
                     0,
                     "find_quasidict %.8s -> %p",
                     val.data,
-                    ctx->quasidict);
+                    quasidict);
     }
     val.data += 8;
     val.len -= 8;
@@ -649,7 +649,7 @@ tr_header_filter(ngx_http_request_t *r)
     ngx_int_t e = get_dictionary_header(r, conf);
     if (e)
       return e;
-    if (bestdict == nullptr && ctx->quasidict == nullptr) {
+    if (bestdict == nullptr && quasidict == nullptr) {
       e = x_sdch_encode_0_header(r, sdch_expected);
       if (e)
         return e;
@@ -667,7 +667,8 @@ tr_header_filter(ngx_http_request_t *r)
   ctx->buffering = (conf->postpone_gzipping != 0);
   if (bestdict != nullptr) {
     ctx->dict = bestdict->dict;
-  } else if (ctx->quasidict = nullptr) {
+  } else if (quasidict != nullptr) {
+    ctx->quasidict = quasidict;
     ctx->dict = &ctx->quasidict->dict;
   } else {
     ctx->dict = nullptr;
