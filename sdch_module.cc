@@ -534,159 +534,174 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf) {
 static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
-    ngx_table_elt_t       *h;
-    RequestContext   *ctx = nullptr;
-    Config  *conf;
+  ngx_table_elt_t* h;
+  RequestContext* ctx = nullptr;
+  Config* conf;
 
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http sdch filter header 000");
+  ngx_log_debug(
+      NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter header 000");
 
-    conf = Config::get(r);
+  conf = Config::get(r);
 
-    ngx_str_t val;
-    if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
-        ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) == 0) {
-        ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http sdch filter header: no sdch in accept-encoding");
-        return ngx_http_next_header_filter(r);
-    }
-    if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
-        ngx_str_set(&val, "");
-    }
-    int sdch_expected = (val.len > 0);
+  ngx_str_t val;
+  if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
+      ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) == 0) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP,
+                  r->connection->log,
+                  0,
+                  "http sdch filter header: no sdch in accept-encoding");
+    return ngx_http_next_header_filter(r);
+  }
+  if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
+    ngx_str_set(&val, "");
+  }
+  int sdch_expected = (val.len > 0);
 
-    if (should_process(r, conf) != NGX_OK)
-    {
-        ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http sdch filter header: skipping request");
-        ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected);
-        if (e)
-            return e;
-        return ngx_http_next_header_filter(r);
-    }
+  if (should_process(r, conf) != NGX_OK) {
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP,
+                  r->connection->log,
+                  0,
+                  "http sdch filter header: skipping request");
+    ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected);
+    if (e)
+      return e;
+    return ngx_http_next_header_filter(r);
+  }
 
-    if (r->header_only)
-    {
-        return ngx_http_next_header_filter(r);
-    }
-    //r->gzip_vary = 1;
+  if (r->header_only) {
+    return ngx_http_next_header_filter(r);
+  }
+// r->gzip_vary = 1;
 
 #if (NGX_HTTP_DEGRADATION)
-    {
-    ngx_http_core_loc_conf_t  *clcf;
+  {
+    ngx_http_core_loc_conf_t* clcf;
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
     if (clcf->gzip_disable_degradation && ngx_http_degraded(r)) {
-        return ngx_http_next_header_filter(r);
-    }
-    }
-#endif
-
-    if (ngx_http_sdch_ok(r) != NGX_OK) {
       return ngx_http_next_header_filter(r);
     }
+  }
+#endif
 
-    unsigned int ctxstore = 0;
-    if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
-        ctxstore = 1;
+  if (ngx_http_sdch_ok(r) != NGX_OK) {
+    return ngx_http_next_header_filter(r);
+  }
 
-        ngx_table_elt_t *h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-        if (h == nullptr) {
-            return NGX_ERROR;
-        }
+  unsigned int ctxstore = 0;
+  if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
+    ctxstore = 1;
 
-        h->hash = 1;
-        ngx_str_set(&h->key, "X-Sdch-Use-As-Dictionary");
-        ngx_str_set(&h->value, "1");
+    ngx_table_elt_t* h =
+        static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
+    if (h == nullptr) {
+      return NGX_ERROR;
     }
 
-    ngx_str_t group;
-    if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
-        return NGX_ERROR;
+    h->hash = 1;
+    ngx_str_set(&h->key, "X-Sdch-Use-As-Dictionary");
+    ngx_str_set(&h->value, "1");
+  }
+
+  ngx_str_t group;
+  if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
+    return NGX_ERROR;
+  }
+  sdch_dict_conf* bestdict = nullptr;
+  ctx->quasidict = nullptr;
+  while (val.len >= 8) {
+    sdch_dict_conf* d = find_dict(val.data, conf);
+    bestdict = choose_bestdict(bestdict, d, group.data, group.len);
+    if (ctx->quasidict == nullptr && d == nullptr) {
+      ctx->quasidict = find_quasidict(r, val.data);
+      ngx_log_error(NGX_LOG_INFO,
+                    r->connection->log,
+                    0,
+                    "find_quasidict %.8s -> %p",
+                    val.data,
+                    ctx->quasidict);
     }
-    sdch_dict_conf* bestdict = nullptr;
-    ctx->quasidict = nullptr;
-    while (val.len >= 8) {
-        sdch_dict_conf *d = find_dict(val.data, conf);
-        bestdict = choose_bestdict(bestdict, d, group.data, group.len);
-        if (ctx->quasidict == nullptr && d == nullptr) {
-            ctx->quasidict = find_quasidict(r, val.data);
-            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                   "find_quasidict %.8s -> %p", val.data, ctx->quasidict);
-        }
-        val.data += 8; val.len -= 8;
-        unsigned l = strspn((char*)val.data, " \t,");
-        if (l > val.len)
-            l = val.len;
-        val.data += l; val.len -= l;
+    val.data += 8;
+    val.len -= 8;
+    unsigned l = strspn((char*)val.data, " \t,");
+    if (l > val.len)
+      l = val.len;
+    val.data += l;
+    val.len -= l;
+  }
+  if (bestdict != nullptr) {
+    ngx_log_error(NGX_LOG_INFO,
+                  r->connection->log,
+                  0,
+                  "group: %s prio: %d best: %d",
+                  bestdict->groupname.data,
+                  bestdict->priority,
+                  bestdict->best);
+  } else {
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "nobestdict");
+  }
+  if (bestdict == nullptr || ngx_memn2cmp(bestdict->groupname.data,
+                                          group.data,
+                                          bestdict->groupname.len,
+                                          group.len) ||
+      !bestdict->best) {
+    ngx_int_t e = get_dictionary_header(r, conf);
+    if (e)
+      return e;
+    if (bestdict == nullptr && ctx->quasidict == nullptr) {
+      e = x_sdch_encode_0_header(r, sdch_expected);
+      if (e)
+        return e;
+      if (ctxstore == 0)
+        return ngx_http_next_header_filter(r);
     }
-    if (bestdict != nullptr) {
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-            "group: %s prio: %d best: %d", bestdict->groupname.data,
-            bestdict->priority, bestdict->best);
-    } else {
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-            "nobestdict");
-    }
-    if (bestdict == nullptr || ngx_memn2cmp(bestdict->groupname.data, group.data, 
-            bestdict->groupname.len, group.len) || !bestdict->best) {
-    	ngx_int_t e = get_dictionary_header(r, conf);
-    	if (e)
-    	    return e;
-        if (bestdict == nullptr && ctx->quasidict == nullptr) {
-            e = x_sdch_encode_0_header(r, sdch_expected);
-            if (e)
-                return e;
-            if (ctxstore == 0)
-                return ngx_http_next_header_filter(r);
-        }
+  }
+
+  ctx = pool_alloc<RequestContext>(r, r);
+  if (ctx == nullptr) {
+    return NGX_ERROR;
+  }
+
+  ctx->request = r;
+  ctx->buffering = (conf->postpone_gzipping != 0);
+  if (bestdict != nullptr) {
+    ctx->dict = bestdict->dict;
+  } else if (ctx->quasidict = nullptr) {
+    ctx->dict = &ctx->quasidict->dict;
+  } else {
+    ctx->dict = nullptr;
+  }
+  ctx->store = ctxstore;
+
+  if (ctx->dict != nullptr) {
+    h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
+    if (h == nullptr) {
+      return NGX_ERROR;
     }
 
-    ctx = pool_alloc<RequestContext>(r, r);
-    if (ctx == nullptr) {
-        return NGX_ERROR;
+    h->hash = 1;
+    ngx_str_set(&h->key, "Content-Encoding");
+    ngx_str_set(&h->value, "sdch");
+    r->headers_out.content_encoding = h;
+    ngx_int_t e = x_sdch_encode_0_header(r, 0);
+    if (e) {
+      return e;
     }
+  }
 
-    ctx->request = r;
-    ctx->buffering = (conf->postpone_gzipping != 0);
-    if (bestdict != nullptr) {
-        ctx->dict = bestdict->dict;
-    } else if (ctx->quasidict = nullptr) {
-        ctx->dict = &ctx->quasidict->dict;
-    } else {
-        ctx->dict = nullptr;
-    }
-    ctx->store = ctxstore;
+  r->main_filter_need_in_memory = 1;
 
-    if (ctx->dict != nullptr) {
-        h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-        if (h == nullptr) {
-            return NGX_ERROR;
-        }
-
-        h->hash = 1;
-        ngx_str_set(&h->key, "Content-Encoding");
-        ngx_str_set(&h->value, "sdch");
-        r->headers_out.content_encoding = h;
-        ngx_int_t e = x_sdch_encode_0_header(r, 0);
-        if (e) {
-            return e;
-        }
-    }
-
-    r->main_filter_need_in_memory = 1;
-
-    ngx_http_clear_content_length(r);
-    ngx_http_clear_accept_ranges(r);
+  ngx_http_clear_content_length(r);
+  ngx_http_clear_accept_ranges(r);
 
 #if nginx_version > 1005000
-    ngx_http_clear_etag(r);
+  ngx_http_clear_etag(r);
 #else
 //   TODO(wawa): adverse impact should be verified if any
 #endif
 
-    return ngx_http_next_header_filter(r);
+  return ngx_http_next_header_filter(r);
 }
 
 
@@ -1216,29 +1231,27 @@ tr_filter_deflate(RequestContext *ctx)
 static ngx_int_t
 tr_filter_deflate_end(RequestContext *ctx)
 {
+  ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
+  ctx->handler->on_finish();
+  if (ctx->quasidict) {
+    MainConfig::get(ctx->request)->storage.unlock(ctx->quasidict);
+  }
 
-    ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0,
-        "closing ctx");
-    ctx->handler->on_finish();
-    if (ctx->quasidict) {
-      MainConfig::get(ctx->request)->storage.unlock(ctx->quasidict);
-    }
+  // ngx_pfree(r->pool, ctx->preallocated);
 
-    //ngx_pfree(r->pool, ctx->preallocated);
+  ctx->out_buf->last_buf = 1;
+  ngx_int_t rc = tr_filter_out_buf_out(ctx);
+  if (rc != NGX_OK)
+    return rc;
 
-    ctx->out_buf->last_buf = 1;
-    ngx_int_t rc = tr_filter_out_buf_out(ctx);
-    if (rc != NGX_OK)
-        return rc;
+  ctx->zstream.avail_in = 0;
+  ctx->zstream.avail_out = 0;
 
-    ctx->zstream.avail_in = 0;
-    ctx->zstream.avail_out = 0;
+  ctx->done = 1;
 
-    ctx->done = 1;
+  // r->connection->buffered &= ~NGX_HTTP_GZIP_BUFFERED;
 
-    //r->connection->buffered &= ~NGX_HTTP_GZIP_BUFFERED;
-
-    return NGX_OK;
+  return NGX_OK;
 }
 
 
