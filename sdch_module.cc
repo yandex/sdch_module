@@ -37,36 +37,35 @@ class fdholder {
 
 }  // namespace
 
-//static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
-static ngx_int_t tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in);
-static ngx_int_t tr_filter_out_buf_out(RequestContext *ctx);
-static ngx_int_t tr_filter_deflate_start(RequestContext *ctx);
-static ngx_int_t tr_filter_add_data(RequestContext *ctx);
-static ngx_int_t tr_filter_get_buf(RequestContext *ctx);
-static ngx_int_t tr_filter_deflate(RequestContext *ctx);
-static ngx_int_t tr_filter_deflate_end(RequestContext *ctx);
+// static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
+static ngx_int_t tr_filter_buffer(RequestContext* ctx, ngx_chain_t* in);
+static ngx_int_t tr_filter_out_buf_out(RequestContext* ctx);
+static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
+static ngx_int_t tr_filter_add_data(RequestContext* ctx);
+static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
+static ngx_int_t tr_filter_deflate(RequestContext* ctx);
+static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
 #if 0
 static void *ngx_http_gzip_filter_alloc(void *opaque, u_int items,
     u_int size);
 static void ngx_http_gzip_filter_free(void *opaque, void *address);
 #endif
-static void ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r,
-    RequestContext *ctx);
+static void ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t* r,
+                                               RequestContext* ctx);
 
-static ngx_int_t tr_add_variables(ngx_conf_t *cf);
-static ngx_int_t tr_ratio_variable(ngx_http_request_t *r,
-    ngx_http_variable_value_t *v, uintptr_t data);
+static ngx_int_t tr_add_variables(ngx_conf_t* cf);
+static ngx_int_t tr_ratio_variable(ngx_http_request_t* r,
+                                   ngx_http_variable_value_t* v,
+                                   uintptr_t data);
 
-static ngx_int_t tr_filter_init(ngx_conf_t *cf);
-static void *tr_create_conf(ngx_conf_t *cf);
-static char *tr_merge_conf(ngx_conf_t *cf,
-    void *parent, void *child);
-static void *tr_create_main_conf(ngx_conf_t *cf);
-static char *tr_init_main_conf(ngx_conf_t *cf, void *conf);
+static ngx_int_t tr_filter_init(ngx_conf_t* cf);
+static void* tr_create_conf(ngx_conf_t* cf);
+static char* tr_merge_conf(ngx_conf_t* cf, void* parent, void* child);
+static void* tr_create_main_conf(ngx_conf_t* cf);
+static char* tr_init_main_conf(ngx_conf_t* cf, void* conf);
 
-static char *tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf);
+static char* tr_set_sdch_dict(ngx_conf_t* cf, ngx_command_t* cmd, void* conf);
 
 static ngx_conf_bitmask_t  ngx_http_sdch_proxied_mask[] = {
     { ngx_string("off"), NGX_HTTP_GZIP_PROXIED_OFF },
@@ -235,33 +234,34 @@ backtrace_log(ngx_log_t *log)
 }
 #endif
 
-static ngx_table_elt_t*
-header_find(ngx_list_t *headers, const char *key, ngx_str_t *value)
-{
-	size_t keylen = strlen(key);
-	ngx_list_part_t *part = &headers->part;
-	ngx_table_elt_t* data = static_cast<ngx_table_elt_t*>(part->elts);
-	unsigned i;
+static ngx_table_elt_t* header_find(ngx_list_t* headers,
+                                    const char* key,
+                                    ngx_str_t* value) {
+  size_t keylen = strlen(key);
+  ngx_list_part_t* part = &headers->part;
+  ngx_table_elt_t* data = static_cast<ngx_table_elt_t*>(part->elts);
+  unsigned i;
 
-	for (i = 0 ;; i++) {
+  for (i = 0;; i++) {
 
-		if (i >= part->nelts) {
-			if (part->next == nullptr) {
-				break;
-			}
+    if (i >= part->nelts) {
+      if (part->next == nullptr) {
+        break;
+      }
 
-			part = part->next;
-			data = static_cast<ngx_table_elt_t*>(part->elts);
-			i = 0;
-		}
-		if (data[i].key.len == keylen && ngx_strncasecmp(data[i].key.data, (u_char*)key, keylen) == 0) {
-                        if (value) {
-                        	*value = data[i].value;
-			}
-			return &data[i];
-		}
-	}
-	return 0;
+      part = part->next;
+      data = static_cast<ngx_table_elt_t*>(part->elts);
+      i = 0;
+    }
+    if (data[i].key.len == keylen &&
+        ngx_strncasecmp(data[i].key.data, (u_char*)key, keylen) == 0) {
+      if (value) {
+        *value = data[i].value;
+      }
+      return &data[i];
+    }
+  }
+  return 0;
 }
 
 static ngx_int_t
