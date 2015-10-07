@@ -24,10 +24,16 @@ namespace sdch {
 class Dictionary {
  public:
   Dictionary();
+  Dictionary(Dictionary&& other);
   ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
   bool init(const char* begin, const char* end, bool is_quasi);
+
+  // Size of dictionary
+  size_t size() const {
+    return size_;
+  }
 
   const std::string& client_id() const {
     return client_id_;
@@ -47,6 +53,7 @@ class Dictionary {
   // But this will do for now.
   std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
 
+  size_t size_;
   std::string client_id_;
   std::string server_id_;
 };

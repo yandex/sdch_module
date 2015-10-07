@@ -67,9 +67,16 @@ void get_dict_ids(const char* buf,
 
 Dictionary::Dictionary() {}
 
+Dictionary::Dictionary(Dictionary&& other)
+    : hashed_dict_(std::move(other.hashed_dict_)),
+      size_(std::move(other.size_)),
+      client_id_(std::move(other.client_id_)),
+      server_id_(std::move(other.server_id_)) {}
+
 Dictionary::~Dictionary() {}
 
 bool Dictionary::init(const char* begin, const char* end, bool is_quasi) {
+  size_ = end - begin;
   const auto* payload = is_quasi ? begin : get_dict_payload(begin, end);
   size_t size = end - payload;
   hashed_dict_.reset(new open_vcdiff::HashedDictionary(payload, size));

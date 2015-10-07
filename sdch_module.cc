@@ -1364,17 +1364,17 @@ tr_create_conf(ngx_conf_t *cf)
 }
 
 
-const char *read_file(const char *fn, Storage::Blob& cn)
+const char *read_file(const char *fn, std::vector<char>& blob)
 {
-    cn.clear();
+    blob.clear();
     fdholder fd(open(fn, O_RDONLY));
     if (fd == -1)
         return "can not open dictionary";
     struct stat st;
     if (fstat(fd, &st) == -1)
         return "dictionary fstat error";
-    cn.resize(st.st_size);
-    if (read(fd, &cn[0], cn.size()) != (ssize_t)cn.size())
+    blob.resize(st.st_size);
+    if (read(fd, &blob[0], blob.size()) != (ssize_t)blob.size())
         return "dictionary read error";
     return 0;
 }
@@ -1384,7 +1384,7 @@ static const char *
 init_dict_data(ngx_conf_t *cf, ngx_str_t *file_name, Dictionary *dict)
 {
   assert(dict != nullptr);
-  Storage::Blob blob;
+  std::vector<char> blob;
   const char* p = read_file((const char*)file_name->data, blob);
   if (p != nullptr)
     return p;

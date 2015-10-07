@@ -1,18 +1,17 @@
-#include <map>
-#include <string>
-
 #include <cassert>
 
 #include "sdch_storage.h"
 
 namespace sdch {
 
+Storage::Value::~Value() {}
+
 Storage::Storage() : max_size_(10000000) {}
 
 bool Storage::clear(time_t ts) { return true; }
 
-bool Storage::store(const char* key, Value&& value) {
-  auto r = values_.insert(StoreType::value_type(key, std::move(value)));
+bool Storage::store(const char* key, Value value) {
+  auto r = values_.emplace(key, std::move(value));
   if (!r.second) {
 #if 0
         if (r.first->second.ts < ts)
@@ -22,7 +21,7 @@ bool Storage::store(const char* key, Value&& value) {
   }
 
   lru_.insert(LRUType::value_type(r.first->second.ts, key));
-  total_size_ += r.first->second.blob.size();
+  total_size_ += r.first->second.dict.size();
 
   // Remove oldest entries if we exceeded max_size_
   for (auto i = lru_.begin(); total_size_ > max_size_ && i != lru_.end(); ) {
@@ -32,7 +31,12 @@ bool Storage::store(const char* key, Value&& value) {
       continue;
     }
 
-    total_size_ -= si->second.blob.size();
+    if (si->second.locked) {  // XXX
+      ++i;
+      continue;
+    }
+
+    total_size_ -= si->second.dict.size();
     values_.erase(si);
     lru_.erase(i++);
   }
@@ -45,8 +49,14 @@ Storage::Value* Storage::find(const char* key) {
   if (i == values_.end())
     return nullptr;
 
+  i->second.locked = true;
+
   // TODO Update LRU?
   return &i->second;
+}
+
+void Storage::unlock(Value* v) {
+  v->locked = false;
 }
 
 }  // namespace sdch
