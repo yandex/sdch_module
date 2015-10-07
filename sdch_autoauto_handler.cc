@@ -46,15 +46,15 @@ void AutoautoHandler::on_finish() {
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,
-                    "storing quasidict %s (%s)",
-                    client_id,
+                    "storing quasidict %s (%d)",
+                    client_id.c_str(),
                     blob_.size());
     } else {
       ngx_log_error(NGX_LOG_ERR,
                     ctx_->request->connection->log,
                     0,
-                    "failed storing quasidict %s (%s)",
-                    client_id,
+                    "failed storing quasidict %s (%d)",
+                    client_id.c_str(),
                     blob_.size());
     }
   }
