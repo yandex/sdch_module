@@ -10,6 +10,8 @@ extern "C" {
 #include <ngx_config.h>
 }
 
+#include "sdch_storage.h"
+
 namespace sdch {
 
 class MainConfig {
@@ -17,6 +19,10 @@ class MainConfig {
   MainConfig();
   ~MainConfig();
 
+  static MainConfig* get(ngx_http_request_t* r);
+
+  Storage storage;
+  // TODO Change config handling to pass it to Storage directly
   ngx_uint_t stor_size = NGX_CONF_UNSET_SIZE;
 };
 

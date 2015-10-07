@@ -13,8 +13,8 @@ extern "C" {
 
 #include "sdch_module.h"
 
-#include "storage.h"
 #include "sdch_dictionary.h"
+#include "sdch_storage.h"
 
 namespace sdch {
 
@@ -29,11 +29,8 @@ struct RequestContext {
   // Fetch RequestContext associated with nginx request
   static RequestContext* get(ngx_http_request_t* r);
 
-  // TODO Remove
-  blob_type            blob;
-
   ngx_http_request_t* request;
-  Handler             *handler;
+  Handler*            handler;
 
 
   ngx_chain_t* in;
@@ -65,8 +62,6 @@ struct RequestContext {
   size_t zout;
 
   z_stream zstream;
-
-  struct sv* stuc;
 };
 
 

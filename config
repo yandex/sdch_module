@@ -24,7 +24,6 @@ ngx_addon_name=sdch_module
 HTTP_AUX_FILTER_MODULES="$HTTP_AUX_FILTER_MODULES sdch_module"
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
-                $ngx_addon_dir/blob.cc \
                 $ngx_addon_dir/sdch_config.cc \
                 $ngx_addon_dir/sdch_autoauto_handler.cc \
                 $ngx_addon_dir/sdch_dictionary.cc \
@@ -35,7 +34,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/sdch_module.cc \
                 $ngx_addon_dir/sdch_output_handler.cc \
                 $ngx_addon_dir/sdch_request_context.cc \
-                $ngx_addon_dir/storage.cc \
+                $ngx_addon_dir/sdch_storage.cc \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -50,7 +49,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/sdch_output_handler.h \
                 $ngx_addon_dir/sdch_pool_alloc.h \
                 $ngx_addon_dir/sdch_request_context.h \
-                $ngx_addon_dir/storage.h \
+                $ngx_addon_dir/sdch_storage.h \
                 "
 
 

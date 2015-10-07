@@ -389,16 +389,15 @@ find_dict(u_char *h, Config *conf)
     return nullptr;
 }
 
-static blob_type
-find_quasidict(u_char *h, struct sv **v)
+static Storage::Value*
+find_quasidict(ngx_http_request_t* r, u_char *h)
 {
     char nm[9];
     nm[8] = 0;
     memcpy(nm, h, 8);
 
-    blob_type b = nullptr;
-    stor_find(nm, &b, v);
-    return b;
+    auto* main = MainConfig::get(r);
+    return main->storage.find(nm);
 }
 
 static ngx_int_t
@@ -606,14 +605,13 @@ tr_header_filter(ngx_http_request_t *r)
     if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
         return NGX_ERROR;
     }
-    sdch_dict_conf *bestdict = nullptr;
-    blob_type quasidict_blob = nullptr;
-    struct sv *ctxstuc = nullptr;
+    sdch_dict_conf* bestdict = nullptr;
+    Storage::Value* quasidict_blob = nullptr;
     while (val.len >= 8) {
         sdch_dict_conf *d = find_dict(val.data, conf);
         bestdict = choose_bestdict(bestdict, d, group.data, group.len);
         if (quasidict_blob == nullptr && d == nullptr) {
-            quasidict_blob = find_quasidict(val.data, &ctxstuc);
+            quasidict_blob = find_quasidict(r, val.data);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "find_quasidict %.8s -> %p", val.data, quasidict_blob);
         }
@@ -667,7 +665,6 @@ tr_header_filter(ngx_http_request_t *r)
         ctx->dict = nullptr;
     }
     ctx->store = ctxstore;
-    ctx->stuc = ctxstuc;
 
     if (ctx->dict != nullptr) {
         h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
@@ -1356,7 +1353,7 @@ tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 {
     MainConfig *conf = static_cast<MainConfig*>(cnf);
     if (conf->stor_size != NGX_CONF_UNSET_SIZE)
-        max_stor_size = conf->stor_size;
+        conf->storage.set_max_size(conf->stor_size);
     return NGX_CONF_OK;
 }
 
@@ -1367,17 +1364,17 @@ tr_create_conf(ngx_conf_t *cf)
 }
 
 
-const char *read_file(const char *fn, blob_type cn)
+const char *read_file(const char *fn, Storage::Blob& cn)
 {
-    cn->data.clear();
+    cn.clear();
     fdholder fd(open(fn, O_RDONLY));
     if (fd == -1)
         return "can not open dictionary";
     struct stat st;
     if (fstat(fd, &st) == -1)
         return "dictionary fstat error";
-    cn->data.resize(st.st_size);
-    if (read(fd, &cn->data[0], cn->data.size()) != (ssize_t)cn->data.size())
+    cn.resize(st.st_size);
+    if (read(fd, &cn[0], cn.size()) != (ssize_t)cn.size())
         return "dictionary read error";
     return 0;
 }
@@ -1387,12 +1384,12 @@ static const char *
 init_dict_data(ngx_conf_t *cf, ngx_str_t *file_name, Dictionary *dict)
 {
   assert(dict != nullptr);
-  blob_s blob;
-  const char* p = read_file((const char*)file_name->data, &blob);
+  Storage::Blob blob;
+  const char* p = read_file((const char*)file_name->data, blob);
   if (p != nullptr)
     return p;
-  if (!dict->init(blob_data_begin(&blob),
-                  blob_data_begin(&blob) + blob_data_size(&blob),
+  if (!dict->init(blob.data(),
+                  blob.data() + blob.size(),
                   false)) {
     ngx_conf_log_error(
         NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", file_name->data);
