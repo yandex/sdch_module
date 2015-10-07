@@ -4,6 +4,8 @@
 #ifndef SDCH_AUTOAUTO_HANDLER_H_
 #define SDCH_AUTOAUTO_HANDLER_H_
 
+#include <vector>
+
 #include "sdch_handler.h"
 
 namespace sdch {
@@ -23,6 +25,11 @@ class AutoautoHandler : public Handler {
   void on_finish() override;
 
  private:
+  // Keep context. For logging purpose mostly.
+  RequestContext* ctx_;
+
+  // Storage for data passing by. We'll create actual dictionary in on_finish
+  std::vector<char> blob_;
 };
 
 

@@ -606,14 +606,14 @@ tr_header_filter(ngx_http_request_t *r)
         return NGX_ERROR;
     }
     sdch_dict_conf* bestdict = nullptr;
-    Storage::Value* quasidict_blob = nullptr;
+    ctx->quasidict = nullptr;
     while (val.len >= 8) {
         sdch_dict_conf *d = find_dict(val.data, conf);
         bestdict = choose_bestdict(bestdict, d, group.data, group.len);
-        if (quasidict_blob == nullptr && d == nullptr) {
-            quasidict_blob = find_quasidict(r, val.data);
+        if (ctx->quasidict == nullptr && d == nullptr) {
+            ctx->quasidict = find_quasidict(r, val.data);
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                   "find_quasidict %.8s -> %p", val.data, quasidict_blob);
+                   "find_quasidict %.8s -> %p", val.data, ctx->quasidict);
         }
         val.data += 8; val.len -= 8;
         unsigned l = strspn((char*)val.data, " \t,");
@@ -634,7 +634,7 @@ tr_header_filter(ngx_http_request_t *r)
     	ngx_int_t e = get_dictionary_header(r, conf);
     	if (e)
     	    return e;
-        if (bestdict == nullptr && quasidict_blob == nullptr) {
+        if (bestdict == nullptr && ctx->quasidict == nullptr) {
             e = x_sdch_encode_0_header(r, sdch_expected);
             if (e)
                 return e;
@@ -652,15 +652,8 @@ tr_header_filter(ngx_http_request_t *r)
     ctx->buffering = (conf->postpone_gzipping != 0);
     if (bestdict != nullptr) {
         ctx->dict = bestdict->dict;
-    } else if (quasidict_blob != nullptr) {
-#if 0  // FIXME
-        ctx->dict = &ctx->fdict;
-        ctx->fdict.dict = quasidict_blob;
-        size_t sz = blob_data_size(quasidict_blob)-8;
-        memcpy(ctx->fdict.server_dictid, blob_data_begin(quasidict_blob)+sz, 8);
-        get_hashed_dict(blob_data_begin(quasidict_blob), blob_data_begin(quasidict_blob)+sz,
-            1, &ctx->fdict.hashed_dict);
-#endif
+    } else if (ctx->quasidict = nullptr) {
+        ctx->dict = &ctx->quasidict->dict;
     } else {
         ctx->dict = nullptr;
     }
@@ -1227,29 +1220,9 @@ tr_filter_deflate_end(RequestContext *ctx)
     ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0,
         "closing ctx");
     ctx->handler->on_finish();
-#if 0
-    FIXME It should go into corresponding Handler::on_finish implementation
-    if (ctx->store && !ctx->blob) {
-        ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
-            "storing quasidict: no blob");
+    if (ctx->quasidict) {
+      MainConfig::get(ctx->request)->storage.unlock(ctx->quasidict);
     }
-    if (ctx->store && ctx->blob) {
-        unsigned char user_dictid[9];
-        unsigned char server_dictid[9];
-        get_dict_ids(blob_data_begin(ctx->blob), blob_data_size(ctx->blob),
-            user_dictid, server_dictid);
-        if (blob_append(ctx->blob, user_dictid, 8) != 0) {
-            blob_destroy(ctx->blob);
-        } else {
-            stor_store((const char *)user_dictid, time(0), ctx->blob); // XXX
-            ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
-                "storing quasidict %s (%p)", user_dictid, ctx->blob);
-        }
-    }
-    if (ctx->stuc) {
-        stor_unlock(ctx->stuc);
-    }
-#endif
 
     //ngx_pfree(r->pool, ctx->preallocated);
 

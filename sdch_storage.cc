@@ -10,8 +10,8 @@ Storage::Storage() : max_size_(10000000) {}
 
 bool Storage::clear(time_t ts) { return true; }
 
-bool Storage::store(const char* key, Value value) {
-  auto r = values_.emplace(key, std::move(value));
+bool Storage::store(const std::string& key, Value value) {
+  auto r = values_.emplace(std::move(key), std::move(value));
   if (!r.second) {
 #if 0
         if (r.first->second.ts < ts)
@@ -44,7 +44,7 @@ bool Storage::store(const char* key, Value value) {
   return true;
 }
 
-Storage::Value* Storage::find(const char* key) {
+Storage::Value* Storage::find(const std::string& key) {
   auto i = values_.find(key);
   if (i == values_.end())
     return nullptr;

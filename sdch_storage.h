@@ -29,9 +29,9 @@ class Storage {
 
   Storage();
 
-  bool store(const char* key, Value value);
+  bool store(const std::string& key, Value value);
   // Get Value and "lock" it.
-  Value* find(const char* key);
+  Value* find(const std::string& key);
   // Unlock used Value
   void unlock(Value* v);
 

@@ -31,6 +31,7 @@ struct RequestContext {
 
   ngx_http_request_t* request;
   Handler*            handler;
+  Storage::Value*     quasidict;
 
 
   ngx_chain_t* in;
