@@ -119,10 +119,10 @@ static ngx_command_t  tr_filter_commands[] = {
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE123,
-	  tr_set_sdch_dict,
-	  NGX_HTTP_LOC_CONF_OFFSET,
-	  0,
-	  nullptr },
+      tr_set_sdch_dict,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      nullptr },
 
     { ngx_string("sdch_group"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
