@@ -10,11 +10,18 @@ extern "C" {
 #include <ngx_config.h>
 }
 
+#include <vector>
+
+#include "sdch_pool_alloc.h"
+#include "sdch_module.h"  // sdch_dict_conf
+
 namespace sdch {
+
+class Dictionary;
 
 class Config {
  public:
-  Config();
+  explicit Config(ngx_pool_t* pool);
   ~Config();
 
   static Config* get(ngx_http_request_t* r);
@@ -36,9 +43,12 @@ class Config {
 
   ngx_array_t* types_keys;
 
-  ngx_array_t* dict_storage;
-  ngx_array_t* dict_conf_storage;
-  ngx_int_t confdictnum;
+  using DictStorage = std::vector<Dictionary*, PoolAllocator<Dictionary*>>;
+  DictStorage* dict_storage;
+
+  using DictConfStorage =
+      std::vector<sdch_dict_conf, PoolAllocator<sdch_dict_conf> >;
+  DictConfStorage* dict_conf_storage;
 
   ngx_str_t sdch_group;
   ngx_http_complex_value_t sdch_groupcv;

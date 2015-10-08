@@ -3,11 +3,14 @@
 
 #include "sdch_config.h"
 
-#include "sdch_module.h"
-
 namespace sdch {
 
-Config::Config() {}
+Config::Config(ngx_pool_t* pool)
+    : dict_storage(
+          pool_alloc<DictStorage>(pool, DictStorage::allocator_type(pool))),
+      dict_conf_storage(
+          pool_alloc<DictConfStorage>(pool,
+                                      DictConfStorage::allocator_type(pool))) {}
 
 Config::~Config() {}
 

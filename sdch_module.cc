@@ -7,6 +7,8 @@
 
 #include <assert.h>
 
+#include <algorithm>
+
 #include "sdch_module.h"
 
 #include "sdch_autoauto_handler.h"
@@ -375,18 +377,13 @@ ok:
     return NGX_OK;
 }
 
-static sdch_dict_conf *
-find_dict(u_char *h, Config *conf)
-{
-    unsigned int i;
-    sdch_dict_conf *dict_conf;
+static sdch_dict_conf* find_dict(u_char* h, Config* conf) {
+  for (auto& c : *conf->dict_conf_storage) {
+    if (ngx_strncmp(h, c.dict->client_id().c_str(), 8) == 0)
+      return &c;
+  }
 
-    dict_conf = static_cast<sdch_dict_conf*>(conf->dict_conf_storage->elts);
-    for (i = 0; i < conf->dict_conf_storage->nelts; i++) {
-        if (ngx_strncmp(h, dict_conf[i].dict->client_id().c_str(), 8) == 0)
-            return &dict_conf[i];
-    }
-    return nullptr;
+  return nullptr;
 }
 
 static Storage::Value*
@@ -1347,7 +1344,7 @@ tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 static void *
 tr_create_conf(ngx_conf_t *cf)
 {
-  return pool_alloc<Config>(cf);
+  return pool_alloc<Config>(cf, cf->pool);
 }
 
 
@@ -1399,32 +1396,31 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     if (cf->args->nelts < 2 || cf->args->nelts > 4) {
         return const_cast<char*>("Wrong number of arguments");
     }
-    if (conf->dict_storage == nullptr) {
-        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(Dictionary));
-    }
-    if (conf->dict_conf_storage == nullptr) {
-        conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
-    }
     ngx_str_t *value = static_cast<ngx_str_t*>(cf->args->elts);
     ngx_str_t groupname;
     ngx_str_set(&groupname, "default");
     if (cf->args->nelts >= 3) {
         groupname = value[2];
     }
-    ngx_int_t prio = conf->confdictnum++;
+    ngx_int_t prio = conf->dict_conf_storage->size();
     if (cf->args->nelts >= 4) {
         prio = ngx_atoi(value[3].data, value[3].len);
         if (prio == NGX_ERROR) {
             return const_cast<char*>("Can't convert to number");
         }
     }
-    Dictionary *data = static_cast<Dictionary*>(ngx_array_push(conf->dict_storage));
+
+    auto* data = pool_alloc<Dictionary>(cf);
+    conf->dict_storage->emplace_back(data);
+
     const char *p = init_dict_data(cf, &value[1], data);
     if (p != nullptr) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
         return const_cast<char*>(p);
     }
-    sdch_dict_conf *sdc = static_cast<sdch_dict_conf*>(ngx_array_push(conf->dict_conf_storage));
+
+    conf->dict_conf_storage->emplace_back();
+    auto sdc = conf->dict_conf_storage->rbegin();
     sdc->groupname.len = groupname.len++;
     sdc->groupname.data = ngx_pstrdup(cf->pool, &groupname);
     sdc->priority = prio;
@@ -1434,19 +1430,12 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     return NGX_CONF_OK;
 }
 
-int
-compare_dict_conf(const void *a, const void *b)
-{
-    const sdch_dict_conf *A = static_cast<const sdch_dict_conf*>(a);
-    const sdch_dict_conf *B = static_cast<const sdch_dict_conf*>(b);
-    ngx_int_t c = ngx_strcmp(A->groupname.data, B->groupname.data);
-    if (c != 0)
-        return c;
-    if (A->priority < B->priority)
-        return -1;
-    if (A->priority > B->priority)
-        return 1;
-    return 0;
+// TODO Move into sdch_dict_conf
+bool compare_dict_conf(const sdch_dict_conf& a, const sdch_dict_conf& b) {
+  ngx_int_t c = ngx_strcmp(a.groupname.data, b.groupname.data);
+  if (c != 0)
+    return c < 0;
+  return a.priority < b.priority;
 }
 
 static char *
@@ -1480,30 +1469,23 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (!conf->enable)
       return NGX_CONF_OK;
 
-    if (conf->dict_conf_storage == nullptr) {
-        conf->dict_conf_storage = prev->dict_conf_storage;
-        conf->dict_storage = prev->dict_storage;
-    }
-    if (conf->dict_conf_storage != nullptr) {
-        sdch_dict_conf *dse = static_cast<sdch_dict_conf*>(conf->dict_conf_storage->elts);
-        qsort(conf->dict_conf_storage->elts, conf->dict_conf_storage->nelts,
-            sizeof(sdch_dict_conf), compare_dict_conf);
-        if (conf->dict_conf_storage->nelts > 0) {
-            dse[0].best = 1;
-        }
-        unsigned int i;
-        for (i = 1; i < conf->dict_conf_storage->nelts; i++) {
-            if (ngx_strcmp(dse[i-1].groupname.data, dse[i].groupname.data)) {
-                dse[i].best = 1;
-            }
-        }
-    }
+    // Merge dictionaries from parent.
+    conf->dict_conf_storage->insert(conf->dict_conf_storage->end(),
+        prev->dict_conf_storage->begin(),
+        prev->dict_conf_storage->end());
 
-    if (conf->dict_storage == nullptr) {
-        conf->dict_storage = ngx_array_create(cf->pool, 2, sizeof(Dictionary));
+    // And sort them
+    std::sort(conf->dict_conf_storage->begin(), conf->dict_conf_storage->end(),
+        compare_dict_conf);
+
+    if (!conf->dict_conf_storage->empty()) {
+        conf->dict_conf_storage->begin()->best = 1;
     }
-    if (conf->dict_conf_storage == nullptr) {
-        conf->dict_conf_storage = ngx_array_create(cf->pool, 2, sizeof(sdch_dict_conf));
+    auto& dse = *conf->dict_conf_storage;
+    for (size_t i = 1; i < dse.size(); ++i) {
+        if (ngx_strcmp(dse[i-1].groupname.data, dse[i].groupname.data)) {
+            dse[i].best = 1;
+        }
     }
 
     ngx_conf_merge_str_value(conf->sdch_group, prev->sdch_group, "default");
