@@ -48,7 +48,6 @@ struct RequestContext {
   ngx_int_t bufs;
 
   struct Dictionary* dict;
-  struct Dictionary fdict;
 
   unsigned started : 1;
   unsigned flush : 4;
