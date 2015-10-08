@@ -9,6 +9,7 @@ extern "C" {
 }
 
 #include <type_traits>  // std::enable_if
+#include <stdexcept>    // std::bad_alloc
 #include <utility>      // std::forward
 
 namespace sdch {
@@ -59,6 +60,31 @@ pool_alloc(Holder* h, Args&& ...args) {
   return pool_alloc<Type>(h->pool, std::forward<Args>(args)...);
 }
 
+// STL compatible allocator
+// We don't deallocate. And don't set pool_cleanup handler. Because it will be
+// used in STL containers which will do "proper" memory management.
+template<typename T>
+class PoolAllocator {
+ public:
+  explicit PoolAllocator(ngx_pool_t* pool) : pool_(pool) {}
+
+  typedef T value_type;
+  typedef T* pointer;
+
+  pointer allocate(std::size_t n) {
+    auto res = static_cast<pointer>(ngx_pcalloc(pool_, n * sizeof(value_type)));
+    if (res == nullptr) {
+      // It's bad. But we can't return nullptr
+      throw std::bad_alloc();
+    }
+    return res;
+  }
+
+  void deallocate(pointer p, std::size_t n) { /* NOOP */ }
+
+ private:
+  ngx_pool_t* pool_;
+};
 
 }  // namespace ngx
 
