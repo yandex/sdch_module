@@ -4,6 +4,12 @@
 #ifndef SDCH_DICT_CONFIG_H_
 #define SDCH_DICT_CONFIG_H_
 
+extern "C" {
+#include <ngx_config.h>
+#include <nginx.h>
+#include <ngx_core.h>
+}
+
 namespace sdch {
 
 class Dictionary;

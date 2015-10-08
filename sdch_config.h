@@ -17,7 +17,7 @@ extern "C" {
 
 namespace sdch {
 
-class Dictionary;
+class DictionaryFactory;
 
 class Config {
  public:
@@ -43,12 +43,6 @@ class Config {
 
   ngx_array_t* types_keys;
 
-  using DictStorage = std::vector<Dictionary*, PoolAllocator<Dictionary*>>;
-  DictStorage* dict_storage;
-
-  using DictConfStorage = std::vector<DictConfig, PoolAllocator<DictConfig>>;
-  DictConfStorage* dict_conf_storage;
-
   ngx_str_t sdch_group;
   ngx_http_complex_value_t sdch_groupcv;
 
@@ -62,6 +56,8 @@ class Config {
   ngx_str_t sdch_dumpdir;
 
   ngx_flag_t enable_quasi     = NGX_CONF_UNSET;
+
+  DictionaryFactory* dict_factory;
 };
 
 

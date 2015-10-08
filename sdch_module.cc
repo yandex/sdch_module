@@ -7,12 +7,11 @@
 
 #include <assert.h>
 
-#include <algorithm>
-
 #include "sdch_module.h"
 
 #include "sdch_autoauto_handler.h"
 #include "sdch_config.h"
+#include "sdch_dictionary_factory.h"
 #include "sdch_dump_handler.h"
 #include "sdch_encoding_handler.h"
 #include "sdch_main_config.h"
@@ -377,15 +376,6 @@ ok:
     return NGX_OK;
 }
 
-static DictConfig* find_dict(u_char* h, Config* conf) {
-  for (auto& c : *conf->dict_conf_storage) {
-    if (ngx_strncmp(h, c.dict->client_id().c_str(), 8) == 0)
-      return &c;
-  }
-
-  return nullptr;
-}
-
 static Storage::Value*
 find_quasidict(ngx_http_request_t* r, u_char *h)
 {
@@ -457,28 +447,6 @@ expand_disable(ngx_http_request_t *r, Config *conf)
         return 1;
     }
     return 0;
-}
-
-static DictConfig *
-choose_bestdict(DictConfig *old, DictConfig *n, u_char *group,
-    u_int grl)
-{
-    if (old == nullptr)
-        return n;
-    if (n == nullptr)
-        return old;
-
-    int om = (ngx_memn2cmp(old->groupname.data, group,
-        old->groupname.len, grl) == 0);
-    int nm = (ngx_memn2cmp(n->groupname.data, group,
-        n->groupname.len, grl) == 0);
-    if (om && !nm)
-        return old;
-    if (nm && !om)
-        return n;
-    if (n->priority < old->priority)
-        return n;
-    return old;
 }
 
 // Check should we process request at all
@@ -608,8 +576,8 @@ tr_header_filter(ngx_http_request_t *r)
   DictConfig* bestdict = nullptr;
   Storage::Value* quasidict = nullptr;
   while (val.len >= 8) {
-    DictConfig* d = find_dict(val.data, conf);
-    bestdict = choose_bestdict(bestdict, d, group.data, group.len);
+    DictConfig* d = conf->dict_factory->find_dictionary(val.data);
+    bestdict = conf->dict_factory->choose_best_dictionary(bestdict, d, group);
     if (quasidict == nullptr && d == nullptr) {
       quasidict = find_quasidict(r, val.data);
       ngx_log_error(NGX_LOG_INFO,
@@ -1402,7 +1370,8 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     if (cf->args->nelts >= 3) {
         groupname = value[2];
     }
-    ngx_int_t prio = conf->dict_conf_storage->size();
+
+    ngx_int_t prio = -1;
     if (cf->args->nelts >= 4) {
         prio = ngx_atoi(value[3].data, value[3].len);
         if (prio == NGX_ERROR) {
@@ -1410,8 +1379,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
         }
     }
 
-    auto* data = pool_alloc<Dictionary>(cf);
-    conf->dict_storage->emplace_back(data);
+    auto* data = conf->dict_factory->allocate_dictionary();
 
     const char *p = init_dict_data(cf, &value[1], data);
     if (p != nullptr) {
@@ -1419,24 +1387,17 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
         return const_cast<char*>(p);
     }
 
-    conf->dict_conf_storage->emplace_back();
-    auto sdc = conf->dict_conf_storage->rbegin();
+    auto* sdc = conf->dict_factory->allocate_config();
     sdc->groupname.len = groupname.len++;
     sdc->groupname.data = ngx_pstrdup(cf->pool, &groupname);
-    sdc->priority = prio;
+    if (prio != -1)
+      sdc->priority = prio;
     sdc->dict = data;
     sdc->best = 0;
 
     return NGX_CONF_OK;
 }
 
-// TODO Move into sdch_dict_conf
-bool compare_dict_conf(const DictConfig& a, const DictConfig& b) {
-  ngx_int_t c = ngx_strcmp(a.groupname.data, b.groupname.data);
-  if (c != 0)
-    return c < 0;
-  return a.priority < b.priority;
-}
 
 static char *
 tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
@@ -1470,23 +1431,7 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
       return NGX_CONF_OK;
 
     // Merge dictionaries from parent.
-    conf->dict_conf_storage->insert(conf->dict_conf_storage->end(),
-        prev->dict_conf_storage->begin(),
-        prev->dict_conf_storage->end());
-
-    // And sort them
-    std::sort(conf->dict_conf_storage->begin(), conf->dict_conf_storage->end(),
-        compare_dict_conf);
-
-    if (!conf->dict_conf_storage->empty()) {
-        conf->dict_conf_storage->begin()->best = 1;
-    }
-    auto& dse = *conf->dict_conf_storage;
-    for (size_t i = 1; i < dse.size(); ++i) {
-        if (ngx_strcmp(dse[i-1].groupname.data, dse[i].groupname.data)) {
-            dse[i].best = 1;
-        }
-    }
+    conf->dict_factory->merge(prev->dict_factory);
 
     ngx_conf_merge_str_value(conf->sdch_group, prev->sdch_group, "default");
     ccv.value = &conf->sdch_group;
