@@ -377,7 +377,7 @@ ok:
     return NGX_OK;
 }
 
-static sdch_dict_conf* find_dict(u_char* h, Config* conf) {
+static DictConfig* find_dict(u_char* h, Config* conf) {
   for (auto& c : *conf->dict_conf_storage) {
     if (ngx_strncmp(h, c.dict->client_id().c_str(), 8) == 0)
       return &c;
@@ -459,8 +459,8 @@ expand_disable(ngx_http_request_t *r, Config *conf)
     return 0;
 }
 
-static sdch_dict_conf *
-choose_bestdict(sdch_dict_conf *old, sdch_dict_conf *n, u_char *group,
+static DictConfig *
+choose_bestdict(DictConfig *old, DictConfig *n, u_char *group,
     u_int grl)
 {
     if (old == nullptr)
@@ -605,10 +605,10 @@ tr_header_filter(ngx_http_request_t *r)
   if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
     return NGX_ERROR;
   }
-  sdch_dict_conf* bestdict = nullptr;
+  DictConfig* bestdict = nullptr;
   Storage::Value* quasidict = nullptr;
   while (val.len >= 8) {
-    sdch_dict_conf* d = find_dict(val.data, conf);
+    DictConfig* d = find_dict(val.data, conf);
     bestdict = choose_bestdict(bestdict, d, group.data, group.len);
     if (quasidict == nullptr && d == nullptr) {
       quasidict = find_quasidict(r, val.data);
@@ -1431,7 +1431,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 }
 
 // TODO Move into sdch_dict_conf
-bool compare_dict_conf(const sdch_dict_conf& a, const sdch_dict_conf& b) {
+bool compare_dict_conf(const DictConfig& a, const DictConfig& b) {
   ngx_int_t c = ngx_strcmp(a.groupname.data, b.groupname.data);
   if (c != 0)
     return c < 0;

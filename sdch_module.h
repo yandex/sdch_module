@@ -19,15 +19,7 @@ extern ngx_module_t sdch_module;
 
 namespace sdch {
 
-class Dictionary;
 class RequestContext;
-
-typedef struct {
-    ngx_str_t            groupname;
-    ngx_uint_t           priority;
-    int                  best;
-    Dictionary          *dict;
-} sdch_dict_conf;
 
 //  It will be needed by OutputHandler
 ssize_t tr_filter_write(RequestContext* ctx, const char *buf, size_t len);

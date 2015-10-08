@@ -3,6 +3,8 @@
 
 #include "sdch_config.h"
 
+#include "sdch_module.h"
+
 namespace sdch {
 
 Config::Config(ngx_pool_t* pool)

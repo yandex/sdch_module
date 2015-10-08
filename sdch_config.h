@@ -12,8 +12,8 @@ extern "C" {
 
 #include <vector>
 
+#include "sdch_dict_config.h"
 #include "sdch_pool_alloc.h"
-#include "sdch_module.h"  // sdch_dict_conf
 
 namespace sdch {
 
@@ -46,8 +46,7 @@ class Config {
   using DictStorage = std::vector<Dictionary*, PoolAllocator<Dictionary*>>;
   DictStorage* dict_storage;
 
-  using DictConfStorage =
-      std::vector<sdch_dict_conf, PoolAllocator<sdch_dict_conf> >;
+  using DictConfStorage = std::vector<DictConfig, PoolAllocator<DictConfig>>;
   DictConfStorage* dict_conf_storage;
 
   ngx_str_t sdch_group;
