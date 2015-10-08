@@ -17,7 +17,7 @@ class Dictionary;
 struct DictConfig {
   ngx_str_t groupname;
   ngx_uint_t priority;
-  int best;
+  bool best;
   Dictionary* dict;
 };
 

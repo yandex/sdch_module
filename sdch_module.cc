@@ -1379,21 +1379,18 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
         }
     }
 
-    auto* data = conf->dict_factory->allocate_dictionary();
+    auto* dict = conf->dict_factory->allocate_dictionary();
 
-    const char *p = init_dict_data(cf, &value[1], data);
+    const char *p = init_dict_data(cf, &value[1], dict);
     if (p != nullptr) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
         return const_cast<char*>(p);
     }
 
-    auto* sdc = conf->dict_factory->allocate_config();
-    sdc->groupname.len = groupname.len;
-    sdc->groupname.data = ngx_pstrdup(cf->pool, &groupname);
-    if (prio != -1)
-      sdc->priority = prio;
-    sdc->dict = data;
-    sdc->best = 0;
+    auto* sdc = conf->dict_factory->store_config(
+        dict,
+        groupname,
+        prio);
 
     return NGX_CONF_OK;
 }

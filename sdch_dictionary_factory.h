@@ -25,8 +25,10 @@ class DictionaryFactory {
   // Allocate new Dictionary. We keep ownership
   Dictionary* allocate_dictionary();
 
-  // Allocate new DictConfig. We keep ownership.
-  DictConfig* allocate_config();
+  // Allocate new DictConfig and store it internally. We keep ownership.
+  DictConfig* store_config(Dictionary* dict,
+                           ngx_str_t& groupname,
+                           ngx_uint_t prio);
 
   // Search for Dictionary
   DictConfig* find_dictionary(const u_char* client_id);

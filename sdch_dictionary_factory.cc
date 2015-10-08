@@ -23,11 +23,20 @@ DictionaryFactory::DictionaryFactory(ngx_pool_t* pool)
       dict_storage_(DictStorage::allocator_type(pool)),
       conf_storage_(DictConfStorage::allocator_type(pool)) {}
 
-DictConfig* DictionaryFactory::allocate_config() {
-   conf_storage_.emplace_back();
-   auto* res = &*conf_storage_.rbegin();
-   res->priority = conf_storage_.size() - 1;
-   return res;
+DictConfig* DictionaryFactory::store_config(Dictionary* dict,
+                                            ngx_str_t& groupname,
+                                            ngx_uint_t prio) {
+
+  conf_storage_.emplace_back();
+  auto* res = &*conf_storage_.rbegin();
+
+  res->groupname.len = groupname.len;
+  res->groupname.data = ngx_pstrdup(pool_, &groupname);
+  res->priority = prio != -1 ? prio : conf_storage_.size() - 1;
+  res->dict = dict;
+  res->best = false;
+
+  return res;
 }
 
 Dictionary* DictionaryFactory::allocate_dictionary() {
