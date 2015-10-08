@@ -1388,7 +1388,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     }
 
     auto* sdc = conf->dict_factory->allocate_config();
-    sdc->groupname.len = groupname.len++;
+    sdc->groupname.len = groupname.len;
     sdc->groupname.data = ngx_pstrdup(cf->pool, &groupname);
     if (prio != -1)
       sdc->priority = prio;
