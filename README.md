@@ -64,6 +64,12 @@ sdch_disablecv
 
 Disable SDCH if the value is non-empty and is not equal to 0.
 
+sdch_min_lenght
+--------------
+**syntax:** *sdch_min_length &lt;length&gt;*
+
+Minimal size of response to encode.
+
 
 sdch_quasi
 ----------

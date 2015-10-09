@@ -38,7 +38,7 @@ class Config {
   static size_t default_bufs_num() { return ngx_pagesize; }
   ngx_bufs_t bufs;
 
-  ssize_t min_length;
+  ssize_t min_length = NGX_CONF_UNSET_SIZE;
 
   ngx_array_t* types_keys;
 

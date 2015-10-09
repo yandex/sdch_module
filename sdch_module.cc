@@ -188,6 +188,15 @@ static ngx_command_t  tr_filter_commands[] = {
       offsetof(Config, enable_quasi),
       nullptr },
 
+    { ngx_string("sdch_min_length"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_HTTP_LIF_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(Config, min_length),
+      nullptr },
+
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
