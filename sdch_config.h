@@ -27,7 +27,6 @@ class Config {
   static Config* get(ngx_http_request_t* r);
 
   ngx_flag_t enable     = NGX_CONF_UNSET;
-  ngx_flag_t no_buffer;
 
   ngx_hash_t types;
   ngx_array_t* types_keys;

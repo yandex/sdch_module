@@ -1144,10 +1144,6 @@ tr_filter_deflate(RequestContext *ctx)
 
     conf = Config::get(r);
 
-    if (conf->no_buffer && ctx->in == nullptr) {
-        return tr_filter_out_buf_out(ctx);
-    }
-
     return NGX_AGAIN;
 }
 
