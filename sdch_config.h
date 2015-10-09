@@ -30,6 +30,7 @@ class Config {
   ngx_flag_t no_buffer;
 
   ngx_hash_t types;
+  ngx_array_t* types_keys;
 
   ngx_str_t sdch_disablecv_s;
   ngx_http_complex_value_t sdch_disablecv;
@@ -39,8 +40,6 @@ class Config {
   ngx_bufs_t bufs;
 
   ssize_t min_length = NGX_CONF_UNSET_SIZE;
-
-  ngx_array_t* types_keys;
 
   ngx_str_t sdch_group;
   ngx_http_complex_value_t sdch_groupcv;

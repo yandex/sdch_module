@@ -64,7 +64,7 @@ sdch_disablecv
 
 Disable SDCH if the value is non-empty and is not equal to 0.
 
-sdch_min_lenght
+sdch_min_length
 --------------
 **syntax:** *sdch_min_length &lt;length&gt;*
 
