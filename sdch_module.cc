@@ -39,7 +39,6 @@ class fdholder {
 }  // namespace
 
 // static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
-static ngx_int_t tr_filter_buffer(RequestContext* ctx, ngx_chain_t* in);
 static ngx_int_t tr_filter_out_buf_out(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
 static ngx_int_t tr_filter_add_data(RequestContext* ctx);
@@ -806,55 +805,6 @@ failed:
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                "http sdch filter failed return");
     return NGX_ERROR;
-}
-
-static ngx_int_t
-tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in)
-{
-    size_t                 size, buffered;
-    ngx_buf_t             *b, *buf;
-    ngx_chain_t           *cl, **ll;
-    ngx_http_request_t    *r;
-    Config  *conf;
-
-    r = ctx->request;
-
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "tr_filter_buffer");
-
-    //r->connection->buffered |= NGX_HTTP_GZIP_BUFFERED;
-
-    buffered = 0;
-    ll = &ctx->in;
-
-    for (cl = ctx->in; cl; cl = cl->next) {
-        buffered += cl->buf->last - cl->buf->pos;
-        ll = &cl->next;
-    }
-
-    conf = Config::get(r);
-
-    while (in) {
-        cl = ngx_alloc_chain_link(r->pool);
-        if (cl == nullptr) {
-            return NGX_ERROR;
-        }
-
-        b = in->buf;
-
-        size = b->last - b->pos;
-        buffered += size;
-
-        cl->buf = b;
-
-        *ll = cl;
-        ll = &cl->next;
-        in = in->next;
-    }
-
-    *ll = nullptr;
-
-    return NGX_DONE;
 }
 
 
