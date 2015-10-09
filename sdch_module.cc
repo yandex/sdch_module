@@ -629,7 +629,6 @@ tr_header_filter(ngx_http_request_t *r)
   }
 
   ctx->request = r;
-  ctx->buffering = (conf->postpone_gzipping != 0);
   if (bestdict != nullptr) {
     ctx->dict = bestdict->dict;
   } else if (quasidict != nullptr) {
@@ -689,37 +688,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                    "http sdch filter body 001 free=%p busy=%p out=%p", 
                    ctx->free, ctx->busy, ctx->out);
 
-    if (ctx->buffering) {
-
-        /*
-         * With default memory settings zlib starts to output gzipped data
-         * only after it has got about 90K, so it makes sense to allocate
-         * zlib memory (200-400K) only after we have enough data to compress.
-         * Although we copy buffers, nevertheless for not big responses
-         * this allows to allocate zlib memory, to compress and to output
-         * the response in one step using hot CPU cache.
-         */
-
-        if (in) {
-            switch (tr_filter_buffer(ctx, in)) {
-
-            case NGX_OK:
-                return NGX_OK;
-
-            case NGX_DONE:
-                in = nullptr;
-                break;
-
-            default:  /* NGX_ERROR */
-                goto failed;
-            }
-
-        } else {
-            ctx->buffering = 0;
-        }
-    }
-
-    if (! ctx->started) {
+    if (!ctx->started) {
         if (tr_filter_deflate_start(ctx) != NGX_OK) {
             goto failed;
         }
@@ -867,28 +836,7 @@ tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in)
         size = b->last - b->pos;
         buffered += size;
 
-        if (b->flush || b->last_buf || buffered > conf->postpone_gzipping) {
-            ctx->buffering = 0;
-        }
-
-        if (ctx->buffering && size) {
-
-            buf = ngx_create_temp_buf(r->pool, size);
-            if (buf == nullptr) {
-                return NGX_ERROR;
-            }
-
-            buf->last = ngx_cpymem(buf->pos, b->pos, size);
-            b->pos = b->last;
-
-            buf->last_buf = b->last_buf;
-            buf->tag = (ngx_buf_tag_t) &sdch_module;
-
-            cl->buf = buf;
-
-        } else {
-            cl->buf = b;
-        }
+        cl->buf = b;
 
         *ll = cl;
         ll = &cl->next;
@@ -897,7 +845,7 @@ tr_filter_buffer(RequestContext *ctx, ngx_chain_t *in)
 
     *ll = nullptr;
 
-    return ctx->buffering ? NGX_OK : NGX_DONE;
+    return NGX_DONE;
 }
 
 
