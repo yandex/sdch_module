@@ -967,7 +967,8 @@ tr_filter_get_buf(RequestContext *ctx)
         ctx->out_buf = ctx->free->buf;
         ctx->free = ctx->free->next;
 
-    } else if (1 /* ctx->bufs < conf->bufs.num */) {
+    } else if (true || ctx->bufs < conf->bufs.num) {
+        // We can't handle nomem situation at the moment.
 
         ctx->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
         if (ctx->out_buf == nullptr) {
@@ -1352,8 +1353,10 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_compile_complex_value_t ccv;
 
     ngx_conf_merge_value(conf->enable, prev->enable, 0);
-    ngx_conf_merge_bufs_value(conf->bufs, prev->bufs,
-                              (128 * 1024) / ngx_pagesize, ngx_pagesize);
+    ngx_conf_merge_bufs_value(conf->bufs,
+                              prev->bufs,
+                              Config::default_bufs_num(),
+                              Config::default_bufs_size());
 
     ngx_conf_merge_str_value(conf->sdch_disablecv_s, prev->sdch_disablecv_s, "");
     ngx_memzero(&ccv, sizeof(ccv));
