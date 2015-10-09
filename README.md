@@ -70,6 +70,11 @@ sdch_min_length
 
 Minimal size of response to encode.
 
+sdch_types
+---
+**syntax:** *sdch_types &lt;types&gt;*
+
+Enable encoding responses with list of mime/types. Default is text/html.
 
 sdch_quasi
 ----------
