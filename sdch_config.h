@@ -36,9 +36,6 @@ class Config {
 
   ngx_bufs_t bufs;
 
-  size_t postpone_gzipping;
-  ngx_int_t level;
-  size_t memlevel;
   ssize_t min_length;
 
   ngx_array_t* types_keys;
