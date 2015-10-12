@@ -974,7 +974,7 @@ tr_filter_write(RequestContext *ctx, const char *buf, size_t len)
       tr_filter_get_buf(ctx);
     }
   }
-  ctx->zout += rlen;
+  ctx->total_out += rlen;
   return rlen;
 }
 
@@ -997,7 +997,7 @@ tr_filter_deflate(RequestContext *ctx)
                                    ctx->zstream.avail_in);
     ctx->zstream.next_in += l0;
     ctx->zstream.avail_in -= l0;
-    ctx->zin += l0;
+    ctx->total_in += l0;
     rc = (ctx->flush == Z_FINISH) ? Z_STREAM_END : Z_OK;
 
     if (rc != Z_OK && rc != Z_STREAM_END && rc != Z_BUF_ERROR) {
@@ -1143,7 +1143,7 @@ tr_ratio_variable(ngx_http_request_t *r,
     v->not_found = 0;
 
 
-    if (ctx == nullptr || ctx->zout == 0) {
+    if (ctx == nullptr || ctx->total_out == 0) {
         v->not_found = 1;
         return NGX_OK;
     }
@@ -1153,10 +1153,10 @@ tr_ratio_variable(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    zint = (ngx_uint_t) (ctx->zin / ctx->zout);
-    zfrac = (ngx_uint_t) ((ctx->zin * 100 / ctx->zout) % 100);
+    zint = (ngx_uint_t) (ctx->total_in / ctx->total_out);
+    zfrac = (ngx_uint_t) ((ctx->total_in * 100 / ctx->total_out) % 100);
 
-    if ((ctx->zin * 1000 / ctx->zout) % 10 > 4) {
+    if ((ctx->total_in * 1000 / ctx->total_out) % 10 > 4) {
 
         /* the rounding, e.g., 2.125 to 2.13 */
 

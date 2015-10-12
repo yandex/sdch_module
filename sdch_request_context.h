@@ -55,8 +55,8 @@ struct RequestContext {
 
   unsigned store : 1;
 
-  size_t zin;
-  size_t zout;
+  size_t total_in;
+  size_t total_out;
 
   z_stream zstream;
 };
