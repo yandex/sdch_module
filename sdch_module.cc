@@ -499,14 +499,10 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf) {
 static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
-  ngx_table_elt_t* h;
-  RequestContext* ctx = nullptr;
-  Config* conf;
-
   ngx_log_debug(
       NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter header 000");
 
-  conf = Config::get(r);
+  auto* conf = Config::get(r);
 
   ngx_str_t val;
   if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
@@ -610,7 +606,7 @@ tr_header_filter(ngx_http_request_t *r)
     }
   }
 
-  ctx = pool_alloc<RequestContext>(r, r);
+  auto* ctx = pool_alloc<RequestContext>(r, r);
   if (ctx == nullptr) {
     return NGX_ERROR;
   }
@@ -627,7 +623,7 @@ tr_header_filter(ngx_http_request_t *r)
   ctx->store = ctxstore;
 
   if (ctx->dict != nullptr) {
-    h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
+    auto* h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
     if (h == nullptr) {
       return NGX_ERROR;
     }
