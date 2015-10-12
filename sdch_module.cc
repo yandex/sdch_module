@@ -711,21 +711,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
     }
 
-    if (ctx->nomem) {
-
-        /* flush busy buffers */
-
-        if (ngx_http_next_body_filter(r, nullptr) == NGX_ERROR) {
-            goto failed;
-        }
-
-        cl = nullptr;
-
-        ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &cl,
-                                (ngx_buf_tag_t) &sdch_module);
-        ctx->nomem = 0;
-    }
-
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter mainloop entry");
 
@@ -785,8 +770,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http tr filter loop update_chains free=%p busy=%p out=%p", 
                        ctx->free, ctx->busy, ctx->out);
-
-        ctx->nomem = 0;
 
         if (ctx->done) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -926,9 +909,7 @@ tr_filter_get_buf(RequestContext *ctx)
         ctx->out_buf = ctx->free->buf;
         ctx->free = ctx->free->next;
 
-    } else if (true || ctx->bufs < conf->bufs.num) {
-        // We can't handle nomem situation at the moment.
-
+    } else {
         ctx->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
         if (ctx->out_buf == nullptr) {
             return NGX_ERROR;
@@ -937,10 +918,6 @@ tr_filter_get_buf(RequestContext *ctx)
         ctx->out_buf->tag = (ngx_buf_tag_t) &sdch_module;
         ctx->out_buf->recycled = 1;
         ctx->bufs++;
-
-    } else {
-        ctx->nomem = 1;
-        return NGX_DECLINED;
     }
 
     ctx->zstream.next_out = ctx->out_buf->pos;
