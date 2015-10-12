@@ -38,7 +38,6 @@ class fdholder {
 
 }  // namespace
 
-// static void tr_filter_memory(ngx_http_request_t *r, RequestContext *ctx);
 static ngx_int_t tr_filter_out_buf_out(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
 static ngx_int_t tr_filter_add_data(RequestContext* ctx);
@@ -46,11 +45,6 @@ static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
-#if 0
-static void *ngx_http_gzip_filter_alloc(void *opaque, u_int items,
-    u_int size);
-static void ngx_http_gzip_filter_free(void *opaque, void *address);
-#endif
 static void ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t* r,
                                                RequestContext* ctx);
 
