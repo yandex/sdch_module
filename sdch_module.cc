@@ -973,13 +973,11 @@ tr_filter_deflate(RequestContext *ctx)
     ngx_chain_t           *cl;
     Config  *conf;
 
-#if 0
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                  "deflate in: ni:%p no:%p ai:%ud ao:%ud fl:%d",
-                 ctx->zstream.next_in, ctx->zstream.next_out,
-                 ctx->zstream.avail_in, ctx->zstream.avail_out,
+                 ctx->in_buf->pos, ctx->out_buf->pos,
+                 ngx_buf_size(ctx->in_buf), ctx->out_buf->last - ctx->out_buf->pos,
                  ctx->flush);
-#endif
 
     int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
                                    ngx_buf_size(ctx->in_buf));
@@ -993,29 +991,12 @@ tr_filter_deflate(RequestContext *ctx)
         return NGX_ERROR;
     }
 
-#if 0
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "deflate out: ni:%p no:%p ai:%ud ao:%ud rc:%d",
-                   ctx->zstream.next_in, ctx->zstream.next_out,
-                   ctx->zstream.avail_in, ctx->zstream.avail_out,
-                   rc);
-#endif
+                 "deflate out: ni:%p no:%p ai:%ud ao:%ud fl:%d",
+                 ctx->in_buf->pos, ctx->out_buf->pos,
+                 ngx_buf_size(ctx->in_buf), ctx->out_buf->last - ctx->out_buf->pos,
+                 ctx->flush);
 
-    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "gzip in_buf:%p pos:%p",
-                   ctx->in_buf, ctx->in_buf->pos);
-
-#if 0
-    if (ctx->zstream.next_in) {
-        ctx->in_buf->pos = ctx->zstream.next_in;
-
-        if (ctx->zstream.avail_in == 0) {
-            ctx->zstream.next_in = nullptr;
-        }
-    }
-
-    ctx->out_buf->last = ctx->zstream.next_out;
-#endif
 
     if (ctx->flush == Z_SYNC_FLUSH) {
 
@@ -1069,8 +1050,6 @@ tr_filter_deflate_end(RequestContext *ctx)
   if (ctx->quasidict) {
     MainConfig::get(ctx->request)->storage.unlock(ctx->quasidict);
   }
-
-  // ngx_pfree(r->pool, ctx->preallocated);
 
   ctx->out_buf->last_buf = 1;
   ngx_int_t rc = tr_filter_out_buf_out(ctx);
