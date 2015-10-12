@@ -11,6 +11,8 @@ extern "C" {
 #include <ngx_http.h>
 }
 
+#include <memory>
+
 #include "sdch_module.h"
 
 #include "sdch_dictionary.h"
@@ -31,7 +33,7 @@ struct RequestContext {
 
   ngx_http_request_t* request;
   Handler*            handler;
-  Storage::Value*     quasidict;
+  Storage::ValueHolder quasidict;
 
 
   ngx_chain_t* in;

@@ -44,7 +44,7 @@ bool Storage::store(const std::string& key, Value value) {
   return true;
 }
 
-Storage::Value* Storage::find(const std::string& key) {
+Storage::ValueHolder Storage::find(const std::string& key) {
   auto i = values_.find(key);
   if (i == values_.end())
     return nullptr;
@@ -52,7 +52,7 @@ Storage::Value* Storage::find(const std::string& key) {
   i->second.locked = true;
 
   // TODO Update LRU?
-  return &i->second;
+  return std::unique_ptr<Value, Unlocker>(&i->second, Unlocker(this));
 }
 
 void Storage::unlock(Value* v) {

@@ -27,13 +27,26 @@ class Storage {
     bool locked;
   };
 
+  class Unlocker {
+   public:
+    Unlocker() {}
+    explicit Unlocker(Storage* owner) : owner_(owner) {}
+
+    void operator()(Value* ptr) const {
+      owner_->unlock(ptr);
+    }
+
+   private:
+    Storage* owner_;
+  };
+
+  using ValueHolder = std::unique_ptr<Storage::Value, Storage::Unlocker>;
+
   Storage();
 
   bool store(const std::string& key, Value value);
   // Get Value and "lock" it.
-  Value* find(const std::string& key);
-  // Unlock used Value
-  void unlock(Value* v);
+  ValueHolder find(const std::string& key);
 
   bool clear(time_t ts);
 
@@ -43,8 +56,13 @@ class Storage {
   void set_max_size(size_t max_size) { max_size_ = max_size; }
 
  private:
+  friend class Unlocker;
+
   using StoreType = std::map<std::string, Value>;
   using LRUType = std::multimap<time_t, std::string>;
+
+  // Unlock used Value
+  void unlock(Value* v);
 
   // Values
   StoreType values_;

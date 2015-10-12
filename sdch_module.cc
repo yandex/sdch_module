@@ -378,15 +378,13 @@ ok:
     return NGX_OK;
 }
 
-static Storage::Value*
-find_quasidict(ngx_http_request_t* r, u_char *h)
-{
-    char nm[9];
-    nm[8] = 0;
-    memcpy(nm, h, 8);
+static Storage::ValueHolder find_quasidict(ngx_http_request_t* r, u_char* h) {
+  char nm[9];
+  nm[8] = 0;
+  memcpy(nm, h, 8);
 
-    auto* main = MainConfig::get(r);
-    return main->storage.find(nm);
+  auto* main = MainConfig::get(r);
+  return main->storage.find(nm);
 }
 
 static ngx_int_t
@@ -576,7 +574,7 @@ tr_header_filter(ngx_http_request_t *r)
     return NGX_ERROR;
   }
   DictConfig* bestdict = nullptr;
-  Storage::Value* quasidict = nullptr;
+  Storage::ValueHolder quasidict;
   while (val.len >= 8) {
     DictConfig* d = conf->dict_factory->find_dictionary(val.data);
     bestdict = conf->dict_factory->choose_best_dictionary(bestdict, d, group);
@@ -587,7 +585,7 @@ tr_header_filter(ngx_http_request_t *r)
                     0,
                     "find_quasidict %.8s -> %p",
                     val.data,
-                    quasidict);
+                    quasidict.get());
     }
     val.data += 8;
     val.len -= 8;
@@ -634,7 +632,7 @@ tr_header_filter(ngx_http_request_t *r)
   if (bestdict != nullptr) {
     ctx->dict = bestdict->dict;
   } else if (quasidict != nullptr) {
-    ctx->quasidict = quasidict;
+    ctx->quasidict = std::move(quasidict);
     ctx->dict = &ctx->quasidict->dict;
   } else {
     ctx->dict = nullptr;
@@ -1028,9 +1026,6 @@ tr_filter_deflate_end(RequestContext *ctx)
 {
   ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
   ctx->handler->on_finish();
-  if (ctx->quasidict) {
-    MainConfig::get(ctx->request)->storage.unlock(ctx->quasidict);
-  }
 
   ctx->out_buf->last_buf = 1;
   ngx_int_t rc = tr_filter_out_buf_out(ctx);
