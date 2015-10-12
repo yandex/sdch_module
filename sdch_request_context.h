@@ -51,7 +51,6 @@ struct RequestContext {
 
   unsigned started : 1;
   unsigned flush : 4;
-  unsigned redo : 1;
   unsigned done : 1;
   unsigned nomem : 1;
 

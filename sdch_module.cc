@@ -850,7 +850,7 @@ tr_filter_add_data(RequestContext *ctx)
 #if (NGX_DEBUG)
     ngx_http_request_t *r = ctx->request;
 #endif
-    if (ctx->zstream.avail_in || ctx->flush != Z_NO_FLUSH || ctx->redo) {
+    if (ctx->zstream.avail_in || ctx->flush != Z_NO_FLUSH) {
         return NGX_OK;
     }
 
@@ -1010,11 +1010,11 @@ tr_filter_deflate(RequestContext *ctx)
     ngx_chain_t           *cl;
     Config  *conf;
 
-    ngx_log_debug6(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                 "deflate in: ni:%p no:%p ai:%ud ao:%ud fl:%d redo:%d",
+    ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                 "deflate in: ni:%p no:%p ai:%ud ao:%ud fl:%d",
                  ctx->zstream.next_in, ctx->zstream.next_out,
                  ctx->zstream.avail_in, ctx->zstream.avail_out,
-                 ctx->flush, ctx->redo);
+                 ctx->flush);
 
     int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->zstream.next_in),
                                    ctx->zstream.avail_in);
@@ -1048,8 +1048,6 @@ tr_filter_deflate(RequestContext *ctx)
     }
 
     ctx->out_buf->last = ctx->zstream.next_out;
-
-    ctx->redo = 0;
 
     if (ctx->flush == Z_SYNC_FLUSH) {
 
