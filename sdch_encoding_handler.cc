@@ -41,7 +41,7 @@ ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
   // It will call ".append" which will pass it to the next_
   auto oldsize = cursize_;
   enc_->EncodeChunkToInterface(buf, len, this);
-  return cursize_ - oldsize;
+  return len;
 }
 
 void EncodingHandler::on_finish() {
