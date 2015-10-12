@@ -967,12 +967,6 @@ tr_filter_deflate(RequestContext *ctx)
     ngx_chain_t           *cl;
     Config  *conf;
 
-    ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                 "deflate in: ni:%p no:%p ai:%ud ao:%ud fl:%d",
-                 ctx->in_buf->pos, ctx->out_buf->pos,
-                 ngx_buf_size(ctx->in_buf), ctx->out_buf->last - ctx->out_buf->pos,
-                 ctx->flush);
-
     int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
                                    ngx_buf_size(ctx->in_buf));
     ctx->in_buf->pos += l0;
@@ -984,13 +978,6 @@ tr_filter_deflate(RequestContext *ctx)
                       "deflate() failed: %d, %d", ctx->flush, rc);
         return NGX_ERROR;
     }
-
-    ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                 "deflate out: ni:%p no:%p ai:%ud ao:%ud fl:%d",
-                 ctx->in_buf->pos, ctx->out_buf->pos,
-                 ngx_buf_size(ctx->in_buf), ctx->out_buf->last - ctx->out_buf->pos,
-                 ctx->flush);
-
 
     if (ctx->flush == Z_SYNC_FLUSH) {
 
