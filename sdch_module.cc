@@ -833,7 +833,7 @@ tr_filter_add_data(RequestContext *ctx)
 #if (NGX_DEBUG)
     ngx_http_request_t *r = ctx->request;
 #endif
-    if (ctx->zstream.avail_in || ctx->flush != Z_NO_FLUSH) {
+    if ((ctx->in_buf && ngx_buf_size(ctx->in_buf)) || ctx->flush != Z_NO_FLUSH) {
         return NGX_OK;
     }
 
@@ -864,13 +864,10 @@ tr_filter_add_data(RequestContext *ctx)
 
     ctx->in = ctx->in->next;
 
-    ctx->zstream.next_in = ctx->in_buf->pos;
-    ctx->zstream.avail_in = ctx->in_buf->last - ctx->in_buf->pos;
-
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch in_buf:%p ni:%p ai:%ud",
                    ctx->in_buf,
-                   ctx->zstream.next_in, ctx->zstream.avail_in);
+                   ctx->in_buf->pos, ngx_buf_size(ctx->in_buf));
 
     if (ctx->in_buf->last_buf) {
         ctx->flush = Z_FINISH;
@@ -879,12 +876,7 @@ tr_filter_add_data(RequestContext *ctx)
         ctx->flush = Z_SYNC_FLUSH;
     }
 
-    if (ctx->zstream.avail_in) {
-
-        //ctx->crc32 = crc32(ctx->crc32, ctx->zstream.next_in,
-        //                   ctx->zstream.avail_in);
-
-    } else if (ctx->flush == Z_NO_FLUSH) {
+    if (ctx->flush == Z_NO_FLUSH) {
         return NGX_AGAIN;
     }
 
@@ -898,7 +890,7 @@ tr_filter_get_buf(RequestContext *ctx)
     ngx_http_request_t *r = ctx->request;
     Config  *conf;
 
-    assert (ctx->zstream.avail_out == 0);
+    assert(!ctx->out_buf || !ngx_buf_size(ctx->out_buf));
 
     conf = Config::get(r);
 
@@ -920,17 +912,12 @@ tr_filter_get_buf(RequestContext *ctx)
         ctx->bufs++;
     }
 
-    ctx->zstream.next_out = ctx->out_buf->pos;
-    ctx->zstream.avail_out = conf->bufs.size;
-
     return NGX_OK;
 }
 
 static ngx_int_t
 tr_filter_out_buf_out(RequestContext *ctx)
 {
-    ctx->out_buf->last = ctx->zstream.next_out;
-    assert(ctx->out_buf->last != ctx->out_buf->pos);
     ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
     if (cl == nullptr) {
         return NGX_ERROR;
@@ -942,7 +929,6 @@ tr_filter_out_buf_out(RequestContext *ctx)
     ctx->last_out = &cl->next;
 
     ctx->out_buf = nullptr;
-    ctx->zstream.avail_out = 0;
 
     return NGX_OK;
 }
@@ -953,16 +939,15 @@ tr_filter_write(RequestContext *ctx, const char *buf, size_t len)
   int rlen = 0;
 
   while (len > 0) {
-    unsigned l0 = len;
-    if (ctx->zstream.avail_out < l0)
-      l0 = ctx->zstream.avail_out;
-    if (l0 > 0) {
-      memcpy(ctx->zstream.next_out, buf, l0);
-      len -= l0;
-      buf += l0;
-      ctx->zstream.avail_out -= l0;
-      ctx->zstream.next_out += l0;
-      rlen += l0;
+    if (ctx->out_buf) {
+      auto l0 = std::min((off_t)len, ctx->out_buf->end - ctx->out_buf->last);
+      if (l0 > 0) {
+        memcpy(ctx->out_buf->last, buf, l0);
+        len -= l0;
+        buf += l0;
+        ctx->out_buf->last += l0;
+        rlen += l0;
+      }
     }
     if (len > 0) {
       if (ctx->out_buf) {
@@ -974,6 +959,7 @@ tr_filter_write(RequestContext *ctx, const char *buf, size_t len)
       tr_filter_get_buf(ctx);
     }
   }
+
   ctx->total_out += rlen;
   return rlen;
 }
@@ -987,16 +973,17 @@ tr_filter_deflate(RequestContext *ctx)
     ngx_chain_t           *cl;
     Config  *conf;
 
+#if 0
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                  "deflate in: ni:%p no:%p ai:%ud ao:%ud fl:%d",
                  ctx->zstream.next_in, ctx->zstream.next_out,
                  ctx->zstream.avail_in, ctx->zstream.avail_out,
                  ctx->flush);
+#endif
 
-    int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->zstream.next_in),
-                                   ctx->zstream.avail_in);
-    ctx->zstream.next_in += l0;
-    ctx->zstream.avail_in -= l0;
+    int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
+                                   ngx_buf_size(ctx->in_buf));
+    ctx->in_buf->pos += l0;
     ctx->total_in += l0;
     rc = (ctx->flush == Z_FINISH) ? Z_STREAM_END : Z_OK;
 
@@ -1006,16 +993,19 @@ tr_filter_deflate(RequestContext *ctx)
         return NGX_ERROR;
     }
 
+#if 0
     ngx_log_debug5(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "deflate out: ni:%p no:%p ai:%ud ao:%ud rc:%d",
                    ctx->zstream.next_in, ctx->zstream.next_out,
                    ctx->zstream.avail_in, ctx->zstream.avail_out,
                    rc);
+#endif
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "gzip in_buf:%p pos:%p",
                    ctx->in_buf, ctx->in_buf->pos);
 
+#if 0
     if (ctx->zstream.next_in) {
         ctx->in_buf->pos = ctx->zstream.next_in;
 
@@ -1025,6 +1015,7 @@ tr_filter_deflate(RequestContext *ctx)
     }
 
     ctx->out_buf->last = ctx->zstream.next_out;
+#endif
 
     if (ctx->flush == Z_SYNC_FLUSH) {
 
@@ -1043,9 +1034,6 @@ tr_filter_deflate(RequestContext *ctx)
             if (b == nullptr) {
                 return NGX_ERROR;
             }
-
-        } else {
-            ctx->zstream.avail_out = 0;
         }
 
         b->flush = 1;
@@ -1089,12 +1077,7 @@ tr_filter_deflate_end(RequestContext *ctx)
   if (rc != NGX_OK)
     return rc;
 
-  ctx->zstream.avail_in = 0;
-  ctx->zstream.avail_out = 0;
-
   ctx->done = 1;
-
-  // r->connection->buffered &= ~NGX_HTTP_GZIP_BUFFERED;
 
   return NGX_OK;
 }

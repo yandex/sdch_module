@@ -57,8 +57,6 @@ struct RequestContext {
 
   size_t total_in;
   size_t total_out;
-
-  z_stream zstream;
 };
 
 
