@@ -30,7 +30,7 @@ class OutputHandler : public Handler {
 
  private:
   Status get_buf();
-  Status out_buf_out(bool flush);
+  Status flush_out_buf(bool flush);
   Status write(const char* buf, size_t len);
 
   RequestContext* ctx_;
