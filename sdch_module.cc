@@ -45,8 +45,7 @@ static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
-static void ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t* r,
-                                               RequestContext* ctx);
+static void free_copy_buf(RequestContext* ctx);
 
 static ngx_int_t tr_add_variables(ngx_conf_t* cf);
 static ngx_int_t tr_ratio_variable(ngx_http_request_t* r,
@@ -711,7 +710,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http sdch filter loop1 exit");
         if (ctx->out == nullptr) {
-            ngx_http_gzip_filter_free_copy_buf(r, ctx);
+            free_copy_buf(ctx);
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http tr filter loop ret1 %p", ctx->busy);
@@ -724,7 +723,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             goto failed;
         }
 
-        ngx_http_gzip_filter_free_copy_buf(r, ctx);
+        free_copy_buf(ctx);
 
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
                                 (ngx_buf_tag_t) &sdch_module);
@@ -745,7 +744,7 @@ failed:
 
     ctx->done = 1;
 
-    ngx_http_gzip_filter_free_copy_buf(r, ctx);
+    free_copy_buf(ctx);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                "http sdch filter failed return");
@@ -1009,12 +1008,12 @@ tr_filter_deflate_end(RequestContext *ctx)
 
 
 static void
-ngx_http_gzip_filter_free_copy_buf(ngx_http_request_t *r, RequestContext *ctx)
+free_copy_buf(RequestContext *ctx)
 {
     ngx_chain_t  *cl;
 
     for (cl = ctx->copied; cl; cl = cl->next) {
-        ngx_pfree(r->pool, cl->buf->start);
+        ngx_pfree(ctx->request->pool, cl->buf->start);
     }
 
     ctx->copied = nullptr;
