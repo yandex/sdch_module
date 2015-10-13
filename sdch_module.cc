@@ -265,115 +265,103 @@ static ngx_table_elt_t* header_find(ngx_list_t* headers,
   return 0;
 }
 
-static ngx_int_t
-ngx_http_sdch_ok(ngx_http_request_t *r)
-{
-    time_t                     date, expires;
-    ngx_uint_t                 p;
-    ngx_array_t               *cc;
-    ngx_table_elt_t           *e, *d;
-    Config                 *clcf;
+static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
+  time_t date, expires;
+  ngx_uint_t p;
+  ngx_array_t* cc;
+  ngx_table_elt_t* e, *d;
+  Config* clcf;
 
-    if (r != r->main) {
-        return NGX_DECLINED;
-    }
+  if (r != r->main) {
+    return NGX_DECLINED;
+  }
 
-    clcf = Config::get(r);
+  clcf = Config::get(r);
 
-    if (r->headers_in.via == nullptr) {
-        goto ok;
-    }
-
-    p = clcf->sdch_proxied;
-
-    if (p & NGX_HTTP_GZIP_PROXIED_OFF) {
-        return NGX_DECLINED;
-    }
-
-    if (p & NGX_HTTP_GZIP_PROXIED_ANY) {
-        goto ok;
-    }
-
-    if (r->headers_in.authorization && (p & NGX_HTTP_GZIP_PROXIED_AUTH)) {
-        goto ok;
-    }
-
-    e = r->headers_out.expires;
-
-    if (e) {
-
-        if (!(p & NGX_HTTP_GZIP_PROXIED_EXPIRED)) {
-            return NGX_DECLINED;
-        }
-
-        expires = ngx_http_parse_time(e->value.data, e->value.len);
-        if (expires == NGX_ERROR) {
-            return NGX_DECLINED;
-        }
-
-        d = r->headers_out.date;
-
-        if (d) {
-            date = ngx_http_parse_time(d->value.data, d->value.len);
-            if (date == NGX_ERROR) {
-                return NGX_DECLINED;
-            }
-
-        } else {
-            date = ngx_time();
-        }
-
-        if (expires < date) {
-            goto ok;
-        }
-
-        return NGX_DECLINED;
-    }
-
-    cc = &r->headers_out.cache_control;
-
-    if (cc->elts) {
-
-        if ((p & NGX_HTTP_GZIP_PROXIED_NO_CACHE)
-            && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_no_cache,
-                                                 nullptr)
-               >= 0)
-        {
-            goto ok;
-        }
-
-        if ((p & NGX_HTTP_GZIP_PROXIED_NO_STORE)
-            && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_no_store,
-                                                 nullptr)
-               >= 0)
-        {
-            goto ok;
-        }
-
-        if ((p & NGX_HTTP_GZIP_PROXIED_PRIVATE)
-            && ngx_http_parse_multi_header_lines(cc, &ngx_http_gzip_private,
-                                                 nullptr)
-               >= 0)
-        {
-            goto ok;
-        }
-
-        return NGX_DECLINED;
-    }
-
-    if ((p & NGX_HTTP_GZIP_PROXIED_NO_LM) && r->headers_out.last_modified) {
-        return NGX_DECLINED;
-    }
-
-    if ((p & NGX_HTTP_GZIP_PROXIED_NO_ETAG) && r->headers_out.etag) {
-        return NGX_DECLINED;
-    }
-
-ok:
-
-    //r->gzip_ok = 1;
-
+  if (r->headers_in.via == nullptr) {
     return NGX_OK;
+  }
+
+  p = clcf->sdch_proxied;
+
+  if (p & NGX_HTTP_GZIP_PROXIED_OFF) {
+    return NGX_DECLINED;
+  }
+
+  if (p & NGX_HTTP_GZIP_PROXIED_ANY) {
+    return NGX_OK;
+  }
+
+  if (r->headers_in.authorization && (p & NGX_HTTP_GZIP_PROXIED_AUTH)) {
+    return NGX_OK;
+  }
+
+  e = r->headers_out.expires;
+
+  if (e) {
+
+    if (!(p & NGX_HTTP_GZIP_PROXIED_EXPIRED)) {
+      return NGX_DECLINED;
+    }
+
+    expires = ngx_http_parse_time(e->value.data, e->value.len);
+    if (expires == NGX_ERROR) {
+      return NGX_DECLINED;
+    }
+
+    d = r->headers_out.date;
+
+    if (d) {
+      date = ngx_http_parse_time(d->value.data, d->value.len);
+      if (date == NGX_ERROR) {
+        return NGX_DECLINED;
+      }
+
+    } else {
+      date = ngx_time();
+    }
+
+    if (expires < date) {
+      return NGX_OK;
+    }
+
+    return NGX_DECLINED;
+  }
+
+  cc = &r->headers_out.cache_control;
+
+  if (cc->elts) {
+
+    if ((p & NGX_HTTP_GZIP_PROXIED_NO_CACHE) &&
+        ngx_http_parse_multi_header_lines(
+            cc, &ngx_http_gzip_no_cache, nullptr) >= 0) {
+      return NGX_OK;
+    }
+
+    if ((p & NGX_HTTP_GZIP_PROXIED_NO_STORE) &&
+        ngx_http_parse_multi_header_lines(
+            cc, &ngx_http_gzip_no_store, nullptr) >= 0) {
+      return NGX_OK;
+    }
+
+    if ((p & NGX_HTTP_GZIP_PROXIED_PRIVATE) &&
+        ngx_http_parse_multi_header_lines(
+            cc, &ngx_http_gzip_private, nullptr) >= 0) {
+      return NGX_OK;
+    }
+
+    return NGX_DECLINED;
+  }
+
+  if ((p & NGX_HTTP_GZIP_PROXIED_NO_LM) && r->headers_out.last_modified) {
+    return NGX_DECLINED;
+  }
+
+  if ((p & NGX_HTTP_GZIP_PROXIED_NO_ETAG) && r->headers_out.etag) {
+    return NGX_DECLINED;
+  }
+
+  return NGX_OK;
 }
 
 static Storage::ValueHolder find_quasidict(ngx_http_request_t* r, u_char* h) {
