@@ -264,23 +264,17 @@ static ngx_table_elt_t* header_find(ngx_list_t* headers,
 }
 
 static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
-  time_t date, expires;
-  ngx_uint_t p;
-  ngx_array_t* cc;
-  ngx_table_elt_t* e, *d;
-  Config* clcf;
-
   if (r != r->main) {
     return NGX_DECLINED;
   }
 
-  clcf = Config::get(r);
+  auto* conf = Config::get(r);
 
   if (r->headers_in.via == nullptr) {
     return NGX_OK;
   }
 
-  p = clcf->sdch_proxied;
+  auto p = conf->sdch_proxied;
 
   if (p & NGX_HTTP_GZIP_PROXIED_OFF) {
     return NGX_DECLINED;
@@ -294,21 +288,19 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_OK;
   }
 
-  e = r->headers_out.expires;
-
+  auto e = r->headers_out.expires;
   if (e) {
-
     if (!(p & NGX_HTTP_GZIP_PROXIED_EXPIRED)) {
       return NGX_DECLINED;
     }
 
-    expires = ngx_http_parse_time(e->value.data, e->value.len);
+    time_t date;
+    time_t expires = ngx_http_parse_time(e->value.data, e->value.len);
     if (expires == NGX_ERROR) {
       return NGX_DECLINED;
     }
 
-    d = r->headers_out.date;
-
+    auto d = r->headers_out.date;
     if (d) {
       date = ngx_http_parse_time(d->value.data, d->value.len);
       if (date == NGX_ERROR) {
@@ -326,7 +318,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_DECLINED;
   }
 
-  cc = &r->headers_out.cache_control;
+  auto cc = &r->headers_out.cache_control;
 
   if (cc->elts) {
 
