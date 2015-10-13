@@ -24,7 +24,7 @@ Status OutputHandler::on_data(const char* buf, size_t len) {
 }
 
 Status OutputHandler::on_finish() {
-  ctx_->out_buf->last_buf = 1;
+  out_buf_->last_buf = 1;
   return out_buf_out(false);
 }
 
@@ -32,20 +32,20 @@ Status OutputHandler::write(const char* buf, size_t len) {
   int rlen = 0;
 
   while (len > 0) {
-    if (ctx_->out_buf) {
-      auto l0 = std::min((off_t)len, ctx_->out_buf->end - ctx_->out_buf->last);
+    if (out_buf_) {
+      auto l0 = std::min((off_t)len, out_buf_->end - out_buf_->last);
       if (l0 > 0) {
-        memcpy(ctx_->out_buf->last, buf, l0);
+        memcpy(out_buf_->last, buf, l0);
         len -= l0;
         buf += l0;
-        ctx_->out_buf->last += l0;
+        out_buf_->last += l0;
         rlen += l0;
       }
     }
 
     // We have filled out_buf. Flush it.
     if (len > 0 || ctx_->need_flush) {
-      if (ctx_->out_buf) {
+      if (out_buf_) {
         auto rc = out_buf_out(true);
         if (rc != Status::OK)
           return rc;
@@ -62,24 +62,23 @@ Status OutputHandler::write(const char* buf, size_t len) {
 Status OutputHandler::get_buf() {
   ngx_http_request_t* r = ctx_->request;
 
-  assert(!ctx_->out_buf || !ngx_buf_size(ctx_->out_buf));
+  assert(!out_buf_ || !ngx_buf_size(out_buf_));
 
-  ngx_log_debug0(
-      NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "tr_filter_get_buf");
+  ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "sdch get_buf");
 
   if (ctx_->free) {
-    ctx_->out_buf = ctx_->free->buf;
+    out_buf_ = ctx_->free->buf;
     ctx_->free = ctx_->free->next;
 
   } else {
     auto* conf = Config::get(ctx_->request);
-    ctx_->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
-    if (ctx_->out_buf == nullptr) {
+    out_buf_ = ngx_create_temp_buf(r->pool, conf->bufs.size);
+    if (out_buf_ == nullptr) {
       return Status::ERROR;
     }
 
-    ctx_->out_buf->tag = (ngx_buf_tag_t) & sdch_module;
-    ctx_->out_buf->recycled = 1;
+    out_buf_->tag = (ngx_buf_tag_t) & sdch_module;
+    out_buf_->recycled = 1;
     ctx_->bufs++;
   }
 
@@ -92,13 +91,13 @@ Status OutputHandler::out_buf_out(bool flush) {
     return Status::ERROR;
   }
 
-  cl->buf = ctx_->out_buf;
+  cl->buf = out_buf_;
   cl->buf->flush = flush ? 1 : 0;
   cl->next = nullptr;
   *ctx_->last_out = cl;
   ctx_->last_out = &cl->next;
 
-  ctx_->out_buf = nullptr;
+  out_buf_ = nullptr;
 
   return Status::OK;
 }

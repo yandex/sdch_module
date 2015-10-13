@@ -46,7 +46,6 @@ struct RequestContext {
   ngx_chain_t* copy_buf;
 
   ngx_buf_t* in_buf;
-  ngx_buf_t* out_buf;
   ngx_int_t bufs;
 
   struct Dictionary* dict;

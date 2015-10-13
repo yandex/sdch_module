@@ -4,6 +4,12 @@
 #ifndef SDCH_OUTPUT_HANDLER_H_
 #define SDCH_OUTPUT_HANDLER_H_
 
+extern "C" {
+#include <ngx_config.h>
+#include <nginx.h>
+#include <ngx_core.h>
+}
+
 #include "sdch_handler.h"
 
 namespace sdch {
@@ -28,6 +34,7 @@ class OutputHandler : public Handler {
   Status write(const char* buf, size_t len);
 
   RequestContext* ctx_;
+  ngx_buf_t* out_buf_;
 };
 
 
