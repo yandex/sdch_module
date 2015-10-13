@@ -216,8 +216,6 @@ static ngx_http_module_t  sdch_module_ctx = {
 };
 
 
-//static ngx_str_t  ngx_http_gzip_ratio = ngx_string("gzip_ratio");
-
 static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
 static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
@@ -556,6 +554,7 @@ tr_header_filter(ngx_http_request_t *r)
   if (ngx_http_complex_value(r, &conf->sdch_groupcv, &group) != NGX_OK) {
     return NGX_ERROR;
   }
+
   DictConfig* bestdict = nullptr;
   Storage::ValueHolder quasidict;
   while (val.len >= 8) {
