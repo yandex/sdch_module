@@ -56,10 +56,10 @@ ssize_t DumpHandler::on_data(const char* buf, size_t len) {
   return res;
 }
 
-void DumpHandler::on_finish() {
+int DumpHandler::on_finish() {
   // TODO Implement it
   close(fd_);
-  next_->on_finish();
+  return next_->on_finish();
 }
 
 }  // namespace sdch

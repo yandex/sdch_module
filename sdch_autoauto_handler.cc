@@ -30,7 +30,7 @@ ssize_t AutoautoHandler::on_data(const char* buf, size_t len) {
   return res;
 }
 
-void AutoautoHandler::on_finish() {
+int AutoautoHandler::on_finish() {
   if (blob_.empty()) {
     ngx_log_error(NGX_LOG_ERR,
                   ctx_->request->connection->log,
@@ -59,7 +59,7 @@ void AutoautoHandler::on_finish() {
     }
   }
 
-  next_->on_finish();
+  return next_->on_finish();
 }
 
 }  // namespace sdch

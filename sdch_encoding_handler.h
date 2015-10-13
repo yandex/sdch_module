@@ -23,7 +23,7 @@ class EncodingHandler : public Handler,
   // sdch::Handler implementation
   bool init(RequestContext* ctx) override;
   ssize_t on_data(const char* buf, size_t len) override;
-  void on_finish() override;
+  int on_finish() override;
 
   // open_vcdiff::OutputStringInterface implementation
   open_vcdiff::OutputStringInterface& append(const char* s, size_t n) override;

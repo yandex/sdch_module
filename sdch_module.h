@@ -17,14 +17,5 @@ extern "C" {
 
 extern ngx_module_t sdch_module;
 
-namespace sdch {
-
-class RequestContext;
-
-//  It will be needed by OutputHandler
-ssize_t tr_filter_write(RequestContext* ctx, const char *buf, size_t len);
-
-}  // namespace sdch
-
 #endif  // SDCH_MODULE_H_
 

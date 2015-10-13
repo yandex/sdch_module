@@ -38,7 +38,6 @@ class fdholder {
 
 }  // namespace
 
-static ngx_int_t tr_filter_out_buf_out(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
 static ngx_int_t tr_filter_add_data(RequestContext* ctx);
 static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
@@ -843,85 +842,6 @@ tr_filter_add_data(RequestContext *ctx)
 }
 
 
-static ngx_int_t
-tr_filter_get_buf(RequestContext *ctx)
-{
-    ngx_http_request_t *r = ctx->request;
-    Config  *conf;
-
-    assert(!ctx->out_buf || !ngx_buf_size(ctx->out_buf));
-
-    conf = Config::get(r);
-
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "tr_filter_get_buf");
-
-    if (ctx->free) {
-        ctx->out_buf = ctx->free->buf;
-        ctx->free = ctx->free->next;
-
-    } else {
-        ctx->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
-        if (ctx->out_buf == nullptr) {
-            return NGX_ERROR;
-        }
-
-        ctx->out_buf->tag = (ngx_buf_tag_t) &sdch_module;
-        ctx->out_buf->recycled = 1;
-        ctx->bufs++;
-    }
-
-    return NGX_OK;
-}
-
-static ngx_int_t
-tr_filter_out_buf_out(RequestContext *ctx)
-{
-    ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
-    if (cl == nullptr) {
-        return NGX_ERROR;
-    }
-
-    cl->buf = ctx->out_buf;
-    cl->next = nullptr;
-    *ctx->last_out = cl;
-    ctx->last_out = &cl->next;
-
-    ctx->out_buf = nullptr;
-
-    return NGX_OK;
-}
-
-ssize_t
-tr_filter_write(RequestContext *ctx, const char *buf, size_t len)
-{
-  int rlen = 0;
-
-  while (len > 0) {
-    if (ctx->out_buf) {
-      auto l0 = std::min((off_t)len, ctx->out_buf->end - ctx->out_buf->last);
-      if (l0 > 0) {
-        memcpy(ctx->out_buf->last, buf, l0);
-        len -= l0;
-        buf += l0;
-        ctx->out_buf->last += l0;
-        rlen += l0;
-      }
-    }
-    if (len > 0) {
-      if (ctx->out_buf) {
-        int rc = tr_filter_out_buf_out(ctx);
-        if (rc != NGX_OK)
-          return rc;
-      }
-
-      tr_filter_get_buf(ctx);
-    }
-  }
-
-  ctx->total_out += rlen;
-  return rlen;
-}
 
 static ngx_int_t
 tr_filter_deflate(RequestContext *ctx)
@@ -982,8 +902,6 @@ tr_filter_deflate(RequestContext *ctx)
         return NGX_OK;
     }
 
-    conf = Config::get(r);
-
     return NGX_AGAIN;
 }
 
@@ -992,10 +910,8 @@ static ngx_int_t
 tr_filter_deflate_end(RequestContext *ctx)
 {
   ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
-  ctx->handler->on_finish();
+  ngx_int_t rc = ctx->handler->on_finish();
 
-  ctx->out_buf->last_buf = 1;
-  ngx_int_t rc = tr_filter_out_buf_out(ctx);
   if (rc != NGX_OK)
     return rc;
 

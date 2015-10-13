@@ -44,8 +44,10 @@ ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
   return len;
 }
 
-void EncodingHandler::on_finish() {
-  enc_->FinishEncodingToInterface(this);
+int EncodingHandler::on_finish() {
+  if (!enc_->FinishEncodingToInterface(this))
+    return NGX_ERROR;
+
   return next_->on_finish();
 }
 

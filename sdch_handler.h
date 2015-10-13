@@ -28,7 +28,7 @@ class Handler {
 
   // Called when request processing finished.
   // Default implementation just invokes next_->on_finish();
-  virtual void on_finish();
+  virtual int on_finish();
 
  protected:
   Handler* next_;
