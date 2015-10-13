@@ -822,7 +822,7 @@ tr_filter_add_data(RequestContext *ctx)
     if (ctx->in_buf->last_buf) {
         ctx->last_buf = true;
     } else if (ctx->in_buf->flush) {
-        ctx->flush = Z_SYNC_FLUSH;
+        ctx->need_flush = true;
     }
 
     return NGX_OK;
@@ -848,35 +848,6 @@ tr_filter_deflate(RequestContext *ctx)
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
                       "sdch failed");
         return NGX_ERROR;
-    }
-
-    if (ctx->flush == Z_SYNC_FLUSH) {
-
-        ctx->flush = Z_NO_FLUSH;
-
-        cl = ngx_alloc_chain_link(r->pool);
-        if (cl == nullptr) {
-            return NGX_ERROR;
-        }
-
-        b = ctx->out_buf;
-
-        if (ngx_buf_size(b) == 0) {
-
-            b = static_cast<ngx_buf_t*>(ngx_calloc_buf(ctx->request->pool));
-            if (b == nullptr) {
-                return NGX_ERROR;
-            }
-        }
-
-        b->flush = 1;
-
-        cl->buf = b;
-        cl->next = nullptr;
-        *ctx->last_out = cl;
-        ctx->last_out = &cl->next;
-
-        return NGX_OK;
     }
 
     if (status == Status::FINISH) {

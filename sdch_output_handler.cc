@@ -25,7 +25,7 @@ Status OutputHandler::on_data(const char* buf, size_t len) {
 
 Status OutputHandler::on_finish() {
   ctx_->out_buf->last_buf = 1;
-  return out_buf_out();
+  return out_buf_out(false);
 }
 
 Status OutputHandler::write(const char* buf, size_t len) {
@@ -42,9 +42,11 @@ Status OutputHandler::write(const char* buf, size_t len) {
         rlen += l0;
       }
     }
-    if (len > 0) {
+
+    // We have filled out_buf. Flush it.
+    if (len > 0 || ctx_->need_flush) {
       if (ctx_->out_buf) {
-        auto rc = out_buf_out();
+        auto rc = out_buf_out(true);
         if (rc != Status::OK)
           return rc;
       }
@@ -84,13 +86,14 @@ Status OutputHandler::get_buf() {
   return Status::OK;
 }
 
-Status OutputHandler::out_buf_out() {
+Status OutputHandler::out_buf_out(bool flush) {
   ngx_chain_t* cl = ngx_alloc_chain_link(ctx_->request->pool);
   if (cl == nullptr) {
     return Status::ERROR;
   }
 
   cl->buf = ctx_->out_buf;
+  cl->buf->flush = flush ? 1 : 0;
   cl->next = nullptr;
   *ctx_->last_out = cl;
   ctx_->last_out = &cl->next;
