@@ -51,7 +51,6 @@ struct RequestContext {
   struct Dictionary* dict;
 
   unsigned started : 1;
-  unsigned flush : 4;
   unsigned done : 1;
 
   bool last_buf;    // FIXME
