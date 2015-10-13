@@ -4,16 +4,12 @@
 #ifndef SDCH_MODULE_H_
 #define SDCH_MODULE_H_
 
-#include <sys/types.h>
-
 extern "C" {
 #include <ngx_config.h>
 #include <nginx.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
 }
-
-#include "zlib.h"
 
 extern ngx_module_t sdch_module;
 
