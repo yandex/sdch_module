@@ -44,8 +44,6 @@ static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
-static void free_copy_buf(RequestContext* ctx);
-
 static ngx_int_t tr_add_variables(ngx_conf_t* cf);
 static ngx_int_t tr_ratio_variable(ngx_http_request_t* r,
                                    ngx_http_variable_value_t* v,
@@ -699,8 +697,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http sdch filter loop1 exit");
         if (ctx->out == nullptr) {
-            free_copy_buf(ctx);
-
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http tr filter loop ret1 %p", ctx->busy);
             return ctx->busy ? NGX_AGAIN : NGX_OK;
@@ -711,8 +707,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         if (rc == NGX_ERROR) {
             goto failed;
         }
-
-        free_copy_buf(ctx);
 
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
                                 (ngx_buf_tag_t) &sdch_module);
@@ -732,8 +726,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 failed:
 
     ctx->done = 1;
-
-    free_copy_buf(ctx);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                "http sdch filter failed return");
@@ -794,24 +786,7 @@ tr_filter_add_data(RequestContext *ctx)
         return NGX_DECLINED;
     }
 
-    if (ctx->copy_buf) {
-
-        /*
-         * to avoid CPU cache trashing we do not free() just quit buf,
-         * but postpone free()ing after zlib compressing and data output
-         */
-
-        ctx->copy_buf->next = ctx->copied;
-        ctx->copied = ctx->copy_buf;
-        ctx->copy_buf = nullptr;
-    }
-
     ctx->in_buf = ctx->in->buf;
-
-    if (ctx->in_buf->tag == (ngx_buf_tag_t) &sdch_module) {
-        ctx->copy_buf = ctx->in;
-    }
-
     ctx->in = ctx->in->next;
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -874,20 +849,6 @@ tr_filter_deflate_end(RequestContext *ctx)
 
   return NGX_OK;
 }
-
-
-static void
-free_copy_buf(RequestContext *ctx)
-{
-    ngx_chain_t  *cl;
-
-    for (cl = ctx->copied; cl; cl = cl->next) {
-        ngx_pfree(ctx->request->pool, cl->buf->start);
-    }
-
-    ctx->copied = nullptr;
-}
-
 
 static ngx_str_t tr_ratio = ngx_string("sdch_ratio");
 

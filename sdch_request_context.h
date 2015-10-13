@@ -42,9 +42,6 @@ struct RequestContext {
   ngx_chain_t* out;
   ngx_chain_t** last_out;
 
-  ngx_chain_t* copied;
-  ngx_chain_t* copy_buf;
-
   ngx_buf_t* in_buf;
   ngx_int_t bufs;
 
