@@ -23,6 +23,10 @@ class OutputHandler : public Handler {
   Status on_finish() override;
 
  private:
+  Status get_buf();
+  Status out_buf_out();
+  Status write(const char* buf, size_t len);
+
   RequestContext* ctx_;
 };
 
