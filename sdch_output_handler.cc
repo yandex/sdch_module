@@ -11,10 +11,10 @@ namespace sdch {
 
 namespace {
 
-static ngx_int_t tr_filter_get_buf(RequestContext *ctx);
-static ngx_int_t tr_filter_out_buf_out(RequestContext *ctx);
+Status tr_filter_get_buf(RequestContext *ctx);
+Status tr_filter_out_buf_out(RequestContext *ctx);
 
-ssize_t tr_filter_write(RequestContext* ctx, const char* buf, size_t len) {
+Status tr_filter_write(RequestContext* ctx, const char* buf, size_t len) {
   int rlen = 0;
 
   while (len > 0) {
@@ -30,8 +30,8 @@ ssize_t tr_filter_write(RequestContext* ctx, const char* buf, size_t len) {
     }
     if (len > 0) {
       if (ctx->out_buf) {
-        int rc = tr_filter_out_buf_out(ctx);
-        if (rc != NGX_OK)
+        auto rc = tr_filter_out_buf_out(ctx);
+        if (rc != Status::OK)
           return rc;
       }
 
@@ -40,10 +40,10 @@ ssize_t tr_filter_write(RequestContext* ctx, const char* buf, size_t len) {
   }
 
   ctx->total_out += rlen;
-  return rlen;
+  return Status::OK;
 }
 
-static ngx_int_t tr_filter_get_buf(RequestContext* ctx) {
+Status tr_filter_get_buf(RequestContext* ctx) {
   ngx_http_request_t* r = ctx->request;
 
   assert(!ctx->out_buf || !ngx_buf_size(ctx->out_buf));
@@ -59,7 +59,7 @@ static ngx_int_t tr_filter_get_buf(RequestContext* ctx) {
     auto* conf = Config::get(ctx->request);
     ctx->out_buf = ngx_create_temp_buf(r->pool, conf->bufs.size);
     if (ctx->out_buf == nullptr) {
-      return NGX_ERROR;
+      return Status::ERROR;
     }
 
     ctx->out_buf->tag = (ngx_buf_tag_t) & sdch_module;
@@ -67,44 +67,42 @@ static ngx_int_t tr_filter_get_buf(RequestContext* ctx) {
     ctx->bufs++;
   }
 
-  return NGX_OK;
+  return Status::OK;
 }
 
-static ngx_int_t
-tr_filter_out_buf_out(RequestContext *ctx)
-{
-    ngx_chain_t *cl = ngx_alloc_chain_link(ctx->request->pool);
-    if (cl == nullptr) {
-        return NGX_ERROR;
-    }
+Status tr_filter_out_buf_out(RequestContext* ctx) {
+  ngx_chain_t* cl = ngx_alloc_chain_link(ctx->request->pool);
+  if (cl == nullptr) {
+    return Status::ERROR;
+  }
 
-    cl->buf = ctx->out_buf;
-    cl->next = nullptr;
-    *ctx->last_out = cl;
-    ctx->last_out = &cl->next;
+  cl->buf = ctx->out_buf;
+  cl->next = nullptr;
+  *ctx->last_out = cl;
+  ctx->last_out = &cl->next;
 
-    ctx->out_buf = nullptr;
+  ctx->out_buf = nullptr;
 
-    return NGX_OK;
+  return Status::OK;
 }
+
 }  // namespace
 
-OutputHandler::OutputHandler(RequestContext* ctx, Handler* next)
-    : Handler(next), ctx_(ctx) {}
+OutputHandler::OutputHandler(RequestContext* ctx)
+    : Handler(nullptr), ctx_(ctx) {}
 
 OutputHandler::~OutputHandler() {}
 
 bool OutputHandler::init(RequestContext* ctx) { return true; }
 
-ssize_t OutputHandler::on_data(const char* buf, size_t len) {
-  ssize_t res = tr_filter_write(ctx_, buf, len);
-  // TODO Implement it
-  if (next_)
-    res = next_->on_data(buf, len);
-  return res;
+Status OutputHandler::on_data(const char* buf, size_t len) {
+  auto res = tr_filter_write(ctx_, buf, len);
+  if (res != Status::OK)
+    return res;
+  return ctx_->last_buf ? Status::FINISH : res;
 }
 
-int OutputHandler::on_finish() {
+Status OutputHandler::on_finish() {
   ctx_->out_buf->last_buf = 1;
   return tr_filter_out_buf_out(ctx_);
 }

@@ -13,14 +13,14 @@ class RequestContext;
 // nginx output handler. Will pass data to nginx.
 class OutputHandler : public Handler {
  public:
-  OutputHandler(RequestContext* ctx, Handler* next);
+  OutputHandler(RequestContext* ctx);
   ~OutputHandler();
 
   bool init(RequestContext* ctx) override;
 
-  ssize_t on_data(const char* buf, size_t len) override;
+  Status on_data(const char* buf, size_t len) override;
 
-  int on_finish() override;
+  Status on_finish() override;
 
  private:
   RequestContext* ctx_;

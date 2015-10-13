@@ -44,20 +44,20 @@ bool DumpHandler::init(RequestContext* ctx) {
   return true;
 }
 
-ssize_t DumpHandler::on_data(const char* buf, size_t len) {
+Status DumpHandler::on_data(const char* buf, size_t len) {
   ssize_t res = 0;
 
   if ((res = write(fd_, buf, len)) != static_cast<ssize_t>(len)) {
     // XXX
+    return Status::ERROR;
   }
 
   if (next_)
-    res = next_->on_data(buf, len);
-  return res;
+    return next_->on_data(buf, len);
+  return Status::OK;
 }
 
-int DumpHandler::on_finish() {
-  // TODO Implement it
+Status DumpHandler::on_finish() {
   close(fd_);
   return next_->on_finish();
 }

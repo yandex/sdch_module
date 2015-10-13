@@ -37,16 +37,21 @@ bool EncodingHandler::init(RequestContext* ctx) {
   return true;
 }
 
-ssize_t EncodingHandler::on_data(const char* buf, size_t len) {
+Status EncodingHandler::on_data(const char* buf, size_t len) {
   // It will call ".append" which will pass it to the next_
-  auto oldsize = cursize_;
-  enc_->EncodeChunkToInterface(buf, len, this);
-  return len;
+  if (len) {
+    if (!enc_->EncodeChunkToInterface(buf, len, this))
+      return Status::ERROR;
+    return next_status_;
+  }
+
+  // No data was supplied. Just pass it through.
+  return next_->on_data(buf, len);
 }
 
-int EncodingHandler::on_finish() {
+Status EncodingHandler::on_finish() {
   if (!enc_->FinishEncodingToInterface(this))
-    return NGX_ERROR;
+    return Status::ERROR;
 
   return next_->on_finish();
 }
@@ -54,7 +59,7 @@ int EncodingHandler::on_finish() {
 
 open_vcdiff::OutputStringInterface& EncodingHandler::append(const char* s,
                                                             size_t n) {
-  next_->on_data(s, n);
+  next_status_ = next_->on_data(s, n);
   cursize_ += n;
   return *this;
 }

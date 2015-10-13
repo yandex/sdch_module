@@ -9,10 +9,10 @@ Handler::Handler(Handler* next) : next_(next) {}
 
 Handler::~Handler() {}
 
-int Handler::on_finish() {
+Status Handler::on_finish() {
   if (next_)
     return next_->on_finish();
-  return 0;
+  return Status::OK;
 }
 
 }  // namespace sdch

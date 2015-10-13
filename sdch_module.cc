@@ -753,7 +753,7 @@ tr_filter_deflate_start(RequestContext *ctx)
     ctx->last_out = &ctx->out;
 
     // Last will be OutputHandler.
-    ctx->handler = pool_alloc<OutputHandler>(r, ctx, nullptr);
+    ctx->handler = pool_alloc<OutputHandler>(r, ctx);
     if (ctx->handler == nullptr || !ctx->handler->init(ctx))
       return NGX_ERROR;
 
@@ -783,7 +783,7 @@ tr_filter_add_data(RequestContext *ctx)
 #if (NGX_DEBUG)
     ngx_http_request_t *r = ctx->request;
 #endif
-    if ((ctx->in_buf && ngx_buf_size(ctx->in_buf)) || ctx->flush != Z_NO_FLUSH) {
+    if ((ctx->in_buf && ngx_buf_size(ctx->in_buf))) {
         return NGX_OK;
     }
 
@@ -820,14 +820,9 @@ tr_filter_add_data(RequestContext *ctx)
                    ctx->in_buf->pos, ngx_buf_size(ctx->in_buf));
 
     if (ctx->in_buf->last_buf) {
-        ctx->flush = Z_FINISH;
-
+        ctx->last_buf = true;
     } else if (ctx->in_buf->flush) {
         ctx->flush = Z_SYNC_FLUSH;
-    }
-
-    if (ctx->flush == Z_NO_FLUSH) {
-        return NGX_AGAIN;
     }
 
     return NGX_OK;
@@ -839,20 +834,19 @@ static ngx_int_t
 tr_filter_deflate(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
-    int                    rc;
     ngx_buf_t             *b;
     ngx_chain_t           *cl;
     Config  *conf;
 
-    int l0 = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
-                                   ngx_buf_size(ctx->in_buf));
-    ctx->in_buf->pos += l0;
-    ctx->total_in += l0;
-    rc = (ctx->flush == Z_FINISH) ? Z_STREAM_END : Z_OK;
+    auto buf_size = ngx_buf_size(ctx->in_buf);
+    auto status = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
+                                   buf_size);
+    ctx->in_buf->pos += buf_size;
+    ctx->total_in += buf_size;
 
-    if (rc != Z_OK && rc != Z_STREAM_END && rc != Z_BUF_ERROR) {
+    if (status == Status::ERROR) {
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                      "deflate() failed: %d, %d", ctx->flush, rc);
+                      "sdch failed");
         return NGX_ERROR;
     }
 
@@ -885,12 +879,10 @@ tr_filter_deflate(RequestContext *ctx)
         return NGX_OK;
     }
 
-    if (rc == Z_STREAM_END) {
-
+    if (status == Status::FINISH) {
         if (tr_filter_deflate_end(ctx) != NGX_OK) {
             return NGX_ERROR;
         }
-
         return NGX_OK;
     }
 
@@ -902,10 +894,10 @@ static ngx_int_t
 tr_filter_deflate_end(RequestContext *ctx)
 {
   ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
-  ngx_int_t rc = ctx->handler->on_finish();
+  auto rc = ctx->handler->on_finish();
 
-  if (rc != NGX_OK)
-    return rc;
+  if (rc != Status::OK)
+    return NGX_ERROR;
 
   ctx->done = 1;
 

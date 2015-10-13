@@ -20,17 +20,17 @@ bool AutoautoHandler::init(RequestContext* ctx) {
   return true;
 }
 
-ssize_t AutoautoHandler::on_data(const char* buf, size_t len) {
+Status AutoautoHandler::on_data(const char* buf, size_t len) {
   ssize_t res = 0;
 
   blob_.insert(blob_.end(), buf, buf + len);
 
   if (next_)
-    res = next_->on_data(buf, len);
-  return res;
+    return next_->on_data(buf, len);
+  return Status::OK;
 }
 
-int AutoautoHandler::on_finish() {
+Status AutoautoHandler::on_finish() {
   if (blob_.empty()) {
     ngx_log_error(NGX_LOG_ERR,
                   ctx_->request->connection->log,
