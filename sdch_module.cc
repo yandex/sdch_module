@@ -676,11 +676,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                 break;
             }
 
-            if (rc == NGX_AGAIN) {
-                continue;
-            }
-
-
             rc = tr_filter_deflate(ctx);
 
             if (rc == NGX_OK) {
