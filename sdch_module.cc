@@ -558,9 +558,7 @@ tr_header_filter(ngx_http_request_t *r)
     }
     val.data += 8;
     val.len -= 8;
-    unsigned l = strspn((char*)val.data, " \t,");
-    if (l > val.len)
-      l = val.len;
+    auto l = std::min(strspn((char*)val.data, " \t,"), val.len);
     val.data += l;
     val.len -= l;
   }
