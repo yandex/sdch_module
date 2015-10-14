@@ -39,7 +39,7 @@ class fdholder {
 }  // namespace
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
-static ngx_int_t tr_filter_add_data(RequestContext* ctx);
+static bool tr_filter_add_data(RequestContext* ctx);
 static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
@@ -670,9 +670,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
             /* cycle while there is data to feed zlib and ... */
 
-            rc = tr_filter_add_data(ctx);
-
-            if (rc == NGX_DECLINED) {
+            if (!tr_filter_add_data(ctx)) {
                 break;
             }
 
@@ -764,21 +762,20 @@ tr_filter_deflate_start(RequestContext *ctx)
 }
 
 
-static ngx_int_t
+static bool
 tr_filter_add_data(RequestContext *ctx)
 {
-#if (NGX_DEBUG)
     ngx_http_request_t *r = ctx->request;
-#endif
+
     if ((ctx->in_buf && ngx_buf_size(ctx->in_buf))) {
-        return NGX_OK;
+        return true;
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch in: %p", ctx->in);
 
     if (ctx->in == nullptr) {
-        return NGX_DECLINED;
+        return false;
     }
 
     ctx->in_buf = ctx->in->buf;
@@ -795,7 +792,7 @@ tr_filter_add_data(RequestContext *ctx)
         ctx->need_flush = true;
     }
 
-    return NGX_OK;
+    return true;
 }
 
 
