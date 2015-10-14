@@ -28,7 +28,8 @@ class Dictionary {
   ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
-  bool init(const char* begin, const char* end, bool is_quasi);
+  bool init_from_file(const char* filename);
+  bool init_quasy(const char* buf, size_t len);
 
   // Size of dictionary
   size_t size() const {
@@ -48,6 +49,7 @@ class Dictionary {
   }
 
  private:
+  bool init(const char* begin, const char* payload, const char* end);
 
   // It's not really good. We should integrate with nginx's pool allocations.
   // But this will do for now.

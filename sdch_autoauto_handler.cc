@@ -38,7 +38,8 @@ Status AutoautoHandler::on_finish() {
                   "storing quasidict: no blob");
   } else {
     Dictionary dict;
-    dict.init(blob_.data(), blob_.data() + blob_.size(), true);
+    if (!dict.init_quasy(blob_.data(), blob_.size()))
+      return Status::ERROR;
     auto client_id = dict.client_id();
     auto* main = MainConfig::get(ctx_->request);
     if (main->storage.store(client_id,

@@ -23,19 +23,6 @@ namespace sdch {
 
 namespace {
 
-// Simple RAII holder for opened files.
-class fdholder {
- public:
-  explicit fdholder(int d) : fd(d) {}
-  ~fdholder() { close(fd); }
-
-  operator int() { return fd; }
-
- private:
-  int fd;
-  fdholder& operator=(const fdholder&);
-};
-
 }  // namespace
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
@@ -918,47 +905,6 @@ tr_create_conf(ngx_conf_t *cf)
   return pool_alloc<Config>(cf, cf->pool);
 }
 
-
-const char *read_file(const char *fn, std::vector<char>& blob)
-{
-    blob.clear();
-    fdholder fd(open(fn, O_RDONLY));
-    if (fd == -1)
-        return "can not open dictionary";
-    struct stat st;
-    if (fstat(fd, &st) == -1)
-        return "dictionary fstat error";
-    blob.resize(st.st_size);
-    if (read(fd, &blob[0], blob.size()) != (ssize_t)blob.size())
-        return "dictionary read error";
-    return 0;
-}
-
-// FIXME Remove
-static const char *
-init_dict_data(ngx_conf_t *cf, ngx_str_t *file_name, Dictionary *dict)
-{
-  assert(dict != nullptr);
-  std::vector<char> blob;
-  const char* p = read_file((const char*)file_name->data, blob);
-  if (p != nullptr)
-    return p;
-  if (!dict->init(blob.data(),
-                  blob.data() + blob.size(),
-                  false)) {
-    ngx_conf_log_error(
-        NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", file_name->data);
-    return "Get hashed dict failed";
-  }
-  ngx_conf_log_error(NGX_LOG_NOTICE,
-                     cf,
-                     0,
-                     "dictionary ids: user %s server %s",
-                     dict->client_id().c_str(),
-                     dict->server_id().c_str());
-  return NGX_CONF_OK;
-}
-
 static char *
 tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 {
@@ -983,12 +929,17 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     }
 
     auto* dict = conf->dict_factory->allocate_dictionary();
-
-    const char *p = init_dict_data(cf, &value[1], dict);
-    if (p != nullptr) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%s", p);
-        return const_cast<char*>(p);
+    if (!dict->init_from_file((const char*)value[1].data)) {
+      ngx_conf_log_error(
+          NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", value[1].data);
+      return const_cast<char*>("Get hashed dict failed");
     }
+    ngx_conf_log_error(NGX_LOG_NOTICE,
+                       cf,
+                       0,
+                       "dictionary ids: user %s server %s",
+                       dict->client_id().c_str(),
+                       dict->server_id().c_str());
 
     auto* sdc = conf->dict_factory->store_config(
         dict,

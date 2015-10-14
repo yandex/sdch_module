@@ -3,13 +3,28 @@
 
 #include "sdch_dictionary.h"
 
+#include <cassert>
 #include <cstring>
+#include <vector>
 #include <google/vcencoder.h>
 #include <openssl/sha.h>
 
 namespace sdch {
 
 namespace {
+
+// Simple RAII holder for opened files.
+class fdholder {
+ public:
+  explicit fdholder(int d) : fd(d) {}
+  ~fdholder() { close(fd); }
+
+  operator int() { return fd; }
+
+ private:
+  int fd;
+  fdholder& operator=(const fdholder&);
+};
 
 // Skip dictionary headers in case of on-disk dictionary
 const char *get_dict_payload(const char *dictbegin, const char *dictend)
@@ -63,6 +78,20 @@ void get_dict_ids(const char* buf,
   encode_id(sha + 6, server_id);
 }
 
+bool read_file(const char* fn, std::vector<char>& blob) {
+  blob.clear();
+  fdholder fd(open(fn, O_RDONLY));
+  if (fd == -1)
+    return false;
+  struct stat st;
+  if (fstat(fd, &st) == -1)
+    return false;
+  blob.resize(st.st_size);
+  if (read(fd, &blob[0], blob.size()) != (ssize_t)blob.size())
+    return false;
+  return true;
+}
+
 }  // namespace
 
 Dictionary::Dictionary() {}
@@ -75,11 +104,23 @@ Dictionary::Dictionary(Dictionary&& other)
 
 Dictionary::~Dictionary() {}
 
-bool Dictionary::init(const char* begin, const char* end, bool is_quasi) {
-  size_ = end - begin;
-  const auto* payload = is_quasi ? begin : get_dict_payload(begin, end);
-  size_t size = end - payload;
-  hashed_dict_.reset(new open_vcdiff::HashedDictionary(payload, size));
+bool Dictionary::init_from_file(const char* filename) {
+  std::vector<char> blob;
+  if (!read_file(filename, blob))
+    return false;
+
+  return init(blob.data(),
+              get_dict_payload(blob.data(), blob.data() + blob.size()),
+              blob.data() + blob.size());
+}
+
+bool Dictionary::init_quasy(const char* buf, size_t len) {
+  size_ = len;
+  return init(buf, buf, buf + len);
+}
+
+bool Dictionary::init(const char* begin, const char* payload, const char* end) {
+  hashed_dict_.reset(new open_vcdiff::HashedDictionary(payload, end - payload));
   if (!hashed_dict_->Init())
     return false;
 
