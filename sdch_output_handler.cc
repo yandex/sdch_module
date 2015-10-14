@@ -10,7 +10,9 @@
 namespace sdch {
 
 OutputHandler::OutputHandler(RequestContext* ctx)
-    : Handler(nullptr), ctx_(ctx) {}
+    : Handler(nullptr), ctx_(ctx) {
+  ctx->last_out = &ctx->out;
+}
 
 OutputHandler::~OutputHandler() {}
 
@@ -95,7 +97,7 @@ Status OutputHandler::flush_out_buf(bool flush) {
   cl->buf->flush = flush ? 1 : 0;
   cl->next = nullptr;
   *ctx_->last_out = cl;
-  ctx_->last_out = &cl->next;
+  ctx_->last_out = &ctx_->out;
 
   out_buf_ = nullptr;
 

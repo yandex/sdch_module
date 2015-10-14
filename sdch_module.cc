@@ -683,14 +683,13 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         rc = ngx_http_next_body_filter(r, ctx->out);
-
         if (rc == NGX_ERROR) {
             goto failed;
         }
 
         ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
                                 (ngx_buf_tag_t) &sdch_module);
-        ctx->last_out = &ctx->out;
+
         ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http tr filter loop update_chains free=%p busy=%p out=%p", 
                        ctx->free, ctx->busy, ctx->out);
@@ -722,8 +721,6 @@ tr_filter_deflate_start(RequestContext *ctx)
     ctx->started = 1;
 
 //INIT
-    ctx->last_out = &ctx->out;
-
     // Last will be OutputHandler.
     ctx->handler = pool_alloc<OutputHandler>(r, ctx);
     if (ctx->handler == nullptr || !ctx->handler->init(ctx))
