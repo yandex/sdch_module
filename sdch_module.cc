@@ -832,14 +832,9 @@ static ngx_int_t
 tr_filter_deflate_end(RequestContext *ctx)
 {
   ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
-  auto rc = ctx->handler->on_finish();
-
-  if (rc != Status::OK)
-    return NGX_ERROR;
 
   ctx->done = 1;
-
-  return NGX_OK;
+  return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
 }
 
 static ngx_str_t tr_ratio = ngx_string("sdch_ratio");
