@@ -769,9 +769,6 @@ tr_filter_add_data(RequestContext *ctx)
 
 static ngx_int_t tr_filter_deflate(RequestContext* ctx) {
   ngx_http_request_t* r = ctx->request;
-  ngx_buf_t* b;
-  ngx_chain_t* cl;
-  Config* conf;
 
   auto buf_size = ngx_buf_size(ctx->in_buf);
   auto status = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
