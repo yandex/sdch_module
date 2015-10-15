@@ -392,13 +392,15 @@ ngx_int_t create_output_header(ngx_http_request_t* r,
 }
 
 static ngx_int_t
-x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
+x_sdch_encode_0_header(ngx_http_request_t *r, bool sdch_expected)
 {
   ngx_table_elt_t* h =
       header_find(&r->headers_out.headers, "x-sdch-encode", nullptr);
-  if (!ins && h != nullptr) {
-    h->hash = 0;
-    h->value.len = 0;
+  if (!sdch_expected) {
+    if (h != nullptr) {
+      h->hash = 0;
+      h->value.len = 0;
+    }
     return NGX_OK;
   }
   return create_output_header(r, "X-Sdch-Encode", "0", h);
@@ -484,7 +486,7 @@ tr_header_filter(ngx_http_request_t *r)
   if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
     ngx_str_set(&val, "");
   }
-  int sdch_expected = (val.len > 0);
+  bool sdch_expected = (val.len > 0);
 
   if (should_process(r, conf) != NGX_OK) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
@@ -590,7 +592,7 @@ tr_header_filter(ngx_http_request_t *r)
       return NGX_ERROR;
     }
 
-    if (x_sdch_encode_0_header(r, 0) != NGX_OK) {
+    if (x_sdch_encode_0_header(r, false) != NGX_OK) {
       return NGX_ERROR;
     }
 
