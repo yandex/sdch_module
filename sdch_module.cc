@@ -26,7 +26,6 @@ namespace {
 }  // namespace
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
-static ngx_int_t tr_filter_deflate(RequestContext* ctx, ngx_buf_t* buf);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
 static ngx_int_t tr_add_variables(ngx_conf_t* cf);
@@ -696,9 +695,16 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
           ctx->need_flush = true;
         }
 
-        auto rc = tr_filter_deflate(ctx, in->buf);
-        if (rc != NGX_OK) {
-            return rc;
+        auto buf_size = ngx_buf_size(in->buf);
+        auto status = ctx->handler->on_data(reinterpret_cast<char*>(in->buf->pos),
+                                            buf_size);
+        in->buf->pos = in->buf->last;
+        ctx->total_in += buf_size;
+
+        if (status == Status::ERROR) {
+          ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
+          ctx->done = true;
+          return NGX_ERROR;
         }
 
         if (in->buf->last_buf) {
@@ -721,25 +727,6 @@ tr_filter_deflate_start(RequestContext *ctx)
       ctx->done = 1;
       return NGX_ERROR;
     }
-  }
-
-  return NGX_OK;
-}
-
-
-static ngx_int_t tr_filter_deflate(RequestContext* ctx, ngx_buf_t* in_buf) {
-  ngx_http_request_t* r = ctx->request;
-
-  auto buf_size = ngx_buf_size(in_buf);
-  auto status = ctx->handler->on_data(reinterpret_cast<char*>(in_buf->pos),
-                                      buf_size);
-  in_buf->pos = in_buf->last;
-  ctx->total_in += buf_size;
-
-  if (status == Status::ERROR) {
-    ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
-    ctx->done = true;
-    return NGX_ERROR;
   }
 
   return NGX_OK;
