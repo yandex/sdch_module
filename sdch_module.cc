@@ -466,6 +466,66 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf) {
   return NGX_OK;
 }
 
+// Select Dictionary based on available dictionaries, group, support for quasis
+// and phase of the moon.
+ngx_int_t select_dictionary(ngx_http_request_t* r,
+                            DictionaryFactory* dict_factory,
+                            ngx_str_t val,
+                            const ngx_str_t group,
+                            bool sdch_expected,
+                            Dictionary*& dict,
+                            bool& is_best,
+                            Storage::ValueHolder& quasidict) {
+  DictConfig* bestdict = nullptr;
+  while (val.len >= 8) {
+    DictConfig* d = dict_factory->find_dictionary(val.data);
+    bestdict = dict_factory->choose_best_dictionary(bestdict, d, group);
+    if (quasidict == nullptr && d == nullptr) {
+      quasidict = find_quasidict(r, val.data);
+      ngx_log_error(NGX_LOG_INFO,
+                    r->connection->log,
+                    0,
+                    "find_quasidict %.8s -> %p",
+                    val.data,
+                    quasidict.get());
+    }
+    val.data += 8;
+    val.len -= 8;
+    auto l = std::min(strspn((char*)val.data, " \t,"), val.len);
+    val.data += l;
+    val.len -= l;
+  }
+  if (bestdict != nullptr) {
+    ngx_log_error(NGX_LOG_INFO,
+                  r->connection->log,
+                  0,
+                  "group: %s prio: %d best: %d",
+                  bestdict->groupname.data,
+                  bestdict->priority,
+                  bestdict->best);
+  } else {
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "nobestdict");
+  }
+
+  if (bestdict == nullptr) {
+    dict = nullptr;
+    is_best = false;
+  }
+  else {
+    // If we found dictionary, but it's in wrong group, or it's not the
+    // best, than it's not best
+    is_best = ngx_memn2cmp(bestdict->groupname.data,
+                           group.data,
+                           bestdict->groupname.len,
+                           group.len) == 0 &&
+              bestdict->best;
+    dict = bestdict->dict;
+  }
+
+  return NGX_OK;
+}
+
+
 static ngx_int_t
 tr_header_filter(ngx_http_request_t *r)
 {
@@ -508,6 +568,8 @@ tr_header_filter(ngx_http_request_t *r)
   }
 
   bool store_as_quasi = false;
+  // FIXME We don't create quasi when Browser announce support for it, but has
+  // another dictionary. Is it desired behavior?
   if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
     store_as_quasi = true;
     if (create_output_header(r, "X-Sdch-Use-As-Dictionary", "1") != NGX_OK)
@@ -519,46 +581,24 @@ tr_header_filter(ngx_http_request_t *r)
     return NGX_ERROR;
   }
 
-  DictConfig* bestdict = nullptr;
+  Dictionary* dict = nullptr;
   Storage::ValueHolder quasidict;
-  while (val.len >= 8) {
-    DictConfig* d = conf->dict_factory->find_dictionary(val.data);
-    bestdict = conf->dict_factory->choose_best_dictionary(bestdict, d, group);
-    if (quasidict == nullptr && d == nullptr) {
-      quasidict = find_quasidict(r, val.data);
-      ngx_log_error(NGX_LOG_INFO,
-                    r->connection->log,
-                    0,
-                    "find_quasidict %.8s -> %p",
-                    val.data,
-                    quasidict.get());
-    }
-    val.data += 8;
-    val.len -= 8;
-    auto l = std::min(strspn((char*)val.data, " \t,"), val.len);
-    val.data += l;
-    val.len -= l;
-  }
-  if (bestdict != nullptr) {
-    ngx_log_error(NGX_LOG_INFO,
-                  r->connection->log,
-                  0,
-                  "group: %s prio: %d best: %d",
-                  bestdict->groupname.data,
-                  bestdict->priority,
-                  bestdict->best);
-  } else {
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "nobestdict");
-  }
-  if (bestdict == nullptr || ngx_memn2cmp(bestdict->groupname.data,
-                                          group.data,
-                                          bestdict->groupname.len,
-                                          group.len) ||
-      !bestdict->best) {
+  bool is_best;
+
+  select_dictionary(r,
+                    conf->dict_factory,
+                    val,
+                    group,
+                    sdch_expected,
+                    dict,
+                    is_best,
+                    quasidict);
+
+  if (!is_best) {
     ngx_int_t e = get_dictionary_header(r, conf);
     if (e)
       return e;
-    if (bestdict == nullptr && quasidict == nullptr) {
+    if (dict == nullptr && quasidict == nullptr) {
       e = x_sdch_encode_0_header(r, sdch_expected);
       if (e)
         return e;
@@ -568,19 +608,17 @@ tr_header_filter(ngx_http_request_t *r)
     }
   }
 
+  // Use quasi if there it's available and there is no predefined one
+  if (dict == nullptr && quasidict != nullptr) {
+    dict = &quasidict->dict;
+  }
+
   auto* ctx = pool_alloc<RequestContext>(r, r);
   if (ctx == nullptr) {
     return NGX_ERROR;
   }
 
-  Dictionary* dict = nullptr;
-  if (bestdict != nullptr) {
-    dict = bestdict->dict;
-  } else if (quasidict != nullptr) {
-    dict = &quasidict->dict;
-  }
-
-  // Allocate Handlers chain
+  // Allocate Handlers chain in reverse order
   // Last will be OutputHandler.
   ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
   if (ctx->handler == nullptr)
