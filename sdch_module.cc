@@ -632,7 +632,6 @@ tr_header_filter(ngx_http_request_t *r)
     }
 
     ctx->handler = pool_alloc<EncodingHandler>(r,
-                                               ctx,
                                                ctx->handler,
                                                dict,
                                                std::move(quasidict));

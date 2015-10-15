@@ -11,14 +11,15 @@
 
 namespace sdch {
 
-EncodingHandler::EncodingHandler(RequestContext* ctx,
-                                 Handler* next,
+EncodingHandler::EncodingHandler(Handler* next,
                                  Dictionary* dict,
                                  Storage::ValueHolder quasidict)
     : Handler(next),
-      ctx_(ctx),
       dict_(dict),
       quasidict_(std::move(quasidict)),
+      enc_(dict_->hashed_dict(),
+        open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
+        false),
       cursize_(0) {
   assert(next_);
 }
@@ -26,15 +27,7 @@ EncodingHandler::EncodingHandler(RequestContext* ctx,
 EncodingHandler::~EncodingHandler() {}
 
 bool EncodingHandler::init(RequestContext* ctx) {
-  enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
-      ctx_->request,
-      dict_->hashed_dict(),
-      open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
-      false);
-  if (enc_ == nullptr)
-    return false;
-
-	if (!enc_->StartEncodingToInterface(this))
+	if (!enc_.StartEncodingToInterface(this))
     return false;
 
   // Output Dictionary server_id first
@@ -46,7 +39,7 @@ bool EncodingHandler::init(RequestContext* ctx) {
 Status EncodingHandler::on_data(const char* buf, size_t len) {
   // It will call ".append" which will pass it to the next_
   if (len) {
-    if (!enc_->EncodeChunkToInterface(buf, len, this))
+    if (!enc_.EncodeChunkToInterface(buf, len, this))
       return Status::ERROR;
     return next_status_;
   }
@@ -56,7 +49,7 @@ Status EncodingHandler::on_data(const char* buf, size_t len) {
 }
 
 Status EncodingHandler::on_finish() {
-  if (!enc_->FinishEncodingToInterface(this))
+  if (!enc_.FinishEncodingToInterface(this))
     return Status::ERROR;
 
   return next_->on_finish();

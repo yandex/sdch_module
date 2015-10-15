@@ -19,9 +19,7 @@ class RequestContext;
 class EncodingHandler : public Handler,
                         public open_vcdiff::OutputStringInterface {
  public:
-  // TODO: Remove fat RequestContext and only pass required parameters
-  EncodingHandler(RequestContext* ctx,
-                  Handler* next,
+  EncodingHandler(Handler* next,
                   Dictionary* dict,
                   Storage::ValueHolder quasidict);
   ~EncodingHandler();
@@ -47,7 +45,7 @@ class EncodingHandler : public Handler,
 
   // Actual encoder. We do allocate it from pool, so no manual memory management
   // required.
-  open_vcdiff::VCDiffStreamingEncoder* enc_;
+  open_vcdiff::VCDiffStreamingEncoder enc_;
 
   // For OutputStringInterface implementation
   size_t cursize_;
