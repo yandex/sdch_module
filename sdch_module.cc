@@ -679,8 +679,6 @@ tr_header_filter(ngx_http_request_t *r)
 static ngx_int_t
 tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
-    int                   rc;
-    ngx_chain_t          *cl;
     RequestContext  *ctx = RequestContext::get(r);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -703,14 +701,10 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         ctx->in = in;
     }
 
-    for ( ;; ) {
-        /* cycle while there is data to handle */
-        if (!tr_filter_add_data(ctx)) {
-            return NGX_OK;
-        }
-
-        rc = tr_filter_deflate(ctx);
-        if (rc == NGX_ERROR) {
+    // cycle while there is data to handle
+    while (tr_filter_add_data(ctx)) {
+        auto rc = tr_filter_deflate(ctx);
+        if (rc != NGX_OK) {
             return rc;
         }
 
@@ -718,8 +712,8 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             return tr_filter_deflate_end(ctx);
         }
     }
-    /* unreachable */
-    return NGX_ERROR;
+
+    return NGX_OK;
 }
 
 
@@ -773,28 +767,25 @@ tr_filter_add_data(RequestContext *ctx)
 
 
 
-static ngx_int_t
-tr_filter_deflate(RequestContext *ctx)
-{
-    ngx_http_request_t *r = ctx->request;
-    ngx_buf_t             *b;
-    ngx_chain_t           *cl;
-    Config  *conf;
+static ngx_int_t tr_filter_deflate(RequestContext* ctx) {
+  ngx_http_request_t* r = ctx->request;
+  ngx_buf_t* b;
+  ngx_chain_t* cl;
+  Config* conf;
 
-    auto buf_size = ngx_buf_size(ctx->in_buf);
-    auto status = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
-                                   buf_size);
-    ctx->in_buf->pos += buf_size;
-    ctx->total_in += buf_size;
+  auto buf_size = ngx_buf_size(ctx->in_buf);
+  auto status = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
+                                      buf_size);
+  ctx->in_buf->pos += buf_size;
+  ctx->total_in += buf_size;
 
-    if (status == Status::ERROR) {
-        ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
-                      "sdch failed");
-        ctx->done = true;
-        return NGX_ERROR;
-    }
+  if (status == Status::ERROR) {
+    ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
+    ctx->done = true;
+    return NGX_ERROR;
+  }
 
-    return NGX_AGAIN;
+  return NGX_OK;
 }
 
 
