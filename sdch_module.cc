@@ -641,7 +641,7 @@ tr_header_filter(ngx_http_request_t *r)
   }
 
   if (conf->sdch_dumpdir.len > 0) {
-    ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
+    ctx->handler = pool_alloc<DumpHandler>(r, ctx->handler);
     if (ctx->handler == nullptr) {
       return NGX_ERROR;
     }

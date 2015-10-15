@@ -9,7 +9,7 @@
 
 namespace sdch {
 
-DumpHandler::DumpHandler(RequestContext* ctx, Handler* next) : Handler(next) {
+DumpHandler::DumpHandler(Handler* next) : Handler(next) {
   assert(next_);
 }
 

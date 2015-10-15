@@ -13,7 +13,7 @@ class RequestContext;
 // Dumps data into temporary directory
 class DumpHandler : public Handler {
  public:
-  DumpHandler(RequestContext* ctx, Handler* next);
+  explicit DumpHandler(Handler* next);
   ~DumpHandler();
 
   bool init(RequestContext* ctx) override;
