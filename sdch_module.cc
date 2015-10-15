@@ -27,7 +27,6 @@ namespace {
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
 bool tr_filter_add_data(RequestContext* ctx);
-static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
@@ -515,13 +514,12 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
     is_best = false;
   }
   else {
-    // If we found dictionary, but it's in wrong group, or it's not the
-    // best, than it's not best
-    is_best = ngx_memn2cmp(bestdict->groupname.data,
-                           group.data,
-                           bestdict->groupname.len,
-                           group.len) == 0 &&
-              bestdict->best;
+    // If we found dictionary, but is should be best and in correct group to be
+    // actually THE best.
+    is_best = bestdict->best && ngx_memn2cmp(bestdict->groupname.data,
+                                             group.data,
+                                             bestdict->groupname.len,
+                                             group.len) == 0;
     dict = bestdict->dict;
   }
 
