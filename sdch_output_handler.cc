@@ -9,25 +9,31 @@
 
 namespace sdch {
 
-OutputHandler::OutputHandler(RequestContext* ctx)
-    : Handler(nullptr), ctx_(ctx) {
-  ctx->last_out = &ctx->out;
+OutputHandler::OutputHandler(RequestContext* ctx, ngx_http_output_body_filter_pt next_body)
+    : Handler(nullptr), ctx_(ctx), next_body_(next_body) {
 }
 
 OutputHandler::~OutputHandler() {}
 
-bool OutputHandler::init(RequestContext* ctx) { return true; }
+bool OutputHandler::init(RequestContext* ctx) {
+  last_out_ = &out_;
+  return true;
+}
 
 Status OutputHandler::on_data(const char* buf, size_t len) {
   auto res = write(buf, len);
-  if (res != Status::OK)
-    return res;
-  return ctx_->last_buf ? Status::FINISH : res;
+  if (!out_)
+    return Status::OK;
+
+  return next_body();
 }
 
 Status OutputHandler::on_finish() {
   out_buf_->last_buf = 1;
-  return flush_out_buf(false);
+  if (flush_out_buf(false) == Status::ERROR)
+    return Status::ERROR;
+
+  return next_body();
 }
 
 Status OutputHandler::write(const char* buf, size_t len) {
@@ -68,10 +74,9 @@ Status OutputHandler::get_buf() {
 
   ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "sdch get_buf");
 
-  if (ctx_->free) {
-    out_buf_ = ctx_->free->buf;
-    ctx_->free = ctx_->free->next;
-
+  if (free_) {
+    out_buf_ = free_->buf;
+    free_ = free_->next;
   } else {
     auto* conf = Config::get(ctx_->request);
     out_buf_ = ngx_create_temp_buf(r->pool, conf->bufs.size);
@@ -96,12 +101,22 @@ Status OutputHandler::flush_out_buf(bool flush) {
   cl->buf = out_buf_;
   cl->buf->flush = flush ? 1 : 0;
   cl->next = nullptr;
-  *ctx_->last_out = cl;
-  ctx_->last_out = &ctx_->out;
+  *last_out_ = cl;
+  last_out_ = &out_;
 
   out_buf_ = nullptr;
 
   return Status::OK;
+}
+
+Status OutputHandler::next_body() {
+  auto rc = next_body_(ctx_->request, out_);
+  ngx_chain_update_chains(ctx_->request->pool,
+                          &free_,
+                          &busy_,
+                          &out_,
+                          (ngx_buf_tag_t) & sdch_module);
+  return rc == NGX_OK ? Status::OK : Status::ERROR;
 }
 
 }  // namespace sdch

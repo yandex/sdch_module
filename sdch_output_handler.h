@@ -8,6 +8,7 @@ extern "C" {
 #include <ngx_config.h>
 #include <nginx.h>
 #include <ngx_core.h>
+#include <ngx_http.h>
 }
 
 #include "sdch_handler.h"
@@ -19,7 +20,7 @@ class RequestContext;
 // nginx output handler. Will pass data to nginx.
 class OutputHandler : public Handler {
  public:
-  OutputHandler(RequestContext* ctx);
+  OutputHandler(RequestContext* ctx, ngx_http_output_body_filter_pt next_body);
   ~OutputHandler();
 
   bool init(RequestContext* ctx) override;
@@ -32,9 +33,16 @@ class OutputHandler : public Handler {
   Status get_buf();
   Status flush_out_buf(bool flush);
   Status write(const char* buf, size_t len);
+  Status next_body();
 
   RequestContext* ctx_;
+  ngx_http_output_body_filter_pt next_body_;
+
   ngx_buf_t* out_buf_;
+  ngx_chain_t* free_;
+  ngx_chain_t* busy_;
+  ngx_chain_t* out_;
+  ngx_chain_t** last_out_;
 };
 
 

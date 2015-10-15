@@ -26,7 +26,7 @@ namespace {
 }  // namespace
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
-static bool tr_filter_add_data(RequestContext* ctx);
+bool tr_filter_add_data(RequestContext* ctx);
 static ngx_int_t tr_filter_get_buf(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
@@ -627,10 +627,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return ngx_http_next_body_filter(r, in);
     }
 
-    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http sdch filter body 001 free=%p busy=%p out=%p", 
-                   ctx->free, ctx->busy, ctx->out);
-
     if (!ctx->started) {
         if (tr_filter_deflate_start(ctx) != NGX_OK) {
             goto failed;
@@ -658,41 +654,18 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             /* cycle while there is data to feed zlib and ... */
 
             if (!tr_filter_add_data(ctx)) {
-                break;
+                return NGX_OK;
             }
 
             rc = tr_filter_deflate(ctx);
-
-            if (rc == NGX_OK) {
-                break;
-            }
-
             if (rc == NGX_ERROR) {
-                goto failed;
+                return rc;
             }
 
-            /* rc == NGX_AGAIN */
+            if (ctx->in_buf->last_buf) {
+                return tr_filter_deflate_end(ctx);
+            }
         }
-
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http sdch filter loop1 exit");
-        if (ctx->out == nullptr) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http tr filter loop ret1 %p", ctx->busy);
-            return ctx->busy ? NGX_AGAIN : NGX_OK;
-        }
-
-        rc = ngx_http_next_body_filter(r, ctx->out);
-        if (rc == NGX_ERROR) {
-            goto failed;
-        }
-
-        ngx_chain_update_chains(r->pool, &ctx->free, &ctx->busy, &ctx->out,
-                                (ngx_buf_tag_t) &sdch_module);
-
-        ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http tr filter loop update_chains free=%p busy=%p out=%p", 
-                       ctx->free, ctx->busy, ctx->out);
 
         if (ctx->done) {
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -706,8 +679,6 @@ failed:
 
     ctx->done = 1;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-               "http sdch filter failed return");
     return NGX_ERROR;
 }
 
@@ -722,7 +693,7 @@ tr_filter_deflate_start(RequestContext *ctx)
 
 //INIT
     // Last will be OutputHandler.
-    ctx->handler = pool_alloc<OutputHandler>(r, ctx);
+    ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
     if (ctx->handler == nullptr || !ctx->handler->init(ctx))
       return NGX_ERROR;
 
@@ -746,7 +717,7 @@ tr_filter_deflate_start(RequestContext *ctx)
 }
 
 
-static bool
+bool
 tr_filter_add_data(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
@@ -770,9 +741,7 @@ tr_filter_add_data(RequestContext *ctx)
                    ctx->in_buf,
                    ctx->in_buf->pos, ngx_buf_size(ctx->in_buf));
 
-    if (ctx->in_buf->last_buf) {
-        ctx->last_buf = true;
-    } else if (ctx->in_buf->flush) {
+    if (ctx->in_buf->flush) {
         ctx->need_flush = true;
     }
 
@@ -798,14 +767,8 @@ tr_filter_deflate(RequestContext *ctx)
     if (status == Status::ERROR) {
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
                       "sdch failed");
+        ctx->done = true;
         return NGX_ERROR;
-    }
-
-    if (status == Status::FINISH) {
-        if (tr_filter_deflate_end(ctx) != NGX_OK) {
-            return NGX_ERROR;
-        }
-        return NGX_OK;
     }
 
     return NGX_AGAIN;

@@ -37,11 +37,6 @@ struct RequestContext {
 
 
   ngx_chain_t* in;
-  ngx_chain_t* free;
-  ngx_chain_t* busy;
-  ngx_chain_t* out;
-  ngx_chain_t** last_out;
-
   ngx_buf_t* in_buf;
   ngx_int_t bufs;
 
@@ -50,7 +45,6 @@ struct RequestContext {
   unsigned started : 1;
   unsigned done : 1;
 
-  bool last_buf;    // FIXME
   bool need_flush;  // FIXME
 
   unsigned store : 1;

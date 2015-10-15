@@ -9,7 +9,6 @@ namespace sdch {
 enum class Status {
   OK,       // everything is ok
   ERROR,    // some bad things happened
-  FINISH,   // processing is finished
 };
 
 
