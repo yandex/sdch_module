@@ -21,22 +21,18 @@
 
 namespace sdch {
 
-namespace {
-
-}  // namespace
-
-static ngx_int_t tr_add_variables(ngx_conf_t* cf);
-static ngx_int_t tr_ratio_variable(ngx_http_request_t* r,
+static ngx_int_t add_variables(ngx_conf_t* cf);
+static ngx_int_t ratio_variable(ngx_http_request_t* r,
                                    ngx_http_variable_value_t* v,
                                    uintptr_t data);
 
-static ngx_int_t tr_filter_init(ngx_conf_t* cf);
-static void* tr_create_conf(ngx_conf_t* cf);
-static char* tr_merge_conf(ngx_conf_t* cf, void* parent, void* child);
-static void* tr_create_main_conf(ngx_conf_t* cf);
-static char* tr_init_main_conf(ngx_conf_t* cf, void* conf);
+static ngx_int_t filter_init(ngx_conf_t* cf);
+static void* create_conf(ngx_conf_t* cf);
+static char* merge_conf(ngx_conf_t* cf, void* parent, void* child);
+static void* create_main_conf(ngx_conf_t* cf);
+static char* init_main_conf(ngx_conf_t* cf, void* conf);
 
-static char* tr_set_sdch_dict(ngx_conf_t* cf, ngx_command_t* cmd, void* conf);
+static char* set_sdch_dict(ngx_conf_t* cf, ngx_command_t* cmd, void* conf);
 
 static ngx_conf_bitmask_t  ngx_http_sdch_proxied_mask[] = {
     { ngx_string("off"), NGX_HTTP_GZIP_PROXIED_OFF },
@@ -54,11 +50,11 @@ static ngx_str_t  ngx_http_gzip_no_cache = ngx_string("no-cache");
 static ngx_str_t  ngx_http_gzip_no_store = ngx_string("no-store");
 static ngx_str_t  ngx_http_gzip_private = ngx_string("private");
 
-static ngx_conf_num_bounds_t tr_stor_size_bounds = {
+static ngx_conf_num_bounds_t stor_size_bounds = {
     ngx_conf_check_num_bounds, 1, 0xffffffffU
 };
 
-static ngx_command_t  tr_filter_commands[] = {
+static ngx_command_t  filter_commands[] = {
 
     { ngx_string("sdch"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -89,7 +85,7 @@ static ngx_command_t  tr_filter_commands[] = {
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE123,
-      tr_set_sdch_dict,
+      set_sdch_dict,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       nullptr },
@@ -172,24 +168,24 @@ static ngx_command_t  tr_filter_commands[] = {
       ngx_conf_set_num_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
       offsetof(MainConfig, stor_size),
-      &tr_stor_size_bounds },
+      &stor_size_bounds },
 
       ngx_null_command
 };
 
 
 static ngx_http_module_t  sdch_module_ctx = {
-    tr_add_variables,           /* preconfiguration */
-    tr_filter_init,             /* postconfiguration */
+    add_variables,           /* preconfiguration */
+    filter_init,             /* postconfiguration */
 
-    tr_create_main_conf,        /* create main configuration */
-    tr_init_main_conf,          /* init main configuration */
+    create_main_conf,        /* create main configuration */
+    init_main_conf,          /* init main configuration */
 
-    nullptr,                    /* create server configuration */
-    nullptr,                    /* merge server configuration */
+    nullptr,                 /* create server configuration */
+    nullptr,                 /* merge server configuration */
 
-    tr_create_conf,             /* create location configuration */
-    tr_merge_conf               /* merge location configuration */
+    create_conf,             /* create location configuration */
+    merge_conf               /* merge location configuration */
 };
 
 
@@ -523,7 +519,7 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
 
 
 static ngx_int_t
-tr_header_filter(ngx_http_request_t *r)
+header_filter(ngx_http_request_t *r)
 {
   ngx_log_debug(
       NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter header 000");
@@ -666,7 +662,7 @@ tr_header_filter(ngx_http_request_t *r)
 
 
 static ngx_int_t
-tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
+body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
   RequestContext* ctx = RequestContext::get(r);
 
@@ -720,26 +716,26 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 }
 
 
-static ngx_str_t tr_ratio = ngx_string("sdch_ratio");
+static ngx_str_t ratio = ngx_string("sdch_ratio");
 
 static ngx_int_t
-tr_add_variables(ngx_conf_t *cf)
+add_variables(ngx_conf_t *cf)
 {
     ngx_http_variable_t  *var;
 
-    var = ngx_http_add_variable(cf, &tr_ratio, NGX_HTTP_VAR_NOHASH);
+    var = ngx_http_add_variable(cf, &ratio, NGX_HTTP_VAR_NOHASH);
     if (var == nullptr) {
         return NGX_ERROR;
     }
 
-    var->get_handler = tr_ratio_variable;
+    var->get_handler = ratio_variable;
 
     return NGX_OK;
 }
 
 
 static ngx_int_t
-tr_ratio_variable(ngx_http_request_t *r,
+ratio_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
 {
     ngx_uint_t            zint, zfrac;
@@ -781,13 +777,13 @@ tr_ratio_variable(ngx_http_request_t *r,
 }
 
 static void *
-tr_create_main_conf(ngx_conf_t *cf)
+create_main_conf(ngx_conf_t *cf)
 {
     return pool_alloc<MainConfig>(cf);
 }
 
 static char *
-tr_init_main_conf(ngx_conf_t *cf, void *cnf)
+init_main_conf(ngx_conf_t *cf, void *cnf)
 {
     MainConfig *conf = static_cast<MainConfig*>(cnf);
     if (conf->stor_size != NGX_CONF_UNSET_SIZE)
@@ -796,13 +792,13 @@ tr_init_main_conf(ngx_conf_t *cf, void *cnf)
 }
 
 static void *
-tr_create_conf(ngx_conf_t *cf)
+create_conf(ngx_conf_t *cf)
 {
   return pool_alloc<Config>(cf, cf->pool);
 }
 
 static char *
-tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
+set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 {
     Config *conf = static_cast<Config*>(cnf);
 
@@ -847,7 +843,7 @@ tr_set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
 
 
 static char *
-tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
+merge_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     Config *prev = static_cast<Config*>(parent);
     Config *conf = static_cast<Config*>(child);
@@ -907,13 +903,13 @@ tr_merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
 
 static ngx_int_t
-tr_filter_init(ngx_conf_t *cf)
+filter_init(ngx_conf_t *cf)
 {
     ngx_http_next_header_filter = ngx_http_top_header_filter;
-    ngx_http_top_header_filter = tr_header_filter;
+    ngx_http_top_header_filter = header_filter;
 
     ngx_http_next_body_filter = ngx_http_top_body_filter;
-    ngx_http_top_body_filter = tr_body_filter;
+    ngx_http_top_body_filter = body_filter;
 
     ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "http sdch filter init");
     return NGX_OK;
@@ -925,7 +921,7 @@ tr_filter_init(ngx_conf_t *cf)
 ngx_module_t  sdch_module = {
     NGX_MODULE_V1,
     &sdch::sdch_module_ctx,           /* module context */
-    sdch::tr_filter_commands,         /* module directives */
+    sdch::filter_commands,            /* module directives */
     NGX_HTTP_MODULE,                  /* module type */
     nullptr,                          /* init master */
     nullptr,                          /* init module */
