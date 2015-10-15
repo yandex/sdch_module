@@ -34,8 +34,8 @@ class Config {
   ngx_str_t sdch_disablecv_s;
   ngx_http_complex_value_t sdch_disablecv;
 
-  static ngx_int_t default_bufs_size() { return 128 * 1024 / ngx_pagesize; }
-  static size_t default_bufs_num() { return ngx_pagesize; }
+  static ngx_int_t default_bufs_size() { return ngx_pagesize; }
+  static size_t default_bufs_num() { return 128 * 1024 / ngx_pagesize; }
   ngx_bufs_t bufs;
 
   ssize_t min_length = NGX_CONF_UNSET_SIZE;
