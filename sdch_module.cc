@@ -712,41 +712,15 @@ failed:
 static ngx_int_t
 tr_filter_deflate_start(RequestContext *ctx)
 {
-    ngx_http_request_t *r = ctx->request;
-    Config             *conf = Config::get(r);
+  ctx->started = 1;
 
-    ctx->started = 1;
-
-    for (auto* h = ctx->handler; h; h = h->next()) {
-      if (!h->init(ctx))
-        return NGX_ERROR;
-    }
-
-//INIT
-#if 0
-    // Last will be OutputHandler.
-    ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
-    if (ctx->handler == nullptr || !ctx->handler->init(ctx))
+  // INIT
+  for (auto* h = ctx->handler; h; h = h->next()) {
+    if (!h->init(ctx))
       return NGX_ERROR;
+  }
 
-    if (ctx->dict != nullptr) {
-      ctx->handler = pool_alloc<EncodingHandler>(r, ctx, ctx->handler);
-      if (ctx->handler == nullptr || !ctx->handler->init(ctx))
-        return NGX_ERROR;
-    }
-    if (conf->sdch_dumpdir.len > 0) {
-      ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
-      if (ctx->handler == nullptr || !ctx->handler->init(ctx))
-        return NGX_ERROR;
-    }
-    if (ctx->store) {
-      ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
-      if (ctx->handler == nullptr || !ctx->handler->init(ctx))
-        return NGX_ERROR;
-    }
-#endif
-
-    return NGX_OK;
+  return NGX_OK;
 }
 
 
