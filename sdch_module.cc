@@ -710,34 +710,20 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                    "http sdch filter mainloop entry");
 
     for ( ;; ) {
-
-        /* cycle while we can write to a client */
-
-        for ( ;; ) {
-
-            /* cycle while there is data to feed zlib and ... */
-
-            if (!tr_filter_add_data(ctx)) {
-                return NGX_OK;
-            }
-
-            rc = tr_filter_deflate(ctx);
-            if (rc == NGX_ERROR) {
-                return rc;
-            }
-
-            if (ctx->in_buf->last_buf) {
-                return tr_filter_deflate_end(ctx);
-            }
+        /* cycle while there is data to handle */
+        if (!tr_filter_add_data(ctx)) {
+            return NGX_OK;
         }
 
-        if (ctx->done) {
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http sdch filter done return %d", rc);
+        rc = tr_filter_deflate(ctx);
+        if (rc == NGX_ERROR) {
             return rc;
         }
-    }
 
+        if (ctx->in_buf->last_buf) {
+            return tr_filter_deflate_end(ctx);
+        }
+    }
     /* unreachable */
     return NGX_ERROR;
 }
