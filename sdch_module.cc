@@ -571,7 +571,6 @@ tr_header_filter(ngx_http_request_t *r)
     return NGX_ERROR;
   }
 
-  ctx->request = r;
   if (bestdict != nullptr) {
     ctx->dict = bestdict->dict;
   } else if (quasidict != nullptr) {
