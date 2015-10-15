@@ -33,20 +33,17 @@ struct RequestContext {
 
   ngx_http_request_t* request;
   Handler*            handler;
-  Storage::ValueHolder quasidict;
 
+  struct Dictionary* dict;
+  bool store;
+  Storage::ValueHolder quasidict;
 
   ngx_chain_t* in;
   ngx_buf_t* in_buf;
-
-  struct Dictionary* dict;
-
-  unsigned started : 1;
-  unsigned done : 1;
-
   bool need_flush;  // FIXME
 
-  unsigned store : 1;
+  bool started : 1;
+  bool done : 1;
 
   size_t total_in;
   size_t total_out;
