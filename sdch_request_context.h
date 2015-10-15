@@ -38,7 +38,6 @@ struct RequestContext {
 
   ngx_chain_t* in;
   ngx_buf_t* in_buf;
-  ngx_int_t bufs;
 
   struct Dictionary* dict;
 

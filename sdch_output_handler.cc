@@ -86,7 +86,6 @@ Status OutputHandler::get_buf() {
 
     out_buf_->tag = (ngx_buf_tag_t) & sdch_module;
     out_buf_->recycled = 1;
-    ctx_->bufs++;
   }
 
   return Status::OK;
