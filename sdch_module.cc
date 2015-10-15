@@ -371,30 +371,37 @@ get_dictionary_header(ngx_http_request_t *r, Config *conf)
     return NGX_OK;
 }
 
+template <size_t K, size_t V>
+ngx_int_t create_output_header(ngx_http_request_t* r,
+                               const char (&key)[K],
+                               const char (&value)[V],
+                               ngx_table_elt_t* prev = nullptr) {
+  ngx_table_elt_t* h = prev
+                       ? prev
+                       : static_cast<ngx_table_elt_t*>(
+                            ngx_list_push(&r->headers_out.headers));
+  if (h == nullptr) {
+    return NGX_ERROR;
+  }
+
+  h->hash = 1;
+  ngx_str_set(&h->key, key);
+  ngx_str_set(&h->value, value);
+
+  return NGX_OK;
+}
+
 static ngx_int_t
 x_sdch_encode_0_header(ngx_http_request_t *r, int ins)
 {
-    ngx_table_elt_t *h = header_find(&r->headers_out.headers,
-        "x-sdch-encode", nullptr);
-    if (!ins) {
-        if (h != nullptr) {
-            h->hash = 0;
-            h->value.len = 0;
-        }
-        return NGX_OK;
-    }
-    if (h == nullptr) {
-        h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-    }
-    if (h == nullptr) {
-        return NGX_ERROR;
-    }
-
-    h->hash = 1;
-    ngx_str_set(&h->key, "X-Sdch-Encode");
-    ngx_str_set(&h->value, "0");
-
+  ngx_table_elt_t* h =
+      header_find(&r->headers_out.headers, "x-sdch-encode", nullptr);
+  if (!ins && h != nullptr) {
+    h->hash = 0;
+    h->value.len = 0;
     return NGX_OK;
+  }
+  return create_output_header(r, "X-Sdch-Encode", "0", h);
 }
 
 static ngx_int_t
@@ -501,16 +508,8 @@ tr_header_filter(ngx_http_request_t *r)
   unsigned int ctxstore = 0;
   if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
     ctxstore = 1;
-
-    ngx_table_elt_t* h =
-        static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-    if (h == nullptr) {
+    if (create_output_header(r, "X-Sdch-Use-As-Dictionary", "1") != NGX_OK)
       return NGX_ERROR;
-    }
-
-    h->hash = 1;
-    ngx_str_set(&h->key, "X-Sdch-Use-As-Dictionary");
-    ngx_str_set(&h->value, "1");
   }
 
   ngx_str_t group;
@@ -579,18 +578,12 @@ tr_header_filter(ngx_http_request_t *r)
   }
 
   if (dict != nullptr) {
-    auto* h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-    if (h == nullptr) {
+    if (create_output_header(r, "Content-Encoding", "sdch") != NGX_OK) {
       return NGX_ERROR;
     }
 
-    h->hash = 1;
-    ngx_str_set(&h->key, "Content-Encoding");
-    ngx_str_set(&h->value, "sdch");
-    r->headers_out.content_encoding = h;
-    ngx_int_t e = x_sdch_encode_0_header(r, 0);
-    if (e) {
-      return e;
+    if (x_sdch_encode_0_header(r, 0) != NGX_OK) {
+      return NGX_ERROR;
     }
   }
 
