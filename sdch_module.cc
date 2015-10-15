@@ -26,7 +26,7 @@ namespace {
 }  // namespace
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
-static ngx_int_t tr_filter_deflate(RequestContext* ctx);
+static ngx_int_t tr_filter_deflate(RequestContext* ctx, ngx_buf_t* buf);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
 static ngx_int_t tr_add_variables(ngx_conf_t* cf);
@@ -692,17 +692,16 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     // cycle while there is data to handle
     for (; in ; in = in->next) {
-        ctx->in_buf = in->buf;
-        if (ctx->in_buf->flush) {
+        if (in->buf->flush) {
           ctx->need_flush = true;
         }
 
-        auto rc = tr_filter_deflate(ctx);
+        auto rc = tr_filter_deflate(ctx, in->buf);
         if (rc != NGX_OK) {
             return rc;
         }
 
-        if (ctx->in_buf->last_buf) {
+        if (in->buf->last_buf) {
             return tr_filter_deflate_end(ctx);
         }
     }
@@ -728,13 +727,13 @@ tr_filter_deflate_start(RequestContext *ctx)
 }
 
 
-static ngx_int_t tr_filter_deflate(RequestContext* ctx) {
+static ngx_int_t tr_filter_deflate(RequestContext* ctx, ngx_buf_t* in_buf) {
   ngx_http_request_t* r = ctx->request;
 
-  auto buf_size = ngx_buf_size(ctx->in_buf);
-  auto status = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
+  auto buf_size = ngx_buf_size(in_buf);
+  auto status = ctx->handler->on_data(reinterpret_cast<char*>(in_buf->pos),
                                       buf_size);
-  ctx->in_buf->pos = ctx->in_buf->last;
+  in_buf->pos = in_buf->last;
   ctx->total_in += buf_size;
 
   if (status == Status::ERROR) {
