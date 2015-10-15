@@ -700,14 +700,8 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                    "http sdch filter started");
 
     if (in) {
-        if (ngx_chain_add_copy(r->pool, &ctx->in, in) != NGX_OK) {
-            ctx->done = true;
-            return NGX_ERROR;
-        }
+        ctx->in = in;
     }
-
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http sdch filter mainloop entry");
 
     for ( ;; ) {
         /* cycle while there is data to handle */
