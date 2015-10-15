@@ -508,7 +508,10 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
   }
 
   if (bestdict == nullptr) {
-    dict = nullptr;
+    // Use quasi if there it's available and there is no predefined one
+    if (quasidict != nullptr) {
+      dict = &quasidict->dict;
+    }
     is_best = false;
   }
   else {
@@ -594,24 +597,23 @@ tr_header_filter(ngx_http_request_t *r)
                     is_best,
                     quasidict);
 
+  // No the best Dictionary selected.
   if (!is_best) {
-    ngx_int_t e = get_dictionary_header(r, conf);
-    if (e)
+    auto e = get_dictionary_header(r, conf);
+    if (e != NGX_OK)
       return e;
-    if (dict == nullptr && quasidict == nullptr) {
-      e = x_sdch_encode_0_header(r, sdch_expected);
-      if (e)
-        return e;
-      // There is no dictionary selected. Ad we are not creating quasi one.
-      if (!store_as_quasi)
-        return ngx_http_next_header_filter(r);
-    }
   }
 
-  // Use quasi if there it's available and there is no predefined one
-  if (dict == nullptr && quasidict != nullptr) {
-    dict = &quasidict->dict;
+  // Actually it wasn't selected at all.
+  if (dict == nullptr) {
+    auto e = x_sdch_encode_0_header(r, sdch_expected);
+    if (e != NGX_OK)
+      return e;
+    // And we are not creating quasi one.
+    if (!store_as_quasi)
+      return ngx_http_next_header_filter(r);
   }
+
 
   auto* ctx = pool_alloc<RequestContext>(r, r);
   if (ctx == nullptr) {
