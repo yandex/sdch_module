@@ -25,9 +25,6 @@ namespace {
 
 }  // namespace
 
-static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
-static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
-
 static ngx_int_t tr_add_variables(ngx_conf_t* cf);
 static ngx_int_t tr_ratio_variable(ngx_http_request_t* r,
                                    ngx_http_variable_value_t* v,
@@ -681,8 +678,12 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     if (!ctx->started) {
-        if (tr_filter_deflate_start(ctx) != NGX_OK) {
+        ctx->started = true;
+        for (auto* h = ctx->handler; h; h = h->next()) {
+          if (!h->init(ctx)) {
+            ctx->done = true;
             return NGX_ERROR;
+          }
         }
     }
 
@@ -708,39 +709,15 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 
         if (in->buf->last_buf) {
-            return tr_filter_deflate_end(ctx);
+            ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
+            ctx->done = true;
+            return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
         }
     }
 
     return NGX_OK;
 }
 
-
-static ngx_int_t
-tr_filter_deflate_start(RequestContext *ctx)
-{
-  ctx->started = 1;
-
-  // INIT
-  for (auto* h = ctx->handler; h; h = h->next()) {
-    if (!h->init(ctx)) {
-      ctx->done = 1;
-      return NGX_ERROR;
-    }
-  }
-
-  return NGX_OK;
-}
-
-
-static ngx_int_t
-tr_filter_deflate_end(RequestContext *ctx)
-{
-  ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
-
-  ctx->done = 1;
-  return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
-}
 
 static ngx_str_t tr_ratio = ngx_string("sdch_ratio");
 
