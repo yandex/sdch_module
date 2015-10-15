@@ -668,54 +668,55 @@ tr_header_filter(ngx_http_request_t *r)
 static ngx_int_t
 tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
-    RequestContext  *ctx = RequestContext::get(r);
+  RequestContext* ctx = RequestContext::get(r);
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http sdch filter body 000");
+  ngx_log_debug0(
+      NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter body 000");
 
-    if (ctx == nullptr || ctx->done || r->header_only) {
-        return ngx_http_next_body_filter(r, in);
+  if (ctx == nullptr || ctx->done || r->header_only) {
+    return ngx_http_next_body_filter(r, in);
+  }
+
+  if (!ctx->started) {
+    ctx->started = true;
+    for (auto* h = ctx->handler; h; h = h->next()) {
+      if (!h->init(ctx)) {
+        ctx->done = true;
+        return NGX_ERROR;
+      }
+    }
+  }
+
+  ngx_log_debug0(
+      NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter started");
+
+  // cycle while there is data to handle
+  for (; in; in = in->next) {
+    if (in->buf->flush) {
+      ctx->need_flush = true;
     }
 
-    if (!ctx->started) {
-        ctx->started = true;
-        for (auto* h = ctx->handler; h; h = h->next()) {
-          if (!h->init(ctx)) {
-            ctx->done = true;
-            return NGX_ERROR;
-          }
-        }
+    auto buf_size = ngx_buf_size(in->buf);
+    auto status =
+        ctx->handler->on_data(reinterpret_cast<char*>(in->buf->pos), buf_size);
+    in->buf->pos = in->buf->last;
+    ctx->total_in += buf_size;
+
+    if (status == Status::ERROR) {
+      ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
+      ctx->done = true;
+      return NGX_ERROR;
     }
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http sdch filter started");
-
-    // cycle while there is data to handle
-    for (; in ; in = in->next) {
-        if (in->buf->flush) {
-          ctx->need_flush = true;
-        }
-
-        auto buf_size = ngx_buf_size(in->buf);
-        auto status = ctx->handler->on_data(reinterpret_cast<char*>(in->buf->pos),
-                                            buf_size);
-        in->buf->pos = in->buf->last;
-        ctx->total_in += buf_size;
-
-        if (status == Status::ERROR) {
-          ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
-          ctx->done = true;
-          return NGX_ERROR;
-        }
-
-        if (in->buf->last_buf) {
-            ngx_log_error(NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
-            ctx->done = true;
-            return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
-        }
+    if (in->buf->last_buf) {
+      ngx_log_error(
+          NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
+      ctx->done = true;
+      return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
     }
+  }
 
-    return NGX_OK;
+  return NGX_OK;
 }
 
 
