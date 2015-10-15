@@ -739,10 +739,6 @@ tr_filter_add_data(RequestContext *ctx)
 {
     ngx_http_request_t *r = ctx->request;
 
-    if ((ctx->in_buf && ngx_buf_size(ctx->in_buf))) {
-        return true;
-    }
-
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch in: %p", ctx->in);
 
@@ -773,7 +769,7 @@ static ngx_int_t tr_filter_deflate(RequestContext* ctx) {
   auto buf_size = ngx_buf_size(ctx->in_buf);
   auto status = ctx->handler->on_data(reinterpret_cast<char*>(ctx->in_buf->pos),
                                       buf_size);
-  ctx->in_buf->pos += buf_size;
+  ctx->in_buf->pos = ctx->in_buf->last;
   ctx->total_in += buf_size;
 
   if (status == Status::ERROR) {
