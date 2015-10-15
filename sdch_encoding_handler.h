@@ -43,8 +43,7 @@ class EncodingHandler : public Handler,
   Dictionary*          dict_;
   Storage::ValueHolder quasidict_;
 
-  // Actual encoder. We do allocate it from pool, so no manual memory management
-  // required.
+  // Actual encoder.
   open_vcdiff::VCDiffStreamingEncoder enc_;
 
   // For OutputStringInterface implementation
