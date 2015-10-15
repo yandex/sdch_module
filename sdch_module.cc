@@ -692,7 +692,7 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     if (!ctx->started) {
         if (tr_filter_deflate_start(ctx) != NGX_OK) {
-            goto failed;
+            return NGX_ERROR;
         }
     }
 
@@ -701,7 +701,8 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     if (in) {
         if (ngx_chain_add_copy(r->pool, &ctx->in, in) != NGX_OK) {
-            goto failed;
+            ctx->done = true;
+            return NGX_ERROR;
         }
     }
 
@@ -738,10 +739,6 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     /* unreachable */
-failed:
-
-    ctx->done = 1;
-
     return NGX_ERROR;
 }
 
@@ -753,8 +750,10 @@ tr_filter_deflate_start(RequestContext *ctx)
 
   // INIT
   for (auto* h = ctx->handler; h; h = h->next()) {
-    if (!h->init(ctx))
+    if (!h->init(ctx)) {
+      ctx->done = 1;
       return NGX_ERROR;
+    }
   }
 
   return NGX_OK;
