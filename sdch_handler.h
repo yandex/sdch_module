@@ -32,6 +32,8 @@ class Handler {
   // Default implementation just invokes next_->on_finish();
   virtual Status on_finish();
 
+  Handler* next() const { return next_; }
+
  protected:
   Handler* next_;
 };

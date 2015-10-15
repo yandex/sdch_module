@@ -11,10 +11,16 @@
 
 namespace sdch {
 
-EncodingHandler::EncodingHandler(RequestContext* ctx, Handler* next)
-    : Handler(next), ctx_(ctx), cursize_(0) {
+EncodingHandler::EncodingHandler(RequestContext* ctx,
+                                 Handler* next,
+                                 Dictionary* dict,
+                                 Storage::ValueHolder quasidict)
+    : Handler(next),
+      ctx_(ctx),
+      dict_(dict),
+      quasidict_(std::move(quasidict)),
+      cursize_(0) {
   assert(next_);
-
 }
 
 EncodingHandler::~EncodingHandler() {}
@@ -22,7 +28,7 @@ EncodingHandler::~EncodingHandler() {}
 bool EncodingHandler::init(RequestContext* ctx) {
   enc_ = pool_alloc<open_vcdiff::VCDiffStreamingEncoder>(
       ctx_->request,
-      ctx_->dict->hashed_dict(),
+      dict_->hashed_dict(),
       open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
       false);
   if (enc_ == nullptr)
@@ -32,7 +38,7 @@ bool EncodingHandler::init(RequestContext* ctx) {
     return false;
 
   // Output Dictionary server_id first
-  next_->on_data(ctx_->dict->server_id().c_str(), 9);
+  next_->on_data(dict_->server_id().c_str(), 9);
 
   return true;
 }

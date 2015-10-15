@@ -34,10 +34,6 @@ struct RequestContext {
   ngx_http_request_t* request;
   Handler*            handler;
 
-  struct Dictionary* dict;
-  bool store;
-  Storage::ValueHolder quasidict;
-
   ngx_chain_t* in;
   ngx_buf_t* in_buf;
   bool need_flush;  // FIXME

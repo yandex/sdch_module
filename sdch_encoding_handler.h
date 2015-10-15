@@ -8,8 +8,11 @@
 
 #include <google/vcencoder.h>
 
+#include "sdch_storage.h"
+
 namespace sdch {
 
+class Dictionary;
 class RequestContext;
 
 // Actual VCDiff encoding handler
@@ -17,7 +20,10 @@ class EncodingHandler : public Handler,
                         public open_vcdiff::OutputStringInterface {
  public:
   // TODO: Remove fat RequestContext and only pass required parameters
-  EncodingHandler(RequestContext* ctx, Handler* next);
+  EncodingHandler(RequestContext* ctx,
+                  Handler* next,
+                  Dictionary* dict,
+                  Storage::ValueHolder quasidict);
   ~EncodingHandler();
 
   // sdch::Handler implementation
@@ -35,7 +41,9 @@ class EncodingHandler : public Handler,
  private:
   class OutHelper;
 
-  RequestContext* ctx_;
+  RequestContext*      ctx_;
+  Dictionary*          dict_;
+  Storage::ValueHolder quasidict_;
 
   // Actual encoder. We do allocate it from pool, so no manual memory management
   // required.

@@ -571,17 +571,14 @@ tr_header_filter(ngx_http_request_t *r)
     return NGX_ERROR;
   }
 
+  Dictionary* dict = nullptr;
   if (bestdict != nullptr) {
-    ctx->dict = bestdict->dict;
+    dict = bestdict->dict;
   } else if (quasidict != nullptr) {
-    ctx->quasidict = std::move(quasidict);
-    ctx->dict = &ctx->quasidict->dict;
-  } else {
-    ctx->dict = nullptr;
+    dict = &quasidict->dict;
   }
-  ctx->store = ctxstore;
 
-  if (ctx->dict != nullptr) {
+  if (dict != nullptr) {
     auto* h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
     if (h == nullptr) {
       return NGX_ERROR;
@@ -595,6 +592,36 @@ tr_header_filter(ngx_http_request_t *r)
     if (e) {
       return e;
     }
+  }
+
+  // Allocate Handlers chain
+  // Last will be OutputHandler.
+  ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
+  if (ctx->handler == nullptr)
+    return NGX_ERROR;
+
+  // Id we have actual Dictionary - do encode response
+  if (dict != nullptr) {
+    ctx->handler = pool_alloc<EncodingHandler>(r,
+                                               ctx,
+                                               ctx->handler,
+                                               dict,
+                                               std::move(quasidict));
+    if (ctx->handler == nullptr)
+      return NGX_ERROR;
+  }
+
+  if (conf->sdch_dumpdir.len > 0) {
+    ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
+    if (ctx->handler == nullptr)
+      return NGX_ERROR;
+  }
+
+  // If we have to create new quasi-dictionary
+  if (ctxstore) {
+    ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
+    if (ctx->handler == nullptr)
+      return NGX_ERROR;
   }
 
   r->main_filter_need_in_memory = 1;
@@ -690,7 +717,13 @@ tr_filter_deflate_start(RequestContext *ctx)
 
     ctx->started = 1;
 
+    for (auto* h = ctx->handler; h; h = h->next()) {
+      if (!h->init(ctx))
+        return NGX_ERROR;
+    }
+
 //INIT
+#if 0
     // Last will be OutputHandler.
     ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
     if (ctx->handler == nullptr || !ctx->handler->init(ctx))
@@ -711,6 +744,7 @@ tr_filter_deflate_start(RequestContext *ctx)
       if (ctx->handler == nullptr || !ctx->handler->init(ctx))
         return NGX_ERROR;
     }
+#endif
 
     return NGX_OK;
 }
