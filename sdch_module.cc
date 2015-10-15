@@ -505,9 +505,9 @@ tr_header_filter(ngx_http_request_t *r)
     return ngx_http_next_header_filter(r);
   }
 
-  unsigned int ctxstore = 0;
+  bool ctxstore = false;
   if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
-    ctxstore = 1;
+    ctxstore = true;
     if (create_output_header(r, "X-Sdch-Use-As-Dictionary", "1") != NGX_OK)
       return NGX_ERROR;
   }
@@ -560,7 +560,8 @@ tr_header_filter(ngx_http_request_t *r)
       e = x_sdch_encode_0_header(r, sdch_expected);
       if (e)
         return e;
-      if (ctxstore == 0)
+      // There is no dictionary selected. Ad we are not creating quasi one.
+      if (!ctxstore)
         return ngx_http_next_header_filter(r);
     }
   }
