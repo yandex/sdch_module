@@ -26,7 +26,6 @@ namespace {
 }  // namespace
 
 static ngx_int_t tr_filter_deflate_start(RequestContext* ctx);
-bool tr_filter_add_data(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate(RequestContext* ctx);
 static ngx_int_t tr_filter_deflate_end(RequestContext* ctx);
 
@@ -691,12 +690,13 @@ tr_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http sdch filter started");
 
-    if (in) {
-        ctx->in = in;
-    }
-
     // cycle while there is data to handle
-    while (tr_filter_add_data(ctx)) {
+    for (; in ; in = in->next) {
+        ctx->in_buf = in->buf;
+        if (ctx->in_buf->flush) {
+          ctx->need_flush = true;
+        }
+
         auto rc = tr_filter_deflate(ctx);
         if (rc != NGX_OK) {
             return rc;
@@ -726,35 +726,6 @@ tr_filter_deflate_start(RequestContext *ctx)
 
   return NGX_OK;
 }
-
-
-bool
-tr_filter_add_data(RequestContext *ctx)
-{
-    ngx_http_request_t *r = ctx->request;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "sdch in: %p", ctx->in);
-
-    if (ctx->in == nullptr) {
-        return false;
-    }
-
-    ctx->in_buf = ctx->in->buf;
-    ctx->in = ctx->in->next;
-
-    ngx_log_debug3(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "sdch in_buf:%p ni:%p ai:%ud",
-                   ctx->in_buf,
-                   ctx->in_buf->pos, ngx_buf_size(ctx->in_buf));
-
-    if (ctx->in_buf->flush) {
-        ctx->need_flush = true;
-    }
-
-    return true;
-}
-
 
 
 static ngx_int_t tr_filter_deflate(RequestContext* ctx) {
