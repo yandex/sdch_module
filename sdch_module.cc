@@ -505,9 +505,9 @@ tr_header_filter(ngx_http_request_t *r)
     return ngx_http_next_header_filter(r);
   }
 
-  bool ctxstore = false;
+  bool store_as_quasi = false;
   if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_quasi) {
-    ctxstore = true;
+    store_as_quasi = true;
     if (create_output_header(r, "X-Sdch-Use-As-Dictionary", "1") != NGX_OK)
       return NGX_ERROR;
   }
@@ -561,7 +561,7 @@ tr_header_filter(ngx_http_request_t *r)
       if (e)
         return e;
       // There is no dictionary selected. Ad we are not creating quasi one.
-      if (!ctxstore)
+      if (!store_as_quasi)
         return ngx_http_next_header_filter(r);
     }
   }
@@ -584,7 +584,7 @@ tr_header_filter(ngx_http_request_t *r)
   if (ctx->handler == nullptr)
     return NGX_ERROR;
 
-  // Id we have actual Dictionary - do encode response
+  // If we have actual Dictionary - do encode response
   if (dict != nullptr) {
     if (create_output_header(r, "Content-Encoding", "sdch") != NGX_OK) {
       return NGX_ERROR;
@@ -612,7 +612,7 @@ tr_header_filter(ngx_http_request_t *r)
   }
 
   // If we have to create new quasi-dictionary
-  if (ctxstore) {
+  if (store_as_quasi) {
     ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
     if (ctx->handler == nullptr) {
       return NGX_ERROR;
