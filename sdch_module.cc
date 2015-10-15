@@ -544,6 +544,7 @@ tr_header_filter(ngx_http_request_t *r)
                   "http sdch filter header: no sdch in accept-encoding");
     return ngx_http_next_header_filter(r);
   }
+
   if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
     ngx_str_set(&val, "");
   }
@@ -627,10 +628,6 @@ tr_header_filter(ngx_http_request_t *r)
   // If we have actual Dictionary - do encode response
   if (dict != nullptr) {
     if (create_output_header(r, "Content-Encoding", "sdch") != NGX_OK) {
-      return NGX_ERROR;
-    }
-
-    if (x_sdch_encode_0_header(r, false) != NGX_OK) {
       return NGX_ERROR;
     }
 
