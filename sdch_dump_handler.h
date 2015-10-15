@@ -4,6 +4,7 @@
 #ifndef SDCH_DUMP_HANDLER_H_
 #define SDCH_DUMP_HANDLER_H_
 
+#include "sdch_fdholder.h"
 #include "sdch_handler.h"
 
 namespace sdch {
@@ -20,10 +21,8 @@ class DumpHandler : public Handler {
 
   Status on_data(const char* buf, size_t len) override;
 
-  Status on_finish() override;
-
  private:
-  int fd_;
+  FDHolder fd_;
 };
 
 

@@ -9,22 +9,11 @@
 #include <google/vcencoder.h>
 #include <openssl/sha.h>
 
+#include "sdch_fdholder.h"
+
 namespace sdch {
 
 namespace {
-
-// Simple RAII holder for opened files.
-class fdholder {
- public:
-  explicit fdholder(int d) : fd(d) {}
-  ~fdholder() { close(fd); }
-
-  operator int() { return fd; }
-
- private:
-  int fd;
-  fdholder& operator=(const fdholder&);
-};
 
 // Skip dictionary headers in case of on-disk dictionary
 const char *get_dict_payload(const char *dictbegin, const char *dictend)
@@ -80,7 +69,7 @@ void get_dict_ids(const char* buf,
 
 bool read_file(const char* fn, std::vector<char>& blob) {
   blob.clear();
-  fdholder fd(open(fn, O_RDONLY));
+  FDHolder fd(open(fn, O_RDONLY));
   if (fd == -1)
     return false;
   struct stat st;
