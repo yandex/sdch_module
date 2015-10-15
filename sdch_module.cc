@@ -578,16 +578,6 @@ tr_header_filter(ngx_http_request_t *r)
     dict = &quasidict->dict;
   }
 
-  if (dict != nullptr) {
-    if (create_output_header(r, "Content-Encoding", "sdch") != NGX_OK) {
-      return NGX_ERROR;
-    }
-
-    if (x_sdch_encode_0_header(r, 0) != NGX_OK) {
-      return NGX_ERROR;
-    }
-  }
-
   // Allocate Handlers chain
   // Last will be OutputHandler.
   ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
@@ -596,26 +586,37 @@ tr_header_filter(ngx_http_request_t *r)
 
   // Id we have actual Dictionary - do encode response
   if (dict != nullptr) {
+    if (create_output_header(r, "Content-Encoding", "sdch") != NGX_OK) {
+      return NGX_ERROR;
+    }
+
+    if (x_sdch_encode_0_header(r, 0) != NGX_OK) {
+      return NGX_ERROR;
+    }
+
     ctx->handler = pool_alloc<EncodingHandler>(r,
                                                ctx,
                                                ctx->handler,
                                                dict,
                                                std::move(quasidict));
-    if (ctx->handler == nullptr)
+    if (ctx->handler == nullptr) {
       return NGX_ERROR;
+    }
   }
 
   if (conf->sdch_dumpdir.len > 0) {
     ctx->handler = pool_alloc<DumpHandler>(r, ctx, ctx->handler);
-    if (ctx->handler == nullptr)
+    if (ctx->handler == nullptr) {
       return NGX_ERROR;
+    }
   }
 
   // If we have to create new quasi-dictionary
   if (ctxstore) {
     ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
-    if (ctx->handler == nullptr)
+    if (ctx->handler == nullptr) {
       return NGX_ERROR;
+    }
   }
 
   r->main_filter_need_in_memory = 1;
