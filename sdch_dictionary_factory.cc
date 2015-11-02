@@ -32,7 +32,7 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
 
   res->groupname.len = groupname.len;
   res->groupname.data = ngx_pstrdup(pool_, &groupname);
-  res->priority = prio != -1 ? prio : conf_storage_.size() - 1;
+  res->priority = prio != ngx_uint_t(-1) ? prio : conf_storage_.size() - 1;
   res->dict = dict;
   res->best = false;
 
