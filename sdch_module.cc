@@ -833,7 +833,7 @@ set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
                        dict->client_id().c_str(),
                        dict->server_id().c_str());
 
-    auto* sdc = conf->dict_factory->store_config(
+    conf->dict_factory->store_config(
         dict,
         groupname,
         prio);
