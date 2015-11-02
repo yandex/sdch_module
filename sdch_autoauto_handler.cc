@@ -20,7 +20,7 @@ bool AutoautoHandler::init(RequestContext* ctx) {
   return true;
 }
 
-Status AutoautoHandler::on_data(const char* buf, size_t len) {
+Status AutoautoHandler::on_data(const uint8_t* buf, size_t len) {
   blob_.insert(blob_.end(), buf, buf + len);
 
   if (next_)

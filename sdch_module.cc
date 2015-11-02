@@ -695,8 +695,7 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     auto buf_size = ngx_buf_size(in->buf);
-    auto status =
-        ctx->handler->on_data(reinterpret_cast<char*>(in->buf->pos), buf_size);
+    auto status = ctx->handler->on_data(in->buf->pos, buf_size);
     in->buf->pos = in->buf->last;
     ctx->total_in += buf_size;
 

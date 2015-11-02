@@ -25,14 +25,14 @@ class OutputHandler : public Handler {
 
   bool init(RequestContext* ctx) override;
 
-  Status on_data(const char* buf, size_t len) override;
+  Status on_data(const uint8_t* buf, size_t len) override;
 
   Status on_finish() override;
 
  private:
   Status get_buf();
   Status flush_out_buf(bool flush);
-  Status write(const char* buf, size_t len);
+  Status write(const uint8_t* buf, size_t len);
   Status next_body();
 
   RequestContext* ctx_;

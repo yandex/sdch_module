@@ -20,7 +20,7 @@ class AutoautoHandler : public Handler {
 
   bool init(RequestContext* ctx) override;
 
-  Status on_data(const char* buf, size_t len) override;
+  Status on_data(const uint8_t* buf, size_t len) override;
   Status on_finish() override;
 
  private:

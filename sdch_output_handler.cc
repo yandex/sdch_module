@@ -20,7 +20,7 @@ bool OutputHandler::init(RequestContext* ctx) {
   return true;
 }
 
-Status OutputHandler::on_data(const char* buf, size_t len) {
+Status OutputHandler::on_data(const uint8_t* buf, size_t len) {
   auto res = write(buf, len);
   if (!out_)
     return res;
@@ -36,7 +36,7 @@ Status OutputHandler::on_finish() {
   return next_body();
 }
 
-Status OutputHandler::write(const char* buf, size_t len) {
+Status OutputHandler::write(const uint8_t* buf, size_t len) {
   int rlen = 0;
 
   while (len > 0) {

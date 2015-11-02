@@ -8,6 +8,8 @@
 
 #include "sdch_status.h"
 
+#include <cstdint>
+
 namespace sdch {
 
 class RequestContext;
@@ -26,7 +28,7 @@ class Handler {
 
   // Handle chunk of data. For example encode it with VCDIFF.
   // Almost every Handler should call next_->on_data() to keep chain.
-  virtual Status on_data(const char* buf, size_t len) = 0;
+  virtual Status on_data(const uint8_t* buf, size_t len) = 0;
 
   // Called when request processing finished.
   // Default implementation just invokes next_->on_finish();

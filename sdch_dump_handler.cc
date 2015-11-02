@@ -44,7 +44,7 @@ bool DumpHandler::init(RequestContext* ctx) {
   return true;
 }
 
-Status DumpHandler::on_data(const char* buf, size_t len) {
+Status DumpHandler::on_data(const uint8_t* buf, size_t len) {
   ssize_t res = 0;
 
   if ((res = write(fd_, buf, len)) != static_cast<ssize_t>(len)) {

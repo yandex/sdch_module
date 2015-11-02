@@ -31,16 +31,17 @@ bool EncodingHandler::init(RequestContext* ctx) {
     return false;
 
   // Output Dictionary server_id first
-  next_->on_data(reinterpret_cast<const char*>(dict_->server_id().data()), 8);
+  next_->on_data(dict_->server_id().data(), 8);
   next_->on_data("\0", 1);
 
   return true;
 }
 
-Status EncodingHandler::on_data(const char* buf, size_t len) {
+Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
   // It will call ".append" which will pass it to the next_
   if (len) {
-    if (!enc_.EncodeChunkToInterface(buf, len, this))
+    if (!enc_.EncodeChunkToInterface(
+             reinterpret_cast<const char*>(buf), len, this))
       return Status::ERROR;
     return next_status_;
   }
@@ -59,7 +60,7 @@ Status EncodingHandler::on_finish() {
 
 open_vcdiff::OutputStringInterface& EncodingHandler::append(const char* s,
                                                             size_t n) {
-  next_status_ = next_->on_data(s, n);
+  next_status_ = next_->on_data(reinterpret_cast<const uint8_t*>(s), n);
   cursize_ += n;
   return *this;
 }
