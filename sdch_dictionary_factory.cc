@@ -10,7 +10,8 @@ namespace sdch {
 namespace {
 
 bool compare_dict_conf(const DictConfig& a, const DictConfig& b) {
-  ngx_int_t c = ngx_strcmp(a.groupname.data, b.groupname.data);
+  ngx_int_t c = ngx_memn2cmp(a.groupname.data, b.groupname.data,
+                             a.groupname.len, b.groupname.len);
   if (c != 0)
     return c < 0;
   return a.priority < b.priority;
@@ -89,8 +90,10 @@ void DictionaryFactory::merge(const DictionaryFactory* parent) {
     conf_storage_.begin()->best = 1;
   }
   for (size_t i = 1; i < conf_storage_.size(); ++i) {
-    if (ngx_strcmp(conf_storage_[i - 1].groupname.data,
-                   conf_storage_[i].groupname.data)) {
+    if (ngx_memn2cmp(conf_storage_[i - 1].groupname.data,
+                   conf_storage_[i].groupname.data,
+                   conf_storage_[i - 1].groupname.len,
+                   conf_storage_[i].groupname.len)) {
       conf_storage_[i].best = 1;
     }
   }
