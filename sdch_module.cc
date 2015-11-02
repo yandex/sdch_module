@@ -622,6 +622,10 @@ header_filter(ngx_http_request_t *r)
       return NGX_ERROR;
     }
 
+    if (x_sdch_encode_0_header(r, false) != NGX_OK) {
+      return NGX_ERROR;
+    }
+
     ctx->handler = pool_alloc<EncodingHandler>(r,
                                                ctx->handler,
                                                dict,
