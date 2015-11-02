@@ -20,6 +20,7 @@ class FDHolder {
   FDHolder& operator=(FDHolder&& other) {
     fd_ = other.fd_;
     other.fd_ = -1;
+    return *this;
   }
   operator int() { return fd_; }
 

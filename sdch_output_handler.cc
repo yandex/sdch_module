@@ -23,7 +23,7 @@ bool OutputHandler::init(RequestContext* ctx) {
 Status OutputHandler::on_data(const char* buf, size_t len) {
   auto res = write(buf, len);
   if (!out_)
-    return Status::OK;
+    return res;
 
   return next_body();
 }

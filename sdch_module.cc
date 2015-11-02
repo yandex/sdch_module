@@ -622,6 +622,10 @@ header_filter(ngx_http_request_t *r)
       return NGX_ERROR;
     }
 
+    if (x_sdch_encode_0_header(r, false) != NGX_OK) {
+      return NGX_ERROR;
+    }
+
     ctx->handler = pool_alloc<EncodingHandler>(r,
                                                ctx->handler,
                                                dict,
@@ -833,7 +837,7 @@ set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
                        dict->client_id().c_str(),
                        dict->server_id().c_str());
 
-    auto* sdc = conf->dict_factory->store_config(
+    conf->dict_factory->store_config(
         dict,
         groupname,
         prio);

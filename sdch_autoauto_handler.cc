@@ -21,8 +21,6 @@ bool AutoautoHandler::init(RequestContext* ctx) {
 }
 
 Status AutoautoHandler::on_data(const char* buf, size_t len) {
-  ssize_t res = 0;
-
   blob_.insert(blob_.end(), buf, buf + len);
 
   if (next_)
