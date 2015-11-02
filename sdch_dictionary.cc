@@ -46,17 +46,16 @@ ngx_encode_base64url(ngx_str_t *dst, ngx_str_t *src)
 }
 #endif
 
-void encode_id(u_char* sha, std::string& id) {
-  id.resize(8);
+void encode_id(u_char* sha, Dictionary::id_t& id) {
 	ngx_str_t src = {6, sha};
-	ngx_str_t dst = {8, reinterpret_cast<u_char*>(&id[0])};
+	ngx_str_t dst = {8, id.data()};
 	ngx_encode_base64url(&dst, &src);
 }
 
 void get_dict_ids(const char* buf,
                   size_t buflen,
-                  std::string& client_id,
-                  std::string& server_id) {
+                  Dictionary::id_t& client_id,
+                  Dictionary::id_t& server_id) {
   SHA256_CTX ctx;
   SHA256_Init(&ctx);
   SHA256_Update(&ctx, buf, buflen);

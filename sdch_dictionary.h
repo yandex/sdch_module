@@ -11,8 +11,9 @@ extern "C" {
 #include <ngx_http.h>
 }
 
+#include <cstdint>
 #include <memory>
-#include <string>
+#include <array>
 
 namespace open_vcdiff {
 class HashedDictionary;
@@ -23,6 +24,8 @@ namespace sdch {
 // In-memory Dictionary representation
 class Dictionary {
  public:
+  using id_t = std::array<uint8_t, 8>;
+
   Dictionary();
   Dictionary(Dictionary&& other);
   ~Dictionary();
@@ -36,11 +39,11 @@ class Dictionary {
     return size_;
   }
 
-  const std::string& client_id() const {
+  const id_t& client_id() const {
     return client_id_;
   }
 
-  const std::string& server_id() const {
+  const id_t& server_id() const {
     return server_id_;
   }
 
@@ -56,8 +59,8 @@ class Dictionary {
   std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
 
   size_t size_;
-  std::string client_id_;
-  std::string server_id_;
+  id_t client_id_;
+  id_t server_id_;
 };
 
 

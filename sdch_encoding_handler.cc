@@ -31,7 +31,8 @@ bool EncodingHandler::init(RequestContext* ctx) {
     return false;
 
   // Output Dictionary server_id first
-  next_->on_data(dict_->server_id().c_str(), 9);
+  next_->on_data(reinterpret_cast<const char*>(dict_->server_id().data()), 8);
+  next_->on_data("\0", 1);
 
   return true;
 }

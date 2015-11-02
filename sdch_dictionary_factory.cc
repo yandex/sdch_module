@@ -70,7 +70,7 @@ DictConfig* DictionaryFactory::choose_best_dictionary(DictConfig* old,
 
 DictConfig* DictionaryFactory::find_dictionary(const u_char* client_id) {
   for (auto& c : conf_storage_) {
-    if (ngx_strncmp(client_id, c.dict->client_id().c_str(), 8) == 0)
+    if (ngx_strncmp(client_id, c.dict->client_id().data(), 8) == 0)
       return &c;
   }
 

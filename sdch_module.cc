@@ -330,12 +330,10 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
 }
 
 static Storage::ValueHolder find_quasidict(ngx_http_request_t* r, u_char* h) {
-  char nm[9];
-  nm[8] = 0;
-  memcpy(nm, h, 8);
-
+  Dictionary::id_t id;
+  std::copy(std::begin(id), std::end(id), h);
   auto* main = MainConfig::get(r);
-  return main->storage.find(nm);
+  return main->storage.find(id);
 }
 
 static ngx_int_t
@@ -833,9 +831,9 @@ set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     ngx_conf_log_error(NGX_LOG_NOTICE,
                        cf,
                        0,
-                       "dictionary ids: user %s server %s",
-                       dict->client_id().c_str(),
-                       dict->server_id().c_str());
+                       "dictionary ids: user %*s server %*s",
+                       dict->client_id().size(), dict->client_id().data(),
+                       dict->server_id().size(), dict->server_id().data());
 
     conf->dict_factory->store_config(
         dict,

@@ -44,9 +44,9 @@ class Storage {
 
   Storage();
 
-  bool store(const std::string& key, Value value);
+  bool store(const Dictionary::id_t& key, Value value);
   // Get Value and "lock" it.
-  ValueHolder find(const std::string& key);
+  ValueHolder find(const Dictionary::id_t& key);
 
   bool clear(time_t ts);
 
@@ -58,8 +58,8 @@ class Storage {
  private:
   friend class Unlocker;
 
-  using StoreType = std::map<std::string, Value>;
-  using LRUType = std::multimap<time_t, std::string>;
+  using StoreType = std::map<Dictionary::id_t, Value>;
+  using LRUType = std::multimap<time_t, Dictionary::id_t>;
 
   // Unlock used Value
   void unlock(Value* v);
