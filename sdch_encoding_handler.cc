@@ -32,7 +32,9 @@ bool EncodingHandler::init(RequestContext* ctx) {
 
   // Output Dictionary server_id first
   next_->on_data(dict_->server_id().data(), 8);
-  next_->on_data("\0", 1);
+
+  static uint8_t terminator[1] = { 0x0 };
+  next_->on_data(terminator, 1);
 
   return true;
 }
