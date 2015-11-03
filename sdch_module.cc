@@ -707,8 +707,8 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     if (in->buf->last_buf) {
-      ngx_log_error(
-          NGX_LOG_ALERT, ctx->request->connection->log, 0, "closing ctx");
+      ngx_log_debug(NGX_LOG_DEBUG_HTTP,
+          ctx->request->connection->log, 0, "closing ctx");
       ctx->done = true;
       return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
     }
