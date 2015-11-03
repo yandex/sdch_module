@@ -329,9 +329,10 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
   return NGX_OK;
 }
 
-static Storage::ValueHolder find_quasidict(ngx_http_request_t* r, u_char* h) {
+static Storage::ValueHolder find_quasidict(ngx_http_request_t* r,
+                                           const u_char * const h) {
   Dictionary::id_t id;
-  std::copy(std::begin(id), std::end(id), h);
+  std::copy(h, h+8, std::begin(id));
   auto* main = MainConfig::get(r);
   return main->storage.find(id);
 }
