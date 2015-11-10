@@ -87,6 +87,7 @@ Avail-Dictionary: lHudK8d3
 --- response_headers
 ! Get-Dictionary
 Content-Encoding: sdch
+! X-Sdch-Encode
 
 === TEST 2: Correct group, priority 2
 --- request
@@ -98,6 +99,7 @@ Avail-Dictionary: vhNmADcl
 --- response_headers
 Get-Dictionary: /sdch/css.dict
 Content-Encoding: sdch
+! X-Sdch-Encode
 
 === TEST 3: Incorrect group (js dict)
 --- request
@@ -109,6 +111,7 @@ Avail-Dictionary: sz0N_vq2
 --- response_headers
 Get-Dictionary: /sdch/css.dict
 Content-Encoding: sdch
+! X-Sdch-Encode
 
 
 === TEST 42: Some totally crappy dictionary
