@@ -340,6 +340,9 @@ static Storage::ValueHolder find_quasidict(ngx_http_request_t* r,
 static ngx_int_t
 get_dictionary_header(ngx_http_request_t *r, Config *conf)
 {
+    if (header_find(&r->headers_out.headers, "get-dictionary", nullptr)) {
+        return NGX_OK;
+    }
     ngx_str_t val;
     if (ngx_http_complex_value(r, &conf->sdch_urlcv, &val) != NGX_OK) {
         return NGX_ERROR;
