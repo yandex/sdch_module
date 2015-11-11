@@ -432,7 +432,7 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf,
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: content is already encoded");
     const ngx_str_t &val = r->headers_out.content_encoding->value;
-    if (ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) != 0)
+    if (ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) != 0) // XXX
       *sdch_encoded = true;
     return NGX_HTTP_FORBIDDEN;
   }
@@ -531,7 +531,7 @@ header_filter(ngx_http_request_t *r)
 
   ngx_str_t val;
   if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
-      ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) == 0) {
+      ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) == 0) { // XXX
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
                   r->connection->log,
                   0,
