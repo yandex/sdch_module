@@ -873,10 +873,6 @@ merge_conf(ngx_conf_t *cf, void *parent, void *child)
         return const_cast<char*>("Can't merge config");
     }
 
-    // FIXME Should we still merge it?
-    if (!conf->enable)
-      return NGX_CONF_OK;
-
     // Merge dictionaries from parent.
     conf->dict_factory->merge(prev->dict_factory);
 
