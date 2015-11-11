@@ -409,7 +409,8 @@ expand_disable(ngx_http_request_t *r, Config *conf)
 }
 
 // Check should we process request at all
-static ngx_int_t should_process(ngx_http_request_t* r, Config* conf) {
+static ngx_int_t should_process(ngx_http_request_t* r, Config* conf,
+                                bool* sdch_encoded) {
   if (!conf->enable) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: not enabled");
@@ -430,6 +431,9 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf) {
     && r->headers_out.content_encoding->value.len) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: content is already encoded");
+    const ngx_str_t &val = r->headers_out.content_encoding->value;
+    if (ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) != 0)
+      *sdch_encoded = true;
     return NGX_HTTP_FORBIDDEN;
   }
 
@@ -540,12 +544,13 @@ header_filter(ngx_http_request_t *r)
   }
   bool sdch_expected = (val.len > 0);
 
-  if (should_process(r, conf) != NGX_OK) {
+  bool sdch_encoded = false;
+  if (should_process(r, conf, &sdch_encoded) != NGX_OK) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
                   r->connection->log,
                   0,
                   "http sdch filter header: skipping request");
-    ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected);
+    ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected && !sdch_encoded);
     if (e)
       return e;
     return ngx_http_next_header_filter(r);
