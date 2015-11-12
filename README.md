@@ -64,6 +64,17 @@ sdch_disablecv
 
 Disable SDCH if the value is non-empty and is not equal to 0.
 
+sdch_min_length
+--------------
+**syntax:** *sdch_min_length &lt;length&gt;*
+
+Minimal size of response to encode.
+
+sdch_types
+---
+**syntax:** *sdch_types &lt;types&gt;*
+
+Enable encoding responses with list of mime/types. Default is text/html.
 
 sdch_quasi
 ----------

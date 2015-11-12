@@ -23,22 +23,6 @@ add_block_preprocessor(sub {
         sdch_types text/css application/x-javascript;
       ");
 
-    $block->set_value(config => '
-        location /sdch/foo.css {
-          sdch_url /sdch/css.dict;
-          sdch_group css;
-          default_type text/css;
-          return 200 "FOO";
-        }
-
-        location /sdch/foo.js {
-          sdch_url /sdch/js.dict;
-          sdch_group js;
-          default_type application/x-javascript;
-          return 200 "FOO";
-        }
-      ');
-
     # Ids are:
     # user lHudK8d3 server iNm9gxBj
     # user SmjAzMQH server ATySZvFd
@@ -77,7 +61,16 @@ run_tests();
 
 __DATA__
 
-=== TEST 1: Correct group, priority 1
+=== TEST 1: Small responses are not encoded
+--- config
+location /sdch/foo.css {
+  sdch_url /sdch/css.dict;
+  sdch_group css;
+  sdch_min_length 16;
+  default_type text/css;
+  return 200 "FOO";
+}
+
 --- request
 GET /sdch/foo.css HTTP/1.1
 --- more_headers
@@ -85,45 +78,26 @@ Accept-Encoding: gzip, deflate, sdch
 Avail-Dictionary: lHudK8d3
 
 --- response_headers
-! Get-Dictionary
-Content-Encoding: sdch
-! X-Sdch-Encode
+! Content-Encoding
 
-=== TEST 2: Correct group, priority 2
+
+=== TEST 1: Large responses are encoded
+--- config
+location /sdch/foo.css {
+  sdch_url /sdch/css.dict;
+  sdch_group css;
+  sdch_min_length 16;
+  default_type text/css;
+  return 200 "FOO FOO FOO FOO FOO FOO FOO FOO FOO";
+}
+
 --- request
 GET /sdch/foo.css HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: vhNmADcl
+Avail-Dictionary: lHudK8d3
 
 --- response_headers
-Get-Dictionary: /sdch/css.dict
 Content-Encoding: sdch
-! X-Sdch-Encode
 
-=== TEST 3: Incorrect group (js dict)
---- request
-GET /sdch/foo.css HTTP/1.1
---- more_headers
-Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: sz0N_vq2
-
---- response_headers
-Get-Dictionary: /sdch/css.dict
-Content-Encoding: sdch
-! X-Sdch-Encode
-
-
-=== TEST 42: Some totally crappy dictionary
---- request
-GET /sdch/foo.css HTTP/1.1
---- more_headers
-Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: foobar1
-
---- response
-FOO
---- response_headers
-Get-Dictionary: /sdch/css.dict
-X-Sdch-Encode: 0
 

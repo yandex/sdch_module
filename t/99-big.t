@@ -26,16 +26,8 @@ add_block_preprocessor(sub {
     $block->set_value(config => '
         location /sdch/foo.css {
           sdch_url /sdch/css.dict;
-          sdch_group css;
           default_type text/css;
-          return 200 "FOO";
-        }
-
-        location /sdch/foo.js {
-          sdch_url /sdch/js.dict;
-          sdch_group js;
-          default_type application/x-javascript;
-          return 200 "FOO";
+          sdch_group css;
         }
       ');
 
@@ -65,6 +57,8 @@ add_block_preprocessor(sub {
 
         THE OLD JS DICTIONARY
 
+        >>> sdch/foo.css
+        ' . 'CSS ' x 65536 . '
       ');
 
     return $block;
@@ -87,43 +81,4 @@ Avail-Dictionary: lHudK8d3
 --- response_headers
 ! Get-Dictionary
 Content-Encoding: sdch
-! X-Sdch-Encode
-
-=== TEST 2: Correct group, priority 2
---- request
-GET /sdch/foo.css HTTP/1.1
---- more_headers
-Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: vhNmADcl
-
---- response_headers
-Get-Dictionary: /sdch/css.dict
-Content-Encoding: sdch
-! X-Sdch-Encode
-
-=== TEST 3: Incorrect group (js dict)
---- request
-GET /sdch/foo.css HTTP/1.1
---- more_headers
-Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: sz0N_vq2
-
---- response_headers
-Get-Dictionary: /sdch/css.dict
-Content-Encoding: sdch
-! X-Sdch-Encode
-
-
-=== TEST 42: Some totally crappy dictionary
---- request
-GET /sdch/foo.css HTTP/1.1
---- more_headers
-Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: foobar1
-
---- response
-FOO
---- response_headers
-Get-Dictionary: /sdch/css.dict
-X-Sdch-Encode: 0
 
