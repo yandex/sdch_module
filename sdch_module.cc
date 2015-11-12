@@ -108,16 +108,7 @@ static ngx_command_t  filter_commands[] = {
       offsetof(Config, sdch_url),
       nullptr },
 
-    { ngx_string("sdch_maxnoadv"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
-                        |NGX_HTTP_LIF_CONF
-                        |NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(Config, sdch_maxnoadv),
-      nullptr },
-
-    { ngx_string("sdch_dumpdir"),
+   { ngx_string("sdch_dumpdir"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE1,
@@ -897,8 +888,6 @@ merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
         return const_cast<char*>("ngx_http_compile_complex_value sdch_url failed");
     }
-
-    ngx_conf_merge_uint_value(conf->sdch_maxnoadv, prev->sdch_maxnoadv, 0);
 
     ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
 
