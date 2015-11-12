@@ -79,7 +79,8 @@ DictConfig* DictionaryFactory::find_dictionary(const u_char* client_id) {
 
 void DictionaryFactory::merge(const DictionaryFactory* parent) {
   // Merge dictionaries from parent.
-  conf_storage_.insert(conf_storage_.end(),
+  if (conf_storage_.empty())
+    conf_storage_.insert(conf_storage_.end(),
                        parent->conf_storage_.begin(),
                        parent->conf_storage_.end());
 

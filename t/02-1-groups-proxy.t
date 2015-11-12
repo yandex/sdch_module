@@ -4,6 +4,7 @@ use Test::More;
 # We'll run multiple tests against same config.
 # So just generate it for every test programatically.
 my $servroot = $Test::Nginx::Socket::ServRoot;
+my $servport = $Test::Nginx::Socket::ServerPort;
 $ENV{TEST_NGINX_SERVROOT} = $servroot;
 
 add_block_preprocessor(sub {
@@ -15,27 +16,41 @@ add_block_preprocessor(sub {
         uwsgi_temp_path $servroot/uwsgi_temp;
         scgi_temp_path $servroot/scgi_temp;
 
-        sdch on;
-        sdch_dict $servroot/html/sdch/css.dict css 1;
-        sdch_dict $servroot/html/sdch/js.dict js 1;
-        sdch_dict $servroot/html/sdch/css_old.dict css 2;
-        sdch_dict $servroot/html/sdch/js_old.dict js 2;
+        upstream bah {
+            server 127.0.0.1:$servport;
+        }
+
+        #sdch on;
+        sdch_dict $servroot/html/dict/css.dict css 1;
+        sdch_dict $servroot/html/dict/js.dict js 1;
+        sdch_dict $servroot/html/dict/css_old.dict css 2;
+        sdch_dict $servroot/html/dict/js_old.dict js 2;
         sdch_types text/css application/x-javascript;
       ");
 
     $block->set_value(config => '
-        location /sdch/foo.css {
-          sdch_url /sdch/css.dict;
-          sdch_group css;
+        location /back/foo.css {
           default_type text/css;
           return 200 "FOO";
         }
 
-        location /sdch/foo.js {
-          sdch_url /sdch/js.dict;
-          sdch_group js;
+        location /back/foo.js {
           default_type application/x-javascript;
           return 200 "FOO";
+        }
+
+        location /sdch/foo.css {
+          proxy_pass http://bah/back/foo.css;
+          sdch on;
+          sdch_url /sdch/css.dict;
+          sdch_group css;
+        }
+
+        location /sdch/foo.js {
+          proxy_pass http://bah/back/foo.js;
+          sdch on;
+          sdch_url /sdch/js.dict;
+          sdch_group js;
         }
       ');
 
@@ -45,22 +60,22 @@ add_block_preprocessor(sub {
     # user vhNmADcl server X3GNudmJ
     # user Ct4_LIs5 server G31JTg-z
     $block->set_value(user_files => '
-        >>> sdch/css.dict
+        >>> dict/css.dict
         Path: /sdch
 
         THE CSS DICTIONARY
 
-        >>> sdch/js.dict
+        >>> dict/js.dict
         Path: /sdch
 
         THE JS DICTIONARY
 
-        >>> sdch/css_old.dict
+        >>> dict/css_old.dict
         Path: /sdch
 
         THE OLD CSS DICTIONARY
 
-        >>> sdch/js_old.dict
+        >>> dict/js_old.dict
         Path: /sdch
 
         THE OLD JS DICTIONARY
