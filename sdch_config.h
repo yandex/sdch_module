@@ -46,8 +46,6 @@ class Config {
   ngx_str_t sdch_url;
   ngx_http_complex_value_t sdch_urlcv;
 
-  ngx_uint_t sdch_maxnoadv    = NGX_CONF_UNSET;
-
   ngx_uint_t sdch_proxied;
 
   ngx_str_t sdch_dumpdir;

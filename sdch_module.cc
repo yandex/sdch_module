@@ -108,16 +108,7 @@ static ngx_command_t  filter_commands[] = {
       offsetof(Config, sdch_url),
       nullptr },
 
-    { ngx_string("sdch_maxnoadv"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
-                        |NGX_HTTP_LIF_CONF
-                        |NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(Config, sdch_maxnoadv),
-      nullptr },
-
-    { ngx_string("sdch_dumpdir"),
+   { ngx_string("sdch_dumpdir"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_TAKE1,
@@ -412,13 +403,13 @@ expand_disable(ngx_http_request_t *r, Config *conf)
 }
 
 // Check should we process request at all
-static ngx_int_t should_process(ngx_http_request_t* r, Config* conf,
+static bool should_process(ngx_http_request_t* r, Config* conf,
                                 bool* sdch_encoded) {
   if (!conf->enable) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: not enabled");
 
-    return NGX_HTTP_FORBIDDEN;
+    return false;
   }
 
   if (r->headers_out.status != NGX_HTTP_OK
@@ -427,7 +418,7 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf,
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: unsupported status");
 
-    return NGX_HTTP_FORBIDDEN;
+    return false;
   }
 
   if (r->headers_out.content_encoding
@@ -437,29 +428,29 @@ static ngx_int_t should_process(ngx_http_request_t* r, Config* conf,
     const ngx_str_t &val = r->headers_out.content_encoding->value;
     if (ngx_strstrn(val.data, const_cast<char*>("sdch"), val.len) != 0) // XXX
       *sdch_encoded = true;
-    return NGX_HTTP_FORBIDDEN;
+    return false;
   }
 
   if (r->headers_out.content_length_n != -1
     && r->headers_out.content_length_n < conf->min_length) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: content is too small");
-    return NGX_HTTP_FORBIDDEN;
+    return false;
   }
 
   if (ngx_http_test_content_type(r, &conf->types) == nullptr) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: unsupported content type");
-    return NGX_HTTP_FORBIDDEN;
+    return false;
   }
 
   if (expand_disable(r, conf)) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: CV disabled");
-    return NGX_HTTP_FORBIDDEN;
+    return false;
   }
 
-  return NGX_OK;
+  return true;
 }
 
 // Select Dictionary based on available dictionaries, group, support for quasis
@@ -548,7 +539,7 @@ header_filter(ngx_http_request_t *r)
   bool sdch_expected = (val.len > 0);
 
   bool sdch_encoded = false;
-  if (should_process(r, conf, &sdch_encoded) != NGX_OK) {
+  if (!should_process(r, conf, &sdch_encoded)) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
                   r->connection->log,
                   0,
@@ -897,8 +888,6 @@ merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
         return const_cast<char*>("ngx_http_compile_complex_value sdch_url failed");
     }
-
-    ngx_conf_merge_uint_value(conf->sdch_maxnoadv, prev->sdch_maxnoadv, 0);
 
     ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
 
