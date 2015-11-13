@@ -35,7 +35,7 @@ __DATA__
 --- config
 location /sdch {
   sdch on;
-  sdch_quasi on;
+  sdch_fastdict on;
   default_type text/html;
   return 200 "FOO";
 }
@@ -59,7 +59,7 @@ storing quasidict
 --- config
 location /sdch {
   sdch on;
-  sdch_quasi on;
+  sdch_fastdict on;
   default_type text/html;
   return 200 "FOO";
 }

@@ -145,7 +145,7 @@ static ngx_command_t  filter_commands[] = {
       offsetof(Config, types_keys),
       &ngx_http_html_default_types[0] },
 
-    { ngx_string("sdch_quasi"),
+    { ngx_string("sdch_fastdict"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
                         |NGX_HTTP_LIF_CONF
                         |NGX_CONF_FLAG,

@@ -76,9 +76,9 @@ sdch_types
 
 Enable encoding responses with list of mime/types. Default is text/html.
 
-sdch_quasi
+sdch_fastdict
 ----------
-**syntax:** *sdch_quasi (on|off);*
+**syntax:** *sdch_fastdict (on|off);*
 
 **context:** *location, server, if*
 
