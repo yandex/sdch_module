@@ -52,7 +52,7 @@ class Config {
 
   ngx_str_t sdch_dumpdir;
 
-  ngx_flag_t enable_quasi     = NGX_CONF_UNSET;
+  ngx_flag_t enable_fastdict  = NGX_CONF_UNSET;
 
   DictionaryFactory* dict_factory;
 };
