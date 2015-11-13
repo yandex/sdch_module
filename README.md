@@ -107,12 +107,12 @@ sdch_stor_size
 
 The memory limit for quasi-dictionaries.
 
-The quasi-dict protocol
-=======================
-To announce quasi-dict support, the client specify `AUTOAUTO` in 
-the `Avail-Dictionaries` header.
+The FastDict protocol extension
+===============================
+To announce FastDict support, the client sends `Sdch-Features: fastdict`
+header.
 
-If the client support quasi-dicts, and server suggest that the current reply 
+If the client support FastDicts, and server suggest that the current reply 
 will be used as the quasi-dictionary, it add `X-Sdch-Use-As-Dictionary` 
 header to the reply. 
 
