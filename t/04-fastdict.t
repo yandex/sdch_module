@@ -35,7 +35,7 @@ __DATA__
 --- config
 location /sdch {
   sdch on;
-  sdch_quasi on;
+  sdch_fastdict on;
   default_type text/html;
   return 200 "FOO";
 }
@@ -43,7 +43,7 @@ location /sdch {
 GET /sdch HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: AUTOAUTO
+Sdch-Features: fastdict
 
 --- response
 FOO
@@ -59,7 +59,7 @@ storing quasidict
 --- config
 location /sdch {
   sdch on;
-  sdch_quasi on;
+  sdch_fastdict on;
   default_type text/html;
   return 200 "FOO";
 }
@@ -67,7 +67,8 @@ location /sdch {
 GET /sdch HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: AUTOAUTO, lSBDfOiQ
+Avail-Dictionary: lSBDfOiQ
+Sdch-Features: fastdict
 
 --- response_headers
 ! X-Sdch-Use-As-Dictionary

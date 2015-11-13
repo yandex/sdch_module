@@ -82,9 +82,9 @@ sdch_nodict_types
 
 Don't announce a dictionary (with the Get-Dictionary header) if the response has Content-Type listed here. The default is application/x-sdch-dictionary, i.e. an SDCH dictionary.
 
-sdch_quasi
+sdch_fastdict
 ----------
-**syntax:** *sdch_quasi (on|off);*
+**syntax:** *sdch_fastdict (on|off);*
 
 **context:** *location, server, if*
 
