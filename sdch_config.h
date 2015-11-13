@@ -31,6 +31,9 @@ class Config {
   ngx_hash_t types;
   ngx_array_t* types_keys;
 
+  ngx_hash_t nodict_types;
+  ngx_array_t* nodict_types_keys;
+
   ngx_str_t sdch_disablecv_s;
   ngx_http_complex_value_t sdch_disablecv;
 

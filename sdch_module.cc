@@ -54,6 +54,11 @@ static ngx_conf_num_bounds_t stor_size_bounds = {
     ngx_conf_check_num_bounds, 1, 0xffffffffU
 };
 
+static ngx_str_t nodict_default_types[] = {
+    ngx_string("application/x-sdch-dictionary"),
+    ngx_null_string
+};
+
 static ngx_command_t  filter_commands[] = {
 
     { ngx_string("sdch"),
@@ -144,6 +149,15 @@ static ngx_command_t  filter_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, types_keys),
       &ngx_http_html_default_types[0] },
+
+    { ngx_string("sdch_nodict_types"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_HTTP_LIF_CONF
+                        |NGX_CONF_1MORE,
+      ngx_http_types_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(Config, nodict_types_keys),
+      &nodict_default_types[0] },
 
     { ngx_string("sdch_quasi"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -341,6 +355,9 @@ static ngx_int_t
 get_dictionary_header(ngx_http_request_t *r, Config *conf)
 {
     if (header_find(&r->headers_out.headers, "get-dictionary", nullptr)) {
+        return NGX_OK;
+    }
+    if (ngx_http_test_content_type(r, &conf->nodict_types) != nullptr) {
         return NGX_OK;
     }
     ngx_str_t val;
@@ -877,6 +894,13 @@ merge_conf(ngx_conf_t *cf, void *parent, void *child)
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->types,
                              &prev->types_keys, &prev->types,
                              ngx_http_html_default_types)
+        != NGX_OK) {
+        return const_cast<char*>("Can't merge config");
+    }
+
+    if (ngx_http_merge_types(cf, &conf->nodict_types_keys, &conf->nodict_types,
+                             &prev->nodict_types_keys, &prev->nodict_types,
+                             nodict_default_types)
         != NGX_OK) {
         return const_cast<char*>("Can't merge config");
     }
