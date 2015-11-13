@@ -71,10 +71,16 @@ sdch_min_length
 Minimal size of response to encode.
 
 sdch_types
----
+----------
 **syntax:** *sdch_types &lt;types&gt;*
 
-Enable encoding responses with list of mime/types. Default is text/html.
+Enable encoding responses with list of mime/types. Default is text/html, text/css, application/javascript, and application/x-sdch-dictionary.
+
+sdch_nodict_types
+-----------------
+**syntax:** *sdch_nodict_types &lt;types&gt;*
+
+Don't announce a dictionary (with the Get-Dictionary header) if the response has Content-Type listed here. The default is application/x-sdch-dictionary, i.e. an SDCH dictionary.
 
 sdch_quasi
 ----------
