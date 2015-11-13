@@ -544,8 +544,8 @@ header_filter(ngx_http_request_t *r)
 
   // Check that Browser announces FastDict support.
   bool store_as_quasi = false;
-  if (header_find(&r->headers_in.headers, "x-sdch-features", &val) == 0 ||
-      ngx_strstrn(val.data, const_cast<char*>("fastdict"), val.len) != 0) { // XXX
+  if (header_find(&r->headers_in.headers, "sdch-features", &val) == 0 ||
+      ngx_strstrn(val.data, const_cast<char*>("fastdict"), val.len) != 0) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
                   r->connection->log,
                   0,
