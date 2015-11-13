@@ -132,7 +132,7 @@ Get-Dictionary: /sdch/dict1.dict
 X-Sdch-Encode: 0
 --- response
 FOO
-=== TEST 6: dictionary download (simple)
+=== TEST 6: Do not send Get-Dictionary when downloading a dictionary
 --- config
 location /sdch {
   sdch on;
@@ -157,7 +157,7 @@ Accept-Encoding: gzip, deflate, sdch
 ! X-Sdch-Encode
 --- response
 FOO
-=== TEST 7: dictionary download
+=== TEST 7: Do not send Get-Dictionary when downloading a dictionary (with another dictionary available)
 --- config
 location /sdch {
   sdch on;
