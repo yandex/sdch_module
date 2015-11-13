@@ -542,6 +542,17 @@ header_filter(ngx_http_request_t *r)
     return ngx_http_next_header_filter(r);
   }
 
+  // Check that Browser announces FastDict support.
+  bool store_as_quasi = false;
+  if (header_find(&r->headers_in.headers, "x-sdch-features", &val) == 0 ||
+      ngx_strstrn(val.data, const_cast<char*>("fastdict"), val.len) != 0) { // XXX
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP,
+                  r->connection->log,
+                  0,
+                  "http sdch filter header: enable FastDict");
+    store_as_quasi = true;
+  }
+
   if (header_find(&r->headers_in.headers, "avail-dictionary", &val) == 0) {
     ngx_str_set(&val, "");
   }
@@ -565,15 +576,6 @@ header_filter(ngx_http_request_t *r)
 
   if (ngx_http_sdch_ok(r) != NGX_OK) {
     return ngx_http_next_header_filter(r);
-  }
-
-  bool store_as_quasi = false;
-  // FIXME We don't create quasi when Browser announce support for it, but has
-  // another dictionary. Is it desired behavior?
-  if (ngx_strcmp(val.data, "AUTOAUTO") == 0 && conf->enable_fastdict) {
-    store_as_quasi = true;
-    if (create_output_header(r, "X-Sdch-Use-As-Dictionary", "1") != NGX_OK)
-      return NGX_ERROR;
   }
 
   ngx_str_t group;
@@ -607,8 +609,12 @@ header_filter(ngx_http_request_t *r)
     if (e != NGX_OK)
       return e;
     // And we are not creating quasi one.
-    if (!store_as_quasi)
+    if (store_as_quasi) {
+      if (create_output_header(r, "X-Sdch-Use-As-Dictionary", "1") != NGX_OK)
+        return NGX_ERROR;
+    } else {
       return ngx_http_next_header_filter(r);
+    }
   }
 
 

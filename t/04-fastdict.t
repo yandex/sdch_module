@@ -43,7 +43,7 @@ location /sdch {
 GET /sdch HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: AUTOAUTO
+X-Sdch-Features: fastdict
 
 --- response
 FOO
@@ -67,7 +67,8 @@ location /sdch {
 GET /sdch HTTP/1.1
 --- more_headers
 Accept-Encoding: gzip, deflate, sdch
-Avail-Dictionary: AUTOAUTO, lSBDfOiQ
+Avail-Dictionary: lSBDfOiQ
+X-Sdch-Features: fastdict
 
 --- response_headers
 ! X-Sdch-Use-As-Dictionary
