@@ -132,3 +132,54 @@ Get-Dictionary: /sdch/dict1.dict
 X-Sdch-Encode: 0
 --- response
 FOO
+=== TEST 6: dictionary download (simple)
+--- config
+location /sdch {
+  sdch on;
+  sdch_dict $TEST_NGINX_SERVROOT/html/sdch/dict1.dict;
+  sdch_url /sdch/dict1.dict;
+  default_type application/x-sdch-dictionary;
+  return 200 "FOO";
+}
+
+--- user_files
+>>> sdch/dict1.dict
+Host: example.com
+
+THE DICTIONARY
+
+--- request
+GET /sdch/dict1.dict HTTP/1.1
+--- more_headers
+Accept-Encoding: gzip, deflate, sdch
+--- response_headers
+! Get-Dictionary
+! X-Sdch-Encode
+--- response
+FOO
+=== TEST 7: dictionary download
+--- config
+location /sdch {
+  sdch on;
+  sdch_dict $TEST_NGINX_SERVROOT/html/sdch/dict1.dict;
+  sdch_url /sdch/dict1.dict;
+  default_type application/x-sdch-dictionary;
+  return 200 "FOO";
+}
+
+--- user_files
+>>> sdch/dict1.dict
+Host: example.com
+
+THE DICTIONARY
+
+--- request
+GET /sdch/dict1.dict HTTP/1.1
+--- more_headers
+Accept-Encoding: gzip, deflate, sdch
+Avail-Dictionary: foobar1
+--- response_headers
+! Get-Dictionary
+X-Sdch-Encode: 0
+--- response
+FOO
