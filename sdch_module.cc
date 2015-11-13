@@ -54,6 +54,14 @@ static ngx_conf_num_bounds_t stor_size_bounds = {
     ngx_conf_check_num_bounds, 1, 0xffffffffU
 };
 
+static ngx_str_t sdch_default_types[] = {
+    ngx_string("text/html"),
+    ngx_string("text/css"),
+    ngx_string("application/javascript"),
+    ngx_string("application/x-sdch-dictionary"),
+    ngx_null_string
+};
+
 static ngx_str_t nodict_default_types[] = {
     ngx_string("application/x-sdch-dictionary"),
     ngx_null_string
@@ -148,7 +156,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_http_types_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, types_keys),
-      &ngx_http_html_default_types[0] },
+      &sdch_default_types[0] },
 
     { ngx_string("sdch_nodict_types"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -893,7 +901,7 @@ merge_conf(ngx_conf_t *cf, void *parent, void *child)
 
     if (ngx_http_merge_types(cf, &conf->types_keys, &conf->types,
                              &prev->types_keys, &prev->types,
-                             ngx_http_html_default_types)
+                             sdch_default_types)
         != NGX_OK) {
         return const_cast<char*>("Can't merge config");
     }
