@@ -176,6 +176,14 @@ static ngx_command_t  filter_commands[] = {
       offsetof(Config, min_length),
       nullptr },
 
+    { ngx_string("sdch_vary"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
+                        |NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(Config, vary),
+      nullptr },
+
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -655,6 +663,12 @@ header_filter(ngx_http_request_t *r)
       return NGX_ERROR;
     }
 
+    if (conf->vary == 1) {
+      if (create_output_header(r, "Vary", "Accept-Encoding, Avail-Dictionary") != NGX_OK) {
+        return NGX_ERROR;
+      }
+    }
+
     ctx->handler = pool_alloc<EncodingHandler>(r,
                                                ctx->handler,
                                                dict,
@@ -930,6 +944,8 @@ merge_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->sdch_dumpdir, prev->sdch_dumpdir, "");
 
     ngx_conf_merge_value(conf->enable_fastdict, prev->enable_fastdict, 1);
+
+    ngx_conf_merge_value(conf->vary, prev->vary, 1);
 
     return NGX_CONF_OK;
 }
