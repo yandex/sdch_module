@@ -107,6 +107,16 @@ sdch_stor_size
 
 The memory limit for quasi-dictionaries.
 
+sdch_vary
+--------------
+**syntax:** *sdch_vary (on|off)*
+
+**context:** *main, location, server*
+
+**default:** *on*
+
+Add Vary header
+
 The FastDict protocol extension
 ===============================
 To announce FastDict support, the client sends `Sdch-Features: fastdict`
