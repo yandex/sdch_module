@@ -27,14 +27,14 @@ EncodingHandler::EncodingHandler(Handler* next,
 EncodingHandler::~EncodingHandler() {}
 
 bool EncodingHandler::init(RequestContext* ctx) {
-	if (!enc_.StartEncodingToInterface(this))
-    return false;
-
   // Output Dictionary server_id first
   next_->on_data(dict_->server_id().data(), 8);
 
   static uint8_t terminator[1] = { 0x0 };
   next_->on_data(terminator, 1);
+
+  if (!enc_.StartEncodingToInterface(this))
+    return false;
 
   return true;
 }
