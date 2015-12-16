@@ -19,6 +19,13 @@
 #include "sdch_pool_alloc.h"
 #include "sdch_request_context.h"
 
+extern "C" {
+ngx_flag_t sdch_need_vary(ngx_http_request_t *r) {
+    auto* conf = sdch::Config::get(r);
+    return conf->vary;
+}
+}
+
 namespace sdch {
 
 static ngx_int_t add_variables(ngx_conf_t* cf);
@@ -568,7 +575,7 @@ header_filter(ngx_http_request_t *r)
 
   // Check that Browser announces FastDict support.
   bool store_as_quasi = false;
-  if (header_find(&r->headers_in.headers, "sdch-features", &val) == 0 ||
+  if (header_find(&r->headers_in.headers, "sdch-features", &val) != 0 &&
       ngx_strstrn(val.data, const_cast<char*>("fastdict"), val.len) != 0) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
                   r->connection->log,
