@@ -74,3 +74,21 @@ Sdch-Features: fastdict
 ! X-Sdch-Use-As-Dictionary
 Content-Encoding: sdch
 
+=== TEST 3: Fastdict is not declared
+--- config
+location /sdch {
+  sdch on;
+  sdch_fastdict on;
+  default_type text/html;
+  return 200 "FOO";
+}
+--- request
+GET /sdch HTTP/1.1
+--- more_headers
+Accept-Encoding: gzip, deflate, sdch
+
+--- response
+FOO
+--- response_headers
+! X-Sdch-Use-As-Dictionary
+
