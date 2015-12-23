@@ -11,7 +11,6 @@ extern "C" {
 #include <ngx_http.h>
 }
 
-#include <cstdint>
 #include <memory>
 #include <array>
 
@@ -24,7 +23,7 @@ namespace sdch {
 // In-memory Dictionary representation
 class Dictionary {
  public:
-  using id_t = std::array<uint8_t, 8>;
+  typedef std::array<uint8_t, 8> id_t;
 
   Dictionary();
   Dictionary(Dictionary&& other);

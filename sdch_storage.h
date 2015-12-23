@@ -40,7 +40,7 @@ class Storage {
     Storage* owner_;
   };
 
-  using ValueHolder = std::unique_ptr<Storage::Value, Storage::Unlocker>;
+  typedef std::unique_ptr<Storage::Value, Storage::Unlocker> ValueHolder;
 
   Storage();
 
@@ -58,8 +58,8 @@ class Storage {
  private:
   friend class Unlocker;
 
-  using StoreType = std::map<Dictionary::id_t, Value>;
-  using LRUType = std::multimap<time_t, Dictionary::id_t>;
+  typedef std::map<Dictionary::id_t, Value>  StoreType;
+  typedef std::multimap<time_t, Dictionary::id_t>  LRUType;
 
   // Unlock used Value
   void unlock(Value* v);

@@ -62,5 +62,3 @@ CORE_LIBS="$CORE_LIBS \
           -lvcdcom -lvcdenc \
           -lstdc++ \
 	  "
-
-CXXFLAGS="-std=c++11 $CXXFLAGS"

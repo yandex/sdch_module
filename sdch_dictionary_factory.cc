@@ -29,7 +29,7 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
                                             ngx_uint_t prio) {
 
   conf_storage_.emplace_back();
-  auto* res = &*conf_storage_.rbegin();
+  DictConfig* res = &*conf_storage_.rbegin();
 
   res->groupname.len = groupname.len;
   res->groupname.data = ngx_pstrdup(pool_, &groupname);
@@ -41,7 +41,7 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
 }
 
 Dictionary* DictionaryFactory::allocate_dictionary() {
-  auto* res = pool_alloc<Dictionary>(pool_);
+  Dictionary* res = pool_alloc<Dictionary>(pool_);
   dict_storage_.push_back(res);
   return res;
 }
@@ -49,9 +49,9 @@ Dictionary* DictionaryFactory::allocate_dictionary() {
 DictConfig* DictionaryFactory::choose_best_dictionary(DictConfig* old,
                                                       DictConfig* n,
                                                       const ngx_str_t& group) {
-  if (old == nullptr)
+  if (old == NULL)
     return n;
-  if (n == nullptr)
+  if (n == NULL)
     return old;
 
   int om =
@@ -69,12 +69,12 @@ DictConfig* DictionaryFactory::choose_best_dictionary(DictConfig* old,
 }
 
 DictConfig* DictionaryFactory::find_dictionary(const u_char* client_id) {
-  for (auto& c : conf_storage_) {
-    if (ngx_strncmp(client_id, c.dict->client_id().data(), 8) == 0)
-      return &c;
+  for (DictConfig* c = conf_storage_.back(); c != conf_storage_.end(); ++c) {
+    if (ngx_strncmp(client_id, c->dict->client_id().data(), 8) == 0)
+      return c;
   }
 
-  return nullptr;
+  return NULL;
 }
 
 void DictionaryFactory::merge(const DictionaryFactory* parent) {

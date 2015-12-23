@@ -16,7 +16,7 @@ DumpHandler::DumpHandler(Handler* next) : Handler(next), fd_(-1) {
 DumpHandler::~DumpHandler() {}
 
 bool DumpHandler::init(RequestContext* ctx) {
-  auto* conf = Config::get(ctx->request);
+  Config* conf = Config::get(ctx->request);
   char fn[conf->sdch_dumpdir.len + 30];
 
   sprintf(fn,

@@ -9,7 +9,7 @@
 namespace sdch {
 
 Config::Config(ngx_pool_t* pool)
-    : dict_factory(pool_alloc<DictionaryFactory>(pool, pool)) {}
+    : dict_factory(pool_alloc<DictionaryFactory>(pool, pool)) { new(dict_factory) DictionaryFactory(pool);}
 
 Config::~Config() {}
 

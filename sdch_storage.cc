@@ -11,7 +11,7 @@ Storage::Storage() : max_size_(10000000) {}
 bool Storage::clear(time_t ts) { return true; }
 
 bool Storage::store(const Dictionary::id_t& key, Value value) {
-  auto r = values_.emplace(std::move(key), std::move(value));
+  pair<StoreType::iterator, bool> r = values_.emplace(std::move(key), std::move(value));
   if (!r.second) {
 #if 0
         if (r.first->second.ts < ts)
@@ -24,8 +24,8 @@ bool Storage::store(const Dictionary::id_t& key, Value value) {
   total_size_ += r.first->second.dict.size();
 
   // Remove oldest entries if we exceeded max_size_
-  for (auto i = lru_.begin(); total_size_ > max_size_ && i != lru_.end(); ) {
-    auto si = values_.find(i->second);
+  for (LRUType::iterator i = lru_.begin(); total_size_ > max_size_ && i != lru_.end(); ) {
+    StoreType::iterator si = values_.find(i->second);
     if (si == values_.end()) {
       assert(0);
       continue;
@@ -45,9 +45,9 @@ bool Storage::store(const Dictionary::id_t& key, Value value) {
 }
 
 Storage::ValueHolder Storage::find(const Dictionary::id_t& key) {
-  auto i = values_.find(key);
+  StoreType i = values_.find(key);
   if (i == values_.end())
-    return nullptr;
+    return NULL;
 
   i->second.locked = true;
 
