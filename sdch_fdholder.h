@@ -17,11 +17,14 @@ class FDHolder {
       close(fd_);
   }
 
+#if 0
   FDHolder& operator=(FDHolder&& other) {
     fd_ = other.fd_;
     other.fd_ = -1;
     return *this;
   }
+#endif
+
   operator int() { return fd_; }
 
  private:

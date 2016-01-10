@@ -18,10 +18,10 @@ class AutoautoHandler : public Handler {
   AutoautoHandler(RequestContext* ctx, Handler* next);
   ~AutoautoHandler();
 
-  bool init(RequestContext* ctx) override;
+  virtual bool init(RequestContext* ctx);
 
-  Status on_data(const uint8_t* buf, size_t len) override;
-  Status on_finish() override;
+  virtual Status on_data(const uint8_t* buf, size_t len);
+  virtual Status on_finish();
 
  private:
   // Keep context. For logging purpose mostly.

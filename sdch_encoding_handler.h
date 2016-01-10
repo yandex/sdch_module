@@ -25,16 +25,16 @@ class EncodingHandler : public Handler,
   ~EncodingHandler();
 
   // sdch::Handler implementation
-  bool init(RequestContext* ctx) override;
-  Status on_data(const uint8_t* buf, size_t len) override;
-  Status on_finish() override;
+  virtual bool init(RequestContext* ctx);
+  virtual Status on_data(const uint8_t* buf, size_t len);
+  virtual Status on_finish();
 
   // open_vcdiff::OutputStringInterface implementation
-  open_vcdiff::OutputStringInterface& append(const char* s, size_t n) override;
-  void clear() override;
-  void push_back(char c) override;
-  void ReserveAdditionalBytes(size_t res_arg) override;
-  size_t size() const override;
+  virtual open_vcdiff::OutputStringInterface& append(const char* s, size_t n);
+  virtual void clear();
+  virtual void push_back(char c);
+  virtual void ReserveAdditionalBytes(size_t res_arg);
+  virtual size_t size() const;
 
  private:
   class OutHelper;
