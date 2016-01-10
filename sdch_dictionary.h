@@ -13,6 +13,8 @@ extern "C" {
 
 #include <memory>
 
+#include <boost/move/unique_ptr.hpp>
+
 namespace open_vcdiff {
 class HashedDictionary;
 }
@@ -32,7 +34,9 @@ class Dictionary {
   };
 
   Dictionary();
+#if 0
   Dictionary(Dictionary&& other);
+#endif
   ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
@@ -61,11 +65,14 @@ class Dictionary {
 
   // It's not really good. We should integrate with nginx's pool allocations.
   // But this will do for now.
-  std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
+  boost::movelib::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
 
   size_t size_;
   id_t client_id_;
   id_t server_id_;
+
+  Dictionary(const Dictionary&);
+  Dictionary& operator=(const Dictionary&);
 };
 
 

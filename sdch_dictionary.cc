@@ -84,11 +84,13 @@ bool read_file(const char* fn, std::vector<char>& blob) {
 
 Dictionary::Dictionary() {}
 
+#if 0
 Dictionary::Dictionary(Dictionary&& other)
     : hashed_dict_(std::move(other.hashed_dict_)),
       size_(std::move(other.size_)),
       client_id_(std::move(other.client_id_)),
       server_id_(std::move(other.server_id_)) {}
+#endif
 
 Dictionary::~Dictionary() {}
 
