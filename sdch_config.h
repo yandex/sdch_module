@@ -26,7 +26,7 @@ class Config {
 
   static Config* get(ngx_http_request_t* r);
 
-  ngx_flag_t enable     = NGX_CONF_UNSET;
+  ngx_flag_t enable;
 
   ngx_hash_t types;
   ngx_array_t* types_keys;
@@ -41,7 +41,7 @@ class Config {
   static size_t default_bufs_num() { return 128 * 1024 / ngx_pagesize; }
   ngx_bufs_t bufs;
 
-  ssize_t min_length = NGX_CONF_UNSET_SIZE;
+  ssize_t min_length;
 
   ngx_str_t sdch_group;
   ngx_http_complex_value_t sdch_groupcv;
@@ -53,9 +53,9 @@ class Config {
 
   ngx_str_t sdch_dumpdir;
 
-  ngx_flag_t enable_fastdict  = NGX_CONF_UNSET;
+  ngx_flag_t enable_fastdict;
 
-  ngx_flag_t vary  = NGX_CONF_UNSET;
+  ngx_flag_t vary;
 
   DictionaryFactory* dict_factory;
 };
