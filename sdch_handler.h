@@ -8,7 +8,7 @@
 
 #include "sdch_status.h"
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace sdch {
 
