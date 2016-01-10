@@ -6,9 +6,9 @@
 
 namespace sdch {
 
-enum class Status {
-  OK,       // everything is ok
-  ERROR,    // some bad things happened
+enum Status {
+  STATUS_OK,       // everything is ok
+  STATUS_ERROR,    // some bad things happened
 };
 
 

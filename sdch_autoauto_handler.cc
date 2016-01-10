@@ -25,7 +25,7 @@ Status AutoautoHandler::on_data(const uint8_t* buf, size_t len) {
 
   if (next_)
     return next_->on_data(buf, len);
-  return Status::OK;
+  return STATUS_OK;
 }
 
 Status AutoautoHandler::on_finish() {
@@ -37,7 +37,7 @@ Status AutoautoHandler::on_finish() {
   } else {
     Dictionary dict;
     if (!dict.init_quasy(blob_.data(), blob_.size()))
-      return Status::ERROR;
+      return STATUS_ERROR;
     Dictionary::id_t client_id = dict.client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
     if (main->storage.store(client_id,

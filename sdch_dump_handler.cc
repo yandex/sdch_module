@@ -49,12 +49,12 @@ Status DumpHandler::on_data(const uint8_t* buf, size_t len) {
 
   if ((res = write(fd_, buf, len)) != static_cast<ssize_t>(len)) {
     // XXX
-    return Status::ERROR;
+    return STATUS_ERROR;
   }
 
   if (next_)
     return next_->on_data(buf, len);
-  return Status::OK;
+  return STATUS_OK;
 }
 
 }  // namespace sdch

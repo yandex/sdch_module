@@ -30,8 +30,8 @@ Status OutputHandler::on_data(const uint8_t* buf, size_t len) {
 
 Status OutputHandler::on_finish() {
   out_buf_->last_buf = 1;
-  if (flush_out_buf(false) == Status::ERROR)
-    return Status::ERROR;
+  if (flush_out_buf(false) == STATUS_ERROR)
+    return STATUS_ERROR;
 
   return next_body();
 }
@@ -55,7 +55,7 @@ Status OutputHandler::write(const uint8_t* buf, size_t len) {
     if (len > 0 || ctx_->need_flush) {
       if (out_buf_) {
         Status rc = flush_out_buf(true);
-        if (rc != Status::OK)
+        if (rc != STATUS_OK)
           return rc;
       }
 
@@ -64,7 +64,7 @@ Status OutputHandler::write(const uint8_t* buf, size_t len) {
   }
 
   ctx_->total_out += rlen;
-  return Status::OK;
+  return STATUS_OK;
 }
 
 Status OutputHandler::get_buf() {
@@ -81,20 +81,20 @@ Status OutputHandler::get_buf() {
     Config* conf = Config::get(ctx_->request);
     out_buf_ = ngx_create_temp_buf(r->pool, conf->bufs.size);
     if (out_buf_ == NULL) {
-      return Status::ERROR;
+      return STATUS_ERROR;
     }
 
     out_buf_->tag = (ngx_buf_tag_t) & sdch_module;
     out_buf_->recycled = 1;
   }
 
-  return Status::OK;
+  return STATUS_OK;
 }
 
 Status OutputHandler::flush_out_buf(bool flush) {
   ngx_chain_t* cl = ngx_alloc_chain_link(ctx_->request->pool);
   if (cl == NULL) {
-    return Status::ERROR;
+    return STATUS_ERROR;
   }
 
   cl->buf = out_buf_;
@@ -105,7 +105,7 @@ Status OutputHandler::flush_out_buf(bool flush) {
 
   out_buf_ = NULL;
 
-  return Status::OK;
+  return STATUS_OK;
 }
 
 Status OutputHandler::next_body() {
@@ -115,7 +115,7 @@ Status OutputHandler::next_body() {
                           &busy_,
                           &out_,
                           (ngx_buf_tag_t) & sdch_module);
-  return rc == NGX_OK ? Status::OK : Status::ERROR;
+  return rc == NGX_OK ? STATUS_OK : STATUS_ERROR;
 }
 
 }  // namespace sdch

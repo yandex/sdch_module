@@ -54,7 +54,7 @@ Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
 
 Status EncodingHandler::on_finish() {
   if (!enc_.FinishEncodingToInterface(this))
-    return Status::ERROR;
+    return STATUS_ERROR;
 
   return next_->on_finish();
 }
