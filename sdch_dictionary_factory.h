@@ -42,8 +42,8 @@ class DictionaryFactory {
   void merge(const DictionaryFactory* parent);
 
  private:
-  typedef std::vector<Dictionary*, PoolAllocator<Dictionary*>> DictStorage;
-  typedef std::vector<DictConfig, PoolAllocator<DictConfig>>  DictConfStorage;
+  typedef std::vector<Dictionary*, PoolAllocator<Dictionary*> > DictStorage;
+  typedef std::vector<DictConfig, PoolAllocator<DictConfig> >  DictConfStorage;
 
   ngx_pool_t* pool_;
   DictStorage dict_storage_;
