@@ -12,7 +12,6 @@ extern "C" {
 }
 
 #include <memory>
-#include <array>
 
 namespace open_vcdiff {
 class HashedDictionary;
@@ -23,7 +22,14 @@ namespace sdch {
 // In-memory Dictionary representation
 class Dictionary {
  public:
-  typedef std::array<uint8_t, 8> id_t;
+  class id_t {
+   public:
+    uint8_t* data() { return id_; }
+    const uint8_t* data() const { return id_; }
+    size_t size() const { return 8; }
+   private:
+    uint8_t id_[8];
+  };
 
   Dictionary();
   Dictionary(Dictionary&& other);
