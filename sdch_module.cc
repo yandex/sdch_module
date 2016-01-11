@@ -835,7 +835,7 @@ ratio_variable(ngx_http_request_t *r,
 static void *
 create_main_conf(ngx_conf_t *cf)
 {
-    return pool_alloc<MainConfig>(cf);
+    return new (pool_alloc<MainConfig>(cf)) MainConfig();
 }
 
 static char *
