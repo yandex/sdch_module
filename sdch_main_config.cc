@@ -7,7 +7,7 @@
 
 namespace sdch {
 
-MainConfig::MainConfig() {}
+MainConfig::MainConfig() : stor_size(NGX_CONF_UNSET_SIZE) {}
 
 MainConfig::~MainConfig() {}
 

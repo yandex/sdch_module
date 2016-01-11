@@ -41,7 +41,7 @@ Status AutoautoHandler::on_finish() {
     Dictionary::id_t client_id = dict.client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
     if (main->storage.store(client_id,
-                            Storage::Value(time(NULL), std::move(dict)))) {
+                            Storage::Value(time(NULL), boost::move(dict)))) {
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,

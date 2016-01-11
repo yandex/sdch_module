@@ -23,7 +23,7 @@ class MainConfig {
 
   Storage storage;
   // TODO Change config handling to pass it to Storage directly
-  ngx_uint_t stor_size = NGX_CONF_UNSET_SIZE;
+  ngx_uint_t stor_size;
 };
 
 

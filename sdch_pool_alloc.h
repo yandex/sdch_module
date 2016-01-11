@@ -67,6 +67,12 @@ class PoolAllocator {
 
   typedef T value_type;
   typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef size_t size_type;
+  typedef size_t difference_type;
+  template< class U > struct rebind { typedef PoolAllocator<U> other; };
 
   pointer allocate(std::size_t n) {
     pointer res = static_cast<pointer>(ngx_pcalloc(pool_, n * sizeof(value_type)));
@@ -77,7 +83,17 @@ class PoolAllocator {
     return res;
   }
 
+  void construct( pointer p, const_reference val) {
+    new ((void *)p) T(val);
+  }
+
   void deallocate(pointer p, std::size_t n) { /* NOOP */ }
+
+  void destroy(pointer p) { p->~T(); }
+
+  size_type max_size() const {
+    return pool_->max;
+  }
 
  private:
   ngx_pool_t* pool_;

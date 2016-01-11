@@ -16,7 +16,7 @@ EncodingHandler::EncodingHandler(Handler* next,
                                  Storage::ValueHolder quasidict)
     : Handler(next),
       dict_(dict),
-      quasidict_(std::move(quasidict)),
+      quasidict_(boost::move(quasidict)),
       enc_(dict_->hashed_dict(),
         open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
         false),
@@ -44,7 +44,7 @@ Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
   if (len) {
     if (!enc_.EncodeChunkToInterface(
              reinterpret_cast<const char*>(buf), len, this))
-      return Status::ERROR;
+      return STATUS_ERROR;
     return next_status_;
   }
 

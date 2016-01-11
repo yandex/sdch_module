@@ -14,10 +14,9 @@ extern "C" {
 #include <memory>
 
 #include <boost/move/unique_ptr.hpp>
+#include <boost/move/utility.hpp>
 
-namespace open_vcdiff {
-class HashedDictionary;
-}
+#include <google/vcencoder.h>
 
 namespace sdch {
 
@@ -29,14 +28,21 @@ class Dictionary {
     uint8_t* data() { return id_; }
     const uint8_t* data() const { return id_; }
     size_t size() const { return 8; }
+
+    friend bool operator<(const id_t& left, const id_t& right) {
+      return ngx_strncmp(left.id_, right.id_, 8) < 0;
+    }
+
    private:
     uint8_t id_[8];
   };
 
   Dictionary();
-#if 0
-  Dictionary(Dictionary&& other);
-#endif
+  Dictionary(BOOST_RV_REF(Dictionary) other)
+    : hashed_dict_(boost::move(other.hashed_dict_)),
+      size_(boost::move(other.size_)),
+      client_id_(boost::move(other.client_id_)),
+      server_id_(boost::move(other.server_id_)) {}
   ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
@@ -71,8 +77,7 @@ class Dictionary {
   id_t client_id_;
   id_t server_id_;
 
-  Dictionary(const Dictionary&);
-  Dictionary& operator=(const Dictionary&);
+  BOOST_MOVABLE_BUT_NOT_COPYABLE(Dictionary);
 };
 
 

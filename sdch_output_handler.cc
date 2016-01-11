@@ -109,7 +109,7 @@ Status OutputHandler::flush_out_buf(bool flush) {
 }
 
 Status OutputHandler::next_body() {
-  Status rc = next_body_(ctx_->request, out_);
+  ngx_int_t rc = next_body_(ctx_->request, out_);
   ngx_chain_update_chains(ctx_->request->pool,
                           &free_,
                           &busy_,

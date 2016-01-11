@@ -191,12 +191,14 @@ static ngx_command_t  filter_commands[] = {
       offsetof(Config, vary),
       NULL },
 
+#if 0
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
       offsetof(MainConfig, stor_size),
       &stor_size_bounds },
+#endif
 
       ngx_null_command
 };
@@ -291,7 +293,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_OK;
   }
 
-  ngx_table_elt_t e = r->headers_out.expires;
+  ngx_table_elt_t* e = r->headers_out.expires;
   if (e) {
     if (!(p & NGX_HTTP_GZIP_PROXIED_EXPIRED)) {
       return NGX_DECLINED;
@@ -303,7 +305,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
       return NGX_DECLINED;
     }
 
-    ngx_table_elt_t d = r->headers_out.date;
+    ngx_table_elt_t* d = r->headers_out.date;
     if (d) {
       date = ngx_http_parse_time(d->value.data, d->value.len);
       if (date == NGX_ERROR) {
@@ -321,7 +323,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_DECLINED;
   }
 
-  ngx_array_t cc = &r->headers_out.cache_control;
+  ngx_array_t* cc = &r->headers_out.cache_control;
 
   if (cc->elts) {
 
@@ -360,7 +362,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
 static Storage::ValueHolder find_quasidict(ngx_http_request_t* r,
                                            const u_char * const h) {
   Dictionary::id_t id;
-  std::copy(h, h+8, std::begin(id));
+  std::copy(h, h+8, id.data());
   MainConfig* main = MainConfig::get(r);
   return main->storage.find(id);
 }
@@ -649,14 +651,15 @@ header_filter(ngx_http_request_t *r)
   }
 
 
-  RequestContext* ctx = pool_alloc<RequestContext>(r, r);
+  RequestContext* ctx = new (pool_alloc<RequestContext>(r)) RequestContext(r);
   if (ctx == NULL) {
     return NGX_ERROR;
   }
 
   // Allocate Handlers chain in reverse order
   // Last will be OutputHandler.
-  ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
+  ctx->handler = new (pool_alloc<OutputHandler>(r))
+      OutputHandler(ctx, ngx_http_next_body_filter);
   if (ctx->handler == NULL)
     return NGX_ERROR;
 
@@ -676,17 +679,16 @@ header_filter(ngx_http_request_t *r)
       }
     }
 
-    ctx->handler = pool_alloc<EncodingHandler>(r,
-                                               ctx->handler,
-                                               dict,
-                                               std::move(quasidict));
+    ctx->handler = new (pool_alloc<EncodingHandler>(r))
+        EncodingHandler(ctx->handler, dict, boost::move(quasidict));
+
     if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
   }
 
   if (conf->sdch_dumpdir.len > 0) {
-    ctx->handler = pool_alloc<DumpHandler>(r, ctx->handler);
+    ctx->handler = new (pool_alloc<DumpHandler>(r)) DumpHandler(ctx->handler);
     if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
@@ -694,7 +696,8 @@ header_filter(ngx_http_request_t *r)
 
   // If we have to create new quasi-dictionary
   if (store_as_quasi) {
-    ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
+    ctx->handler = new (pool_alloc<AutoautoHandler>(r))
+        AutoautoHandler(ctx, ctx->handler);
     if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
@@ -847,7 +850,7 @@ init_main_conf(ngx_conf_t *cf, void *cnf)
 static void *
 create_conf(ngx_conf_t *cf)
 {
-  return pool_alloc<Config>(cf, cf->pool);
+  return new (pool_alloc<Config>(cf)) Config(cf->pool);
 }
 
 static char *

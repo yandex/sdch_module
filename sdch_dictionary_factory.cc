@@ -28,7 +28,7 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
                                             ngx_str_t& groupname,
                                             ngx_uint_t prio) {
 
-  conf_storage_.emplace_back();
+  conf_storage_.push_back(*conf_storage_.get_allocator().allocate(1));
   DictConfig* res = &*conf_storage_.rbegin();
 
   res->groupname.len = groupname.len;
@@ -69,9 +69,10 @@ DictConfig* DictionaryFactory::choose_best_dictionary(DictConfig* old,
 }
 
 DictConfig* DictionaryFactory::find_dictionary(const u_char* client_id) {
-  for (DictConfig* c = conf_storage_.back(); c != conf_storage_.end(); ++c) {
+  for (DictConfStorage::iterator c = conf_storage_.begin();
+       c != conf_storage_.end(); ++c) {
     if (ngx_strncmp(client_id, c->dict->client_id().data(), 8) == 0)
-      return c;
+      return &*c;
   }
 
   return NULL;
