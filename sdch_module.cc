@@ -651,15 +651,14 @@ header_filter(ngx_http_request_t *r)
   }
 
 
-  RequestContext* ctx = new (pool_alloc<RequestContext>(r)) RequestContext(r);
+  RequestContext* ctx = POOL_ALLOC(r, RequestContext, r);
   if (ctx == NULL) {
     return NGX_ERROR;
   }
 
   // Allocate Handlers chain in reverse order
   // Last will be OutputHandler.
-  ctx->handler = new (pool_alloc<OutputHandler>(r))
-      OutputHandler(ctx, ngx_http_next_body_filter);
+  ctx->handler = POOL_ALLOC(r, OutputHandler, ctx, ngx_http_next_body_filter);
   if (ctx->handler == NULL)
     return NGX_ERROR;
 
@@ -679,8 +678,8 @@ header_filter(ngx_http_request_t *r)
       }
     }
 
-    ctx->handler = new (pool_alloc<EncodingHandler>(r))
-        EncodingHandler(ctx->handler, dict, boost::move(quasidict));
+    ctx->handler = POOL_ALLOC(r,
+        EncodingHandler, ctx->handler, dict, boost::move(quasidict));
 
     if (ctx->handler == NULL) {
       return NGX_ERROR;
@@ -688,7 +687,7 @@ header_filter(ngx_http_request_t *r)
   }
 
   if (conf->sdch_dumpdir.len > 0) {
-    ctx->handler = new (pool_alloc<DumpHandler>(r)) DumpHandler(ctx->handler);
+    ctx->handler = POOL_ALLOC(r, DumpHandler, ctx->handler);
     if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
@@ -696,8 +695,7 @@ header_filter(ngx_http_request_t *r)
 
   // If we have to create new quasi-dictionary
   if (store_as_quasi) {
-    ctx->handler = new (pool_alloc<AutoautoHandler>(r))
-        AutoautoHandler(ctx, ctx->handler);
+    ctx->handler = POOL_ALLOC(r, AutoautoHandler, ctx, ctx->handler);
     if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
@@ -835,7 +833,7 @@ ratio_variable(ngx_http_request_t *r,
 static void *
 create_main_conf(ngx_conf_t *cf)
 {
-    return new (pool_alloc<MainConfig>(cf)) MainConfig();
+    return POOL_ALLOC(cf, MainConfig);
 }
 
 static char *
@@ -850,7 +848,7 @@ init_main_conf(ngx_conf_t *cf, void *cnf)
 static void *
 create_conf(ngx_conf_t *cf)
 {
-  return new (pool_alloc<Config>(cf)) Config(cf->pool);
+  return POOL_ALLOC(cf, Config, cf->pool);
 }
 
 static char *

@@ -101,5 +101,8 @@ class PoolAllocator {
 
 }  // namespace ngx
 
+#define POOL_ALLOC(pool, Type, ...) \
+    new (pool_alloc<Type>(pool)) Type(__VA_ARGS__)
+
 #endif  // POOL_ALLOC_H_
 

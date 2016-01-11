@@ -41,7 +41,7 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
 }
 
 Dictionary* DictionaryFactory::allocate_dictionary() {
-  Dictionary* res = pool_alloc<Dictionary>(pool_);
+  Dictionary* res = POOL_ALLOC(pool_, Dictionary);
   dict_storage_.push_back(res);
   return res;
 }

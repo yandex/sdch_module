@@ -6,7 +6,6 @@
 #include <cassert>
 
 
-#include "sdch_pool_alloc.h"
 #include "sdch_request_context.h"
 
 namespace sdch {

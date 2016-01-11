@@ -13,8 +13,7 @@ Config::Config(ngx_pool_t* pool)
       min_length(NGX_CONF_UNSET_SIZE),
       enable_fastdict(NGX_CONF_UNSET),
       vary(NGX_CONF_UNSET),
-      dict_factory(pool_alloc<DictionaryFactory>(pool)) {
-  new (dict_factory) DictionaryFactory(pool);
+      dict_factory(POOL_ALLOC(pool, DictionaryFactory, pool)) {
 }
 
 Config::~Config() {}
