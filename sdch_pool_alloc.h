@@ -9,7 +9,6 @@ extern "C" {
 }
 
 #include <stdint.h>
-#include <new>
 #include <stdexcept>    // std::bad_alloc
 #include <utility>      // std::forward
 
@@ -101,15 +100,6 @@ class PoolAllocator {
 };
 
 }  // namespace ngx
-
-inline void* operator new(size_t n, ngx_pool_t* pool) {
-  return ngx_pcalloc(pool, n);
-}
-
-template<typename Holder>
-inline void* operator new(size_t n, Holder* h) {
-  return ngx_pcalloc(h->pool, n);
-}
 
 #endif  // POOL_ALLOC_H_
 
