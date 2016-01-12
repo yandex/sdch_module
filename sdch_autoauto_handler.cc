@@ -35,13 +35,13 @@ Status AutoautoHandler::on_finish() {
                   0,
                   "storing quasidict: no blob");
   } else {
-    Dictionary dict;
-    if (!dict.init_quasy(blob_.data(), blob_.size()))
+    Dictionary* dict = POOL_ALLOC(ctx_->request->pool, Dictionary);
+    if (!dict->init_quasy(ctx_->request->pool, blob_.data(), blob_.size()))
       return STATUS_ERROR;
-    Dictionary::id_t client_id = dict.client_id();
+    Dictionary::id_t client_id = dict->client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
     if (main->storage.store(client_id,
-                            Storage::Value(time(NULL), boost::move(dict)))) {
+                            Storage::Value(time(NULL), dict))) {
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,

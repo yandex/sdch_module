@@ -85,23 +85,27 @@ bool read_file(const char* fn, std::vector<char>& blob) {
 Dictionary::Dictionary() {}
 Dictionary::~Dictionary() {}
 
-bool Dictionary::init_from_file(const char* filename) {
+bool Dictionary::init_from_file(ngx_pool_t* pool, const char* filename) {
   std::vector<char> blob;
   if (!read_file(filename, blob))
     return false;
 
-  return init(blob.data(),
+  return init(pool, blob.data(),
               get_dict_payload(blob.data(), blob.data() + blob.size()),
               blob.data() + blob.size());
 }
 
-bool Dictionary::init_quasy(const char* buf, size_t len) {
+bool Dictionary::init_quasy(ngx_pool_t* pool, const char* buf, size_t len) {
   size_ = len;
-  return init(buf, buf, buf + len);
+  return init(pool, buf, buf, buf + len);
 }
 
-bool Dictionary::init(const char* begin, const char* payload, const char* end) {
-  hashed_dict_.reset(new open_vcdiff::HashedDictionary(payload, end - payload));
+bool Dictionary::init(ngx_pool_t* pool,
+                      const char* begin,
+                      const char* payload,
+                      const char* end) {
+  hashed_dict_ =
+      POOL_ALLOC(pool, open_vcdiff::HashedDictionary, payload, end - payload);
   if (!hashed_dict_->Init())
     return false;
 

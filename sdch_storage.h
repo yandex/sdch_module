@@ -20,17 +20,13 @@ class Storage {
  public:
   // Stored Value
   struct Value {
-    Value(time_t t, BOOST_RV_REF(Dictionary) d)
-        : ts(t), dict(boost::move(d)), locked(false) {}
-    Value(BOOST_RV_REF(Value) other)
-        : ts(other.ts), dict(boost::move(other.dict)), locked(other.locked) {}
+    Value(time_t t, Dictionary* d)
+        : ts(t), dict(d), locked(false) {}
     ~Value();
 
     time_t ts;
-    Dictionary dict;
+    Dictionary* dict;
     bool locked;
-   private:
-    BOOST_MOVABLE_BUT_NOT_COPYABLE(Value);
   };
 
   class Unlocker {

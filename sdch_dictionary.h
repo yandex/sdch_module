@@ -13,14 +13,16 @@ extern "C" {
 
 #include <memory>
 
-#include <boost/move/unique_ptr.hpp>
-#include <boost/move/utility.hpp>
+#include "sdch_pool_alloc.h"
 
-#include <google/vcencoder.h>
+namespace open_vcdiff {
+class HashedDictionary;
+}
 
 namespace sdch {
 
 // In-memory Dictionary representation
+// Should be allocated from nginx pool
 class Dictionary {
  public:
   class id_t {
@@ -38,16 +40,11 @@ class Dictionary {
   };
 
   Dictionary();
-  Dictionary(BOOST_RV_REF(Dictionary) other)
-    : hashed_dict_(boost::move(other.hashed_dict_)),
-      size_(boost::move(other.size_)),
-      client_id_(boost::move(other.client_id_)),
-      server_id_(boost::move(other.server_id_)) {}
   ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
-  bool init_from_file(const char* filename);
-  bool init_quasy(const char* buf, size_t len);
+  bool init_from_file(ngx_pool_t* pool, const char* filename);
+  bool init_quasy(ngx_pool_t* pool, const char* buf, size_t len);
 
   // Size of dictionary
   size_t size() const {
@@ -63,21 +60,20 @@ class Dictionary {
   }
 
   const open_vcdiff::HashedDictionary* hashed_dict() const {
-    return hashed_dict_.get();
+    return hashed_dict_;
   }
 
  private:
-  bool init(const char* begin, const char* payload, const char* end);
+  bool init(ngx_pool_t* pool,
+            const char* begin,
+            const char* payload,
+            const char* end);
 
-  // It's not really good. We should integrate with nginx's pool allocations.
-  // But this will do for now.
-  boost::movelib::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
+  open_vcdiff::HashedDictionary* hashed_dict_;
 
   size_t size_;
   id_t client_id_;
   id_t server_id_;
-
-  BOOST_MOVABLE_BUT_NOT_COPYABLE(Dictionary);
 };
 
 

@@ -22,7 +22,7 @@ bool Storage::store(Dictionary::id_t key, Value value) {
   }
 
   lru_.insert(LRUType::value_type(r.first->second.ts, key));
-  total_size_ += r.first->second.dict.size();
+  total_size_ += r.first->second.dict->size();
 
   // Remove oldest entries if we exceeded max_size_
   for (LRUType::iterator i = lru_.begin();
@@ -38,7 +38,7 @@ bool Storage::store(Dictionary::id_t key, Value value) {
       continue;
     }
 
-    total_size_ -= si->second.dict.size();
+    total_size_ -= si->second.dict->size();
     values_.erase(si);
     lru_.erase(i++);
   }
