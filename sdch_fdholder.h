@@ -6,11 +6,10 @@
 
 #include <unistd.h>
 
-#include <boost/move/utility.hpp>
-
 namespace sdch {
 
 // Simple RAII holder for opened files.
+// It should be c++11 move only. But I'm just a poor boy, nobody loves me.
 class FDHolder {
  public:
   explicit FDHolder(int fd) : fd_(fd) {}
@@ -19,14 +18,9 @@ class FDHolder {
       close(fd_);
   }
 
-  FDHolder(BOOST_RV_REF(FDHolder) other) : fd_(other.fd_) {
-    other.fd_ = -1;
-  }
-
-  FDHolder& operator=(BOOST_RV_REF(FDHolder) other) {
-    fd_ = other.fd_;
-    other.fd_ = -1;
-    return *this;
+  void reset(int fd) {
+    FDHolder tmp(fd_);
+    fd_ = fd;
   }
 
   operator int() { return fd_; }
@@ -34,7 +28,8 @@ class FDHolder {
  private:
   int fd_;
 
-  BOOST_MOVABLE_BUT_NOT_COPYABLE(FDHolder);
+  FDHolder(const FDHolder&);
+  FDHolder& operator=(const FDHolder&);
 };
 
 

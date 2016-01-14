@@ -26,7 +26,7 @@ bool DumpHandler::init(RequestContext* ctx) {
           random(),
           random());
 
-  fd_ = FDHolder(open(fn, O_WRONLY | O_CREAT | O_EXCL, 0666));
+  fd_.reset(open(fn, O_WRONLY | O_CREAT | O_EXCL, 0666));
   if (fd_ == -1) {
     ngx_log_error(NGX_LOG_ERR,
                   ctx->request->connection->log,
