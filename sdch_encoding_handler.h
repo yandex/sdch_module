@@ -39,9 +39,9 @@ class EncodingHandler : public Handler,
  private:
   class OutHelper;
 
-  RequestContext*      ctx_;
-  Dictionary*          dict_;
-  boost::shared_ptr<Storage::Value> quasidict_;
+  RequestContext*   ctx_;
+  Dictionary*       dict_;
+  Storage::ValuePtr quasidict_;
 
   // Actual encoder.
   open_vcdiff::VCDiffStreamingEncoder enc_;
