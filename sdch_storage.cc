@@ -10,7 +10,7 @@ Storage::Storage() : max_size_(10000000) {}
 
 bool Storage::clear(time_t ts) { return true; }
 
-bool Storage::store(Dictionary::id_t key, boost::shared_ptr<Value> value) {
+bool Storage::store(Dictionary::id_t key, ValuePtr value) {
   std::pair<StoreType::iterator, bool> r =
       values_.insert(std::make_pair(key, value));
   if (!r.second) {
@@ -46,10 +46,10 @@ bool Storage::store(Dictionary::id_t key, boost::shared_ptr<Value> value) {
   return true;
 }
 
-boost::shared_ptr<Storage::Value> Storage::find(const Dictionary::id_t& key) {
+Storage::ValuePtr Storage::find(const Dictionary::id_t& key) {
   StoreType::iterator i = values_.find(key);
   if (i == values_.end())
-    return boost::shared_ptr<Storage::Value>();
+    return ValuePtr();
 
   // TODO Update LRU?
   return i->second;

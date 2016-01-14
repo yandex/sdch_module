@@ -359,10 +359,10 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
   return NGX_OK;
 }
 
-static boost::shared_ptr<Storage::Value> find_quasidict(ngx_http_request_t* r,
-                                                        const u_char* const h) {
+static Storage::ValuePtr find_quasidict(ngx_http_request_t* r,
+                                        const u_char* const h) {
   Dictionary::id_t id;
-  std::copy(h, h+8, id.data());
+  std::copy(h, h + 8, id.data());
   MainConfig* main = MainConfig::get(r);
   return main->storage.find(id);
 }
@@ -504,7 +504,7 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
                             bool sdch_expected,
                             Dictionary*& dict,
                             bool& is_best,
-                            boost::shared_ptr<Storage::Value>& quasidict) {
+                            Storage::ValuePtr& quasidict) {
   DictConfig* bestdict = NULL;
   while (val.len >= 8) {
     DictConfig* d = dict_factory->find_dictionary(val.data);
@@ -617,7 +617,7 @@ header_filter(ngx_http_request_t *r)
   }
 
   Dictionary* dict = NULL;
-  boost::shared_ptr<Storage::Value> quasidict;
+  Storage::ValuePtr quasidict;
   bool is_best;
 
   select_dictionary(r,

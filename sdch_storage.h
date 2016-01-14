@@ -26,11 +26,15 @@ class Storage {
     Dictionary* dict;
   };
 
+  // We are using shared_ptr for refcounting Values to avoid discarding
+  // currently in use Dictionaries.
+  typedef boost::shared_ptr<Value> ValuePtr;
+
   Storage();
 
-  bool store(Dictionary::id_t key, boost::shared_ptr<Value> value);
+  bool store(Dictionary::id_t key, Storage::ValuePtr value);
   // Get Value and "lock" it.
-  boost::shared_ptr<Value> find(const Dictionary::id_t& key);
+  Storage::ValuePtr find(const Dictionary::id_t& key);
 
   bool clear(time_t ts);
 
@@ -42,7 +46,7 @@ class Storage {
  private:
   friend class Unlocker;
 
-  typedef std::map<Dictionary::id_t, boost::shared_ptr<Value> > StoreType;
+  typedef std::map<Dictionary::id_t, Storage::ValuePtr> StoreType;
   typedef std::multimap<time_t, Dictionary::id_t>  LRUType;
 
   // Values

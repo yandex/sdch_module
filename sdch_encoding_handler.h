@@ -21,7 +21,7 @@ class EncodingHandler : public Handler,
  public:
   EncodingHandler(Handler* next,
                   Dictionary* dict,
-                  boost::shared_ptr<Storage::Value> quasidict);
+                  Storage::ValuePtr quasidict);
   ~EncodingHandler();
 
   // sdch::Handler implementation

@@ -12,7 +12,7 @@ namespace sdch {
 
 EncodingHandler::EncodingHandler(Handler* next,
                                  Dictionary* dict,
-                                 boost::shared_ptr<Storage::Value> quasidict)
+                                 Storage::ValuePtr quasidict)
     : Handler(next),
       dict_(dict),
       quasidict_(quasidict),
