@@ -679,7 +679,7 @@ header_filter(ngx_http_request_t *r)
     }
 
     ctx->handler = POOL_ALLOC(r,
-        EncodingHandler, ctx->handler, dict, boost::move(quasidict));
+        EncodingHandler, ctx->handler, dict, quasidict);
 
     if (ctx->handler == NULL) {
       return NGX_ERROR;
