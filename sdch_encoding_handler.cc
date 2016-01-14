@@ -12,10 +12,10 @@ namespace sdch {
 
 EncodingHandler::EncodingHandler(Handler* next,
                                  Dictionary* dict,
-                                 Storage::ValueHolder quasidict)
+                                 boost::shared_ptr<Storage::Value> quasidict)
     : Handler(next),
       dict_(dict),
-      quasidict_(boost::move(quasidict)),
+      quasidict_(quasidict),
       enc_(dict_->hashed_dict(),
         open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
         false),

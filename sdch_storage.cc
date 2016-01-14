@@ -10,9 +10,9 @@ Storage::Storage() : max_size_(10000000) {}
 
 bool Storage::clear(time_t ts) { return true; }
 
-bool Storage::store(Dictionary::id_t key, Value value) {
-  std::pair<StoreType::iterator, bool> r = values_.emplace(
-      boost::move(key), boost::move(value));
+bool Storage::store(Dictionary::id_t key, boost::shared_ptr<Value> value) {
+  std::pair<StoreType::iterator, bool> r =
+      values_.insert(std::make_pair(key, value));
   if (!r.second) {
 #if 0
         if (r.first->second.ts < ts)
@@ -21,8 +21,8 @@ bool Storage::store(Dictionary::id_t key, Value value) {
     return false;
   }
 
-  lru_.insert(LRUType::value_type(r.first->second.ts, key));
-  total_size_ += r.first->second.dict->size();
+  lru_.insert(LRUType::value_type(r.first->second->ts, key));
+  total_size_ += r.first->second->dict->size();
 
   // Remove oldest entries if we exceeded max_size_
   for (LRUType::iterator i = lru_.begin();
@@ -33,12 +33,12 @@ bool Storage::store(Dictionary::id_t key, Value value) {
       continue;
     }
 
-    if (si->second.locked) {  // XXX
+    if (!si->second.unique()) {  // XXX
       ++i;
       continue;
     }
 
-    total_size_ -= si->second.dict->size();
+    total_size_ -= si->second->dict->size();
     values_.erase(si);
     lru_.erase(i++);
   }
@@ -46,20 +46,13 @@ bool Storage::store(Dictionary::id_t key, Value value) {
   return true;
 }
 
-Storage::ValueHolder Storage::find(const Dictionary::id_t& key) {
+boost::shared_ptr<Storage::Value> Storage::find(const Dictionary::id_t& key) {
   StoreType::iterator i = values_.find(key);
   if (i == values_.end())
-    return Storage::ValueHolder();
-
-  i->second.locked = true;
+    return boost::shared_ptr<Storage::Value>();
 
   // TODO Update LRU?
-  return boost::movelib::unique_ptr<Value, Unlocker>(&i->second,
-                                                     Unlocker(this));
-}
-
-void Storage::unlock(Value* v) {
-  v->locked = false;
+  return i->second;
 }
 
 }  // namespace sdch

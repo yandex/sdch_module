@@ -21,7 +21,7 @@ class EncodingHandler : public Handler,
  public:
   EncodingHandler(Handler* next,
                   Dictionary* dict,
-                  Storage::ValueHolder quasidict);
+                  boost::shared_ptr<Storage::Value> quasidict);
   ~EncodingHandler();
 
   // sdch::Handler implementation
@@ -41,7 +41,7 @@ class EncodingHandler : public Handler,
 
   RequestContext*      ctx_;
   Dictionary*          dict_;
-  Storage::ValueHolder quasidict_;
+  boost::shared_ptr<Storage::Value> quasidict_;
 
   // Actual encoder.
   open_vcdiff::VCDiffStreamingEncoder enc_;

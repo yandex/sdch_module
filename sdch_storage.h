@@ -9,9 +9,7 @@
 
 #include "sdch_dictionary.h"
 
-#include <boost/container/map.hpp>
-#include <boost/move/unique_ptr.hpp>
-#include <boost/move/utility.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace sdch {
 
@@ -21,35 +19,18 @@ class Storage {
   // Stored Value
   struct Value {
     Value(time_t t, Dictionary* d)
-        : ts(t), dict(d), locked(false) {}
+        : ts(t), dict(d) {}
     ~Value();
 
     time_t ts;
     Dictionary* dict;
-    bool locked;
   };
-
-  class Unlocker {
-   public:
-    Unlocker() {}
-    explicit Unlocker(Storage* owner) : owner_(owner) {}
-
-    void operator()(Value* ptr) const {
-      owner_->unlock(ptr);
-    }
-
-   private:
-    Storage* owner_;
-  };
-
-  typedef boost::movelib::unique_ptr<Storage::Value, Storage::Unlocker>
-      ValueHolder;
 
   Storage();
 
-  bool store(Dictionary::id_t key, Value value);
+  bool store(Dictionary::id_t key, boost::shared_ptr<Value> value);
   // Get Value and "lock" it.
-  ValueHolder find(const Dictionary::id_t& key);
+  boost::shared_ptr<Value> find(const Dictionary::id_t& key);
 
   bool clear(time_t ts);
 
@@ -61,11 +42,8 @@ class Storage {
  private:
   friend class Unlocker;
 
-  typedef boost::container::map<Dictionary::id_t, Value>  StoreType;
+  typedef std::map<Dictionary::id_t, boost::shared_ptr<Value> > StoreType;
   typedef std::multimap<time_t, Dictionary::id_t>  LRUType;
-
-  // Unlock used Value
-  void unlock(Value* v);
 
   // Values
   StoreType values_;

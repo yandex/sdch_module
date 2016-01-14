@@ -3,6 +3,8 @@
 
 #include "sdch_autoauto_handler.h"
 
+#include <boost/make_shared.hpp>
+
 #include "sdch_dictionary.h"
 #include "sdch_main_config.h"
 #include "sdch_request_context.h"
@@ -41,7 +43,7 @@ Status AutoautoHandler::on_finish() {
     Dictionary::id_t client_id = dict->client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
     if (main->storage.store(client_id,
-                            Storage::Value(time(NULL), dict))) {
+                            boost::make_shared<Storage::Value>(time(NULL), dict))) {
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,
