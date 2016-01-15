@@ -191,14 +191,12 @@ static ngx_command_t  filter_commands[] = {
       offsetof(Config, vary),
       NULL },
 
-#if 0
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
       offsetof(MainConfig, stor_size),
       &stor_size_bounds },
-#endif
 
       ngx_null_command
 };
