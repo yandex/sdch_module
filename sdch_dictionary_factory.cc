@@ -28,7 +28,7 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
                                             ngx_str_t& groupname,
                                             ngx_uint_t prio) {
 
-  conf_storage_.push_back(*conf_storage_.get_allocator().allocate(1));
+  conf_storage_.resize(conf_storage_.size() + 1);
   DictConfig* res = &*conf_storage_.rbegin();
 
   res->groupname.len = groupname.len;

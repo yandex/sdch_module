@@ -12,6 +12,7 @@ extern "C" {
 }
 
 #include <memory>
+#include <vector>
 
 #include "sdch_pool_alloc.h"
 
@@ -43,8 +44,8 @@ class Dictionary {
   ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
-  bool init_from_file(ngx_pool_t* pool, const char* filename);
-  bool init_quasy(ngx_pool_t* pool, const char* buf, size_t len);
+  bool init_from_file(const char* filename);
+  bool init_quasy(const char* buf, size_t len);
 
   // Size of dictionary
   size_t size() const {
@@ -60,20 +61,21 @@ class Dictionary {
   }
 
   const open_vcdiff::HashedDictionary* hashed_dict() const {
-    return hashed_dict_;
+    return hashed_dict_.get();
   }
 
  private:
-  bool init(ngx_pool_t* pool,
-            const char* begin,
+  bool init(const char* begin,
             const char* payload,
             const char* end);
 
-  open_vcdiff::HashedDictionary* hashed_dict_;
+  std::auto_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
 
   size_t size_;
   id_t client_id_;
   id_t server_id_;
+
+  std::vector<char> blob_;
 };
 
 

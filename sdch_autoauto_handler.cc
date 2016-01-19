@@ -37,9 +37,14 @@ Status AutoautoHandler::on_finish() {
                   0,
                   "storing quasidict: no blob");
   } else {
-    Dictionary* dict = POOL_ALLOC(ctx_->request->pool, Dictionary);
-    if (!dict->init_quasy(ctx_->request->pool, blob_.data(), blob_.size()))
+    Dictionary* dict = new Dictionary;
+    // We have to copy blob. It was allocated from nginx pool and will be
+    // destroyed soon.
+    std::vector<char> blob = blob_;
+    if (!dict->init_quasy(blob.data(), blob.size())) {
+      delete dict;
       return STATUS_ERROR;
+    }
     Dictionary::id_t client_id = dict->client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
     if (main->storage.store(client_id,
