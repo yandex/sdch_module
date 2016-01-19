@@ -23,7 +23,7 @@ class HashedDictionary;
 namespace sdch {
 
 // In-memory Dictionary representation
-// Should be allocated from nginx pool
+// Should NOT be allocated from nginx pool
 class Dictionary {
  public:
   class id_t {
@@ -39,9 +39,6 @@ class Dictionary {
    private:
     uint8_t id_[8];
   };
-
-  Dictionary();
-  ~Dictionary();
 
   // Init dictionary. Returns false in case of errors.
   bool init_from_file(const char* filename);

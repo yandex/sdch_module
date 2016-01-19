@@ -537,7 +537,7 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
   if (bestdict == NULL) {
     // Use quasi if there it's available and there is no predefined one
     if (quasidict != NULL) {
-      dict = quasidict->dict;
+      dict = &quasidict->dict;
     }
     is_best = false;
   }

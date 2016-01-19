@@ -82,9 +82,6 @@ bool read_file(const char* fn, std::vector<char>& blob) {
 
 }  // namespace
 
-Dictionary::Dictionary() {}
-Dictionary::~Dictionary() {}
-
 bool Dictionary::init_from_file(const char* filename) {
   std::vector<char> blob;
   if (!read_file(filename, blob))

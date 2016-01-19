@@ -37,18 +37,13 @@ Status AutoautoHandler::on_finish() {
                   0,
                   "storing quasidict: no blob");
   } else {
-    Dictionary* dict = new Dictionary;
-    // We have to copy blob. It was allocated from nginx pool and will be
-    // destroyed soon.
-    std::vector<char> blob = blob_;
-    if (!dict->init_quasy(blob.data(), blob.size())) {
-      delete dict;
+    Storage::ValuePtr v = boost::make_shared<Storage::Value>(time(NULL));
+    if (!v->dict.init_quasy(blob_.data(), blob_.size())) {
       return STATUS_ERROR;
     }
-    Dictionary::id_t client_id = dict->client_id();
+    Dictionary::id_t client_id = v->dict.client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
-    if (main->storage.store(client_id,
-                            boost::make_shared<Storage::Value>(time(NULL), dict))) {
+    if (main->storage.store(client_id, v)) {
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,

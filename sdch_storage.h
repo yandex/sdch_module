@@ -18,12 +18,12 @@ class Storage {
  public:
   // Stored Value
   struct Value {
-    Value(time_t t, Dictionary* d)
-        : ts(t), dict(d) {}
+    Value(time_t t) : ts(t) {}
+    Value(time_t t, Dictionary d) : ts(t), dict(d) {}
     ~Value();
 
     time_t ts;
-    Dictionary* dict;
+    Dictionary dict;
   };
 
   // We are using shared_ptr for refcounting Values to avoid discarding
