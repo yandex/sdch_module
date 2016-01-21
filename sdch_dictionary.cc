@@ -104,8 +104,6 @@ bool Dictionary::init(const char* begin,
   if (!hashed_dict_->Init())
     return false;
 
-  blob_.clear();
-  blob_.insert(blob_.begin(), payload, end);
   get_dict_ids(begin, end - begin, client_id_, server_id_);
   return true;
 }

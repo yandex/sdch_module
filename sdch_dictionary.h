@@ -71,8 +71,6 @@ class Dictionary {
   size_t size_;
   id_t client_id_;
   id_t server_id_;
-
-  std::vector<char> blob_;
 };
 
 
