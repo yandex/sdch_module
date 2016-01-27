@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+#include "sdch_fdholder.h"
+
 namespace sdch {
 
 namespace {
@@ -17,6 +19,34 @@ bool compare_dict_conf(const DictConfig& a, const DictConfig& b) {
   return a.priority < b.priority;
 }
 
+// Skip dictionary headers in case of on-disk dictionary
+const char *get_dict_payload(const char *dictbegin, const char *dictend)
+{
+	const char *nl = dictbegin;
+	while (nl < dictend) {
+		if (*nl == '\n')
+			return nl+1;
+		nl = (const char*)memchr(nl, '\n', dictend-nl);
+		if (nl == dictend)
+			return nl;
+		++nl;
+	}
+	return dictend;
+}
+
+bool read_file(const char* fn, std::vector<char>& blob) {
+  blob.clear();
+  FDHolder fd(open(fn, O_RDONLY));
+  if (fd == -1)
+    return false;
+  struct stat st;
+  if (fstat(fd, &st) == -1)
+    return false;
+  blob.resize(st.st_size);
+  if (read(fd, &blob[0], blob.size()) != (ssize_t)blob.size())
+    return false;
+  return true;
+}
 }  // namespace
 
 DictionaryFactory::DictionaryFactory(ngx_pool_t* pool)
@@ -40,8 +70,22 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
   return res;
 }
 
-Dictionary* DictionaryFactory::allocate_dictionary() {
+Dictionary* DictionaryFactory::load_dictionary(const char* filename) {
   Dictionary* res = POOL_ALLOC(pool_, Dictionary);
+  if (res == NULL) {
+    return res;
+  }
+
+  std::vector<char> blob;
+  if (!read_file(filename, blob))
+    return NULL;
+
+  if (!res->init(blob.data(),
+              get_dict_payload(blob.data(), blob.data() + blob.size()),
+              blob.data() + blob.size())) {
+    return NULL;
+  }
+
   dict_storage_.push_back(res);
   return res;
 }

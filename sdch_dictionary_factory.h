@@ -23,7 +23,7 @@ class DictionaryFactory {
   explicit DictionaryFactory(ngx_pool_t* pool);
 
   // Allocate new Dictionary. We keep ownership
-  Dictionary* allocate_dictionary();
+  Dictionary* load_dictionary(const char* filename);
 
   // Allocate new DictConfig and store it internally. We keep ownership.
   DictConfig* store_config(Dictionary* dict,

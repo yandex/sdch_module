@@ -22,6 +22,8 @@ class HashedDictionary;
 
 namespace sdch {
 
+class DictionaryFactory;
+
 // In-memory Dictionary representation
 // Should NOT be allocated from nginx pool
 class Dictionary {
@@ -40,8 +42,6 @@ class Dictionary {
     uint8_t id_[8];
   };
 
-  // Init dictionary. Returns false in case of errors.
-  bool init_from_file(const char* filename);
   bool init_quasy(const char* buf, size_t len);
 
   // Size of dictionary
@@ -62,6 +62,8 @@ class Dictionary {
   }
 
  private:
+  friend class DictionaryFactory;
+
   bool init(const char* begin,
             const char* payload,
             const char* end);

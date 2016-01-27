@@ -9,26 +9,9 @@
 #include <google/vcencoder.h>
 #include <openssl/sha.h>
 
-#include "sdch_fdholder.h"
-
 namespace sdch {
 
 namespace {
-
-// Skip dictionary headers in case of on-disk dictionary
-const char *get_dict_payload(const char *dictbegin, const char *dictend)
-{
-	const char *nl = dictbegin;
-	while (nl < dictend) {
-		if (*nl == '\n')
-			return nl+1;
-		nl = (const char*)memchr(nl, '\n', dictend-nl);
-		if (nl == dictend)
-			return nl;
-		++nl;
-	}
-	return dictend;
-}
 
 #if nginx_version < 1006000
 static void
@@ -66,31 +49,8 @@ void get_dict_ids(const char* buf,
   encode_id(sha + 6, server_id);
 }
 
-bool read_file(const char* fn, std::vector<char>& blob) {
-  blob.clear();
-  FDHolder fd(open(fn, O_RDONLY));
-  if (fd == -1)
-    return false;
-  struct stat st;
-  if (fstat(fd, &st) == -1)
-    return false;
-  blob.resize(st.st_size);
-  if (read(fd, &blob[0], blob.size()) != (ssize_t)blob.size())
-    return false;
-  return true;
-}
 
 }  // namespace
-
-bool Dictionary::init_from_file(const char* filename) {
-  std::vector<char> blob;
-  if (!read_file(filename, blob))
-    return false;
-
-  return init(blob.data(),
-              get_dict_payload(blob.data(), blob.data() + blob.size()),
-              blob.data() + blob.size());
-}
 
 bool Dictionary::init_quasy(const char* buf, size_t len) {
   size_ = len;
