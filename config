@@ -30,12 +30,12 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/sdch_dictionary_factory.cc \
                 $ngx_addon_dir/sdch_dump_handler.cc \
                 $ngx_addon_dir/sdch_encoding_handler.cc \
+                $ngx_addon_dir/sdch_fastdict_factory.cc \
                 $ngx_addon_dir/sdch_handler.cc \
                 $ngx_addon_dir/sdch_main_config.cc \
                 $ngx_addon_dir/sdch_module.cc \
                 $ngx_addon_dir/sdch_output_handler.cc \
                 $ngx_addon_dir/sdch_request_context.cc \
-                $ngx_addon_dir/sdch_storage.cc \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -46,6 +46,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/sdch_dict_config.h \
                 $ngx_addon_dir/sdch_dump_handler.h \
                 $ngx_addon_dir/sdch_encoding_handler.h \
+                $ngx_addon_dir/sdch_fastdict_factory.h \
                 $ngx_addon_dir/sdch_fdholder.h \
                 $ngx_addon_dir/sdch_handler.h \
                 $ngx_addon_dir/sdch_main_config.h \
@@ -54,7 +55,6 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/sdch_pool_alloc.h \
                 $ngx_addon_dir/sdch_request_context.h \
                 $ngx_addon_dir/sdch_status.h \
-                $ngx_addon_dir/sdch_storage.h \
                 "
 
 

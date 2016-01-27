@@ -61,7 +61,7 @@ class Dictionary {
 
  private:
   friend class DictionaryFactory;
-  friend class Storage;
+  friend class FastdictFactory;
 
   bool init(const char* begin,
             const char* payload,

@@ -8,7 +8,7 @@
 
 #include <google/vcencoder.h>
 
-#include "sdch_storage.h"
+#include "sdch_fastdict_factory.h"
 
 namespace sdch {
 
@@ -21,7 +21,7 @@ class EncodingHandler : public Handler,
  public:
   EncodingHandler(Handler* next,
                   Dictionary* dict,
-                  Storage::ValuePtr quasidict);
+                  FastdictFactory::ValuePtr quasidict);
   ~EncodingHandler();
 
   // sdch::Handler implementation
@@ -41,7 +41,7 @@ class EncodingHandler : public Handler,
 
   RequestContext*   ctx_;
   Dictionary*       dict_;
-  Storage::ValuePtr quasidict_;
+  FastdictFactory::ValuePtr quasidict_;
 
   // Actual encoder.
   open_vcdiff::VCDiffStreamingEncoder enc_;

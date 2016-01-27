@@ -10,7 +10,7 @@ extern "C" {
 #include <ngx_config.h>
 }
 
-#include "sdch_storage.h"
+#include "sdch_fastdict_factory.h"
 
 namespace sdch {
 
@@ -21,8 +21,8 @@ class MainConfig {
 
   static MainConfig* get(ngx_http_request_t* r);
 
-  Storage storage;
-  // TODO Change config handling to pass it to Storage directly
+  FastdictFactory fastdict_factory;
+  // TODO Change config handling to pass it to FastdictFactory directly
   ngx_uint_t stor_size;
 };
 

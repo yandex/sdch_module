@@ -27,7 +27,7 @@ class AutoautoHandler : public Handler {
   // Keep context. For logging purpose mostly.
   RequestContext* ctx_;
 
-  // Storage for data passing by. We'll create actual dictionary in on_finish
+  // FastdictFactory for data passing by. We'll create actual dictionary in on_finish
   std::vector<char> blob_;
 };
 

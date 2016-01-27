@@ -1,5 +1,5 @@
-#ifndef STORAGE_H
-#define STORAGE_H
+#ifndef SDCH_FASTDICT_FACTORY_H
+#define SDCH_FASTDICT_FACTORY_H
 
 #include <time.h>
 #include <map>
@@ -14,7 +14,7 @@
 namespace sdch {
 
 // Simple LRU blob's storage with limit by total size
-class Storage {
+class FastdictFactory {
  public:
   // Stored Value
   struct Value {
@@ -30,12 +30,12 @@ class Storage {
   // currently in use Dictionaries.
   typedef boost::shared_ptr<Value> ValuePtr;
 
-  Storage();
+  FastdictFactory();
 
   Dictionary* create_dictionary(const char* buf, size_t len);
 
   // Get Value and "lock" it.
-  Storage::ValuePtr find(const Dictionary::id_t& key);
+  FastdictFactory::ValuePtr find(const Dictionary::id_t& key);
 
   bool clear(time_t ts);
 
@@ -47,10 +47,10 @@ class Storage {
  private:
   friend class Unlocker;
 
-  typedef std::map<Dictionary::id_t, Storage::ValuePtr> StoreType;
+  typedef std::map<Dictionary::id_t, FastdictFactory::ValuePtr> StoreType;
   typedef std::multimap<time_t, Dictionary::id_t>  LRUType;
 
-  bool store(Dictionary::id_t key, Storage::ValuePtr value);
+  bool store(Dictionary::id_t key, FastdictFactory::ValuePtr value);
 
   // Values
   StoreType values_;
@@ -64,4 +64,4 @@ class Storage {
 
 }  // namespace sdch
 
-#endif  // STORAGE_H
+#endif  // SDCH_FASTDICT_FACTORY_H

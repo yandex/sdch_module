@@ -12,7 +12,7 @@ namespace sdch {
 
 EncodingHandler::EncodingHandler(Handler* next,
                                  Dictionary* dict,
-                                 Storage::ValuePtr quasidict)
+                                 FastdictFactory::ValuePtr quasidict)
     : Handler(next),
       dict_(dict),
       quasidict_(quasidict),

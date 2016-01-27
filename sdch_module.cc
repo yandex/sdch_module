@@ -357,12 +357,12 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
   return NGX_OK;
 }
 
-static Storage::ValuePtr find_quasidict(ngx_http_request_t* r,
+static FastdictFactory::ValuePtr find_quasidict(ngx_http_request_t* r,
                                         const u_char* const h) {
   Dictionary::id_t id;
   std::copy(h, h + 8, id.data());
   MainConfig* main = MainConfig::get(r);
-  return main->storage.find(id);
+  return main->fastdict_factory.find(id);
 }
 
 static ngx_int_t
@@ -502,7 +502,7 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
                             bool sdch_expected,
                             Dictionary*& dict,
                             bool& is_best,
-                            Storage::ValuePtr& quasidict) {
+                            FastdictFactory::ValuePtr& quasidict) {
   DictConfig* bestdict = NULL;
   while (val.len >= 8) {
     DictConfig* d = dict_factory->find_dictionary(val.data);
@@ -615,7 +615,7 @@ header_filter(ngx_http_request_t *r)
   }
 
   Dictionary* dict = NULL;
-  Storage::ValuePtr quasidict;
+  FastdictFactory::ValuePtr quasidict;
   bool is_best;
 
   select_dictionary(r,
@@ -839,7 +839,7 @@ init_main_conf(ngx_conf_t *cf, void *cnf)
 {
     MainConfig *conf = static_cast<MainConfig*>(cnf);
     if (conf->stor_size != NGX_CONF_UNSET_SIZE)
-        conf->storage.set_max_size(conf->stor_size);
+        conf->fastdict_factory.set_max_size(conf->stor_size);
     return NGX_CONF_OK;
 }
 

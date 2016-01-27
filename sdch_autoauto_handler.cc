@@ -36,7 +36,8 @@ Status AutoautoHandler::on_finish() {
                   "storing quasidict: no blob");
   } else {
     MainConfig* main = MainConfig::get(ctx_->request);
-    Dictionary* dict = main->storage.create_dictionary(blob_.data(), blob_.size());
+    Dictionary* dict =
+        main->fastdict_factory.create_dictionary(blob_.data(), blob_.size());
 
     if (dict) {
       Dictionary::id_t client_id = dict->client_id();
