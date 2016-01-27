@@ -2,6 +2,8 @@
 
 #include "sdch_storage.h"
 
+#include <boost/make_shared.hpp>
+
 namespace sdch {
 
 Storage::Value::~Value() {}
@@ -9,6 +11,19 @@ Storage::Value::~Value() {}
 Storage::Storage() : max_size_(10000000) {}
 
 bool Storage::clear(time_t ts) { return true; }
+
+Dictionary* Storage::create_dictionary(const char* buf, size_t len) {
+  Storage::ValuePtr v = boost::make_shared<Storage::Value>(time(NULL));
+  if (!v->dict.init(buf, buf, buf + len)) {
+    return NULL;
+  }
+
+  if (!store(v->dict.client_id(), v)) {
+    return NULL;
+  }
+
+  return &v->dict;
+}
 
 bool Storage::store(Dictionary::id_t key, ValuePtr value) {
   std::pair<StoreType::iterator, bool> r =

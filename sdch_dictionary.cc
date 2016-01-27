@@ -52,11 +52,6 @@ void get_dict_ids(const char* buf,
 
 }  // namespace
 
-bool Dictionary::init_quasy(const char* buf, size_t len) {
-  size_ = len;
-  return init(buf, buf, buf + len);
-}
-
 bool Dictionary::init(const char* begin,
                       const char* payload,
                       const char* end) {

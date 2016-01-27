@@ -3,8 +3,6 @@
 
 #include "sdch_autoauto_handler.h"
 
-#include <boost/make_shared.hpp>
-
 #include "sdch_dictionary.h"
 #include "sdch_main_config.h"
 #include "sdch_request_context.h"
@@ -37,13 +35,11 @@ Status AutoautoHandler::on_finish() {
                   0,
                   "storing quasidict: no blob");
   } else {
-    Storage::ValuePtr v = boost::make_shared<Storage::Value>(time(NULL));
-    if (!v->dict.init_quasy(blob_.data(), blob_.size())) {
-      return STATUS_ERROR;
-    }
-    Dictionary::id_t client_id = v->dict.client_id();
     MainConfig* main = MainConfig::get(ctx_->request);
-    if (main->storage.store(client_id, v)) {
+    Dictionary* dict = main->storage.create_dictionary(blob_.data(), blob_.size());
+
+    if (dict) {
+      Dictionary::id_t client_id = dict->client_id();
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,
@@ -54,8 +50,7 @@ Status AutoautoHandler::on_finish() {
       ngx_log_error(NGX_LOG_ERR,
                     ctx_->request->connection->log,
                     0,
-                    "failed storing quasidict %*s (%d)",
-                    client_id.size(), client_id.data(),
+                    "failed storing quasidict (%d)",
                     blob_.size());
     }
   }

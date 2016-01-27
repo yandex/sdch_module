@@ -32,7 +32,8 @@ class Storage {
 
   Storage();
 
-  bool store(Dictionary::id_t key, Storage::ValuePtr value);
+  Dictionary* create_dictionary(const char* buf, size_t len);
+
   // Get Value and "lock" it.
   Storage::ValuePtr find(const Dictionary::id_t& key);
 
@@ -48,6 +49,8 @@ class Storage {
 
   typedef std::map<Dictionary::id_t, Storage::ValuePtr> StoreType;
   typedef std::multimap<time_t, Dictionary::id_t>  LRUType;
+
+  bool store(Dictionary::id_t key, Storage::ValuePtr value);
 
   // Values
   StoreType values_;

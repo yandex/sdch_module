@@ -42,8 +42,6 @@ class Dictionary {
     uint8_t id_[8];
   };
 
-  bool init_quasy(const char* buf, size_t len);
-
   // Size of dictionary
   size_t size() const {
     return size_;
@@ -63,6 +61,7 @@ class Dictionary {
 
  private:
   friend class DictionaryFactory;
+  friend class Storage;
 
   bool init(const char* begin,
             const char* payload,
