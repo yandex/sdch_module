@@ -10,8 +10,6 @@ FastdictFactory::Value::~Value() {}
 
 FastdictFactory::FastdictFactory() : max_size_(10000000) {}
 
-bool FastdictFactory::clear(time_t ts) { return true; }
-
 Dictionary* FastdictFactory::create_dictionary(const char* buf, size_t len) {
   ValuePtr v = boost::make_shared<Value>(time(NULL));
   if (!v->dict.init(buf, buf, buf + len)) {

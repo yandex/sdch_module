@@ -35,22 +35,19 @@ class FastdictFactory {
   Dictionary* create_dictionary(const char* buf, size_t len);
 
   // Get Value and "lock" it.
-  FastdictFactory::ValuePtr find(const Dictionary::id_t& key);
-
-  bool clear(time_t ts);
+  ValuePtr find(const Dictionary::id_t& key);
 
   size_t total_size() const { return total_size_; }
-
   size_t max_size() const { return max_size_; }
   void set_max_size(size_t max_size) { max_size_ = max_size; }
 
  private:
   friend class Unlocker;
 
-  typedef std::map<Dictionary::id_t, FastdictFactory::ValuePtr> StoreType;
+  typedef std::map<Dictionary::id_t, ValuePtr> StoreType;
   typedef std::multimap<time_t, Dictionary::id_t>  LRUType;
 
-  bool store(Dictionary::id_t key, FastdictFactory::ValuePtr value);
+  bool store(Dictionary::id_t key, ValuePtr value);
 
   // Values
   StoreType values_;
