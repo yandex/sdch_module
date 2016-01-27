@@ -65,6 +65,7 @@ bool Dictionary::init(const char* begin,
     return false;
 
   get_dict_ids(begin, end - begin, client_id_, server_id_);
+  size_ = end - begin;
   return true;
 }
 
