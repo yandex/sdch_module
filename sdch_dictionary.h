@@ -25,7 +25,8 @@ class DictionaryFactory;
 class FastdictFactory;
 
 // In-memory Dictionary representation
-// Should NOT be allocated from nginx pool
+// Should NOT be allocated from short-lived nginx pool. For example
+// request->pool is totally unsuitable for FastDict.
 class Dictionary {
  public:
   class id_t {
