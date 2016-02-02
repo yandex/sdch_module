@@ -11,10 +11,9 @@ extern "C" {
 #include <ngx_http.h>
 }
 
+#include <stdint.h>  // uint8_t
 #include <memory>
 #include <vector>
-
-#include "sdch_pool_alloc.h"
 
 namespace open_vcdiff {
 class HashedDictionary;
@@ -23,6 +22,7 @@ class HashedDictionary;
 namespace sdch {
 
 class DictionaryFactory;
+class FastdictFactory;
 
 // In-memory Dictionary representation
 // Should NOT be allocated from nginx pool
