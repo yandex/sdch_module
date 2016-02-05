@@ -6,17 +6,16 @@
 #include <cassert>
 
 
-#include "sdch_pool_alloc.h"
 #include "sdch_request_context.h"
 
 namespace sdch {
 
 EncodingHandler::EncodingHandler(Handler* next,
                                  Dictionary* dict,
-                                 Storage::ValueHolder quasidict)
+                                 FastdictFactory::ValuePtr quasidict)
     : Handler(next),
       dict_(dict),
-      quasidict_(std::move(quasidict)),
+      quasidict_(quasidict),
       enc_(dict_->hashed_dict(),
         open_vcdiff::VCD_FORMAT_INTERLEAVED | open_vcdiff::VCD_FORMAT_CHECKSUM,
         false),
@@ -44,7 +43,7 @@ Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
   if (len) {
     if (!enc_.EncodeChunkToInterface(
              reinterpret_cast<const char*>(buf), len, this))
-      return Status::ERROR;
+      return STATUS_ERROR;
     return next_status_;
   }
 
@@ -54,7 +53,7 @@ Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
 
 Status EncodingHandler::on_finish() {
   if (!enc_.FinishEncodingToInterface(this))
-    return Status::ERROR;
+    return STATUS_ERROR;
 
   return next_->on_finish();
 }

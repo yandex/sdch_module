@@ -23,11 +23,11 @@ class OutputHandler : public Handler {
   OutputHandler(RequestContext* ctx, ngx_http_output_body_filter_pt next_body);
   ~OutputHandler();
 
-  bool init(RequestContext* ctx) override;
+  virtual bool init(RequestContext* ctx);
 
-  Status on_data(const uint8_t* buf, size_t len) override;
+  virtual Status on_data(const uint8_t* buf, size_t len);
 
-  Status on_finish() override;
+  virtual Status on_finish();
 
  private:
   Status get_buf();

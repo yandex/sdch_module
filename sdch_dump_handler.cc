@@ -16,7 +16,7 @@ DumpHandler::DumpHandler(Handler* next) : Handler(next), fd_(-1) {
 DumpHandler::~DumpHandler() {}
 
 bool DumpHandler::init(RequestContext* ctx) {
-  auto* conf = Config::get(ctx->request);
+  Config* conf = Config::get(ctx->request);
   char fn[conf->sdch_dumpdir.len + 30];
 
   sprintf(fn,
@@ -26,7 +26,7 @@ bool DumpHandler::init(RequestContext* ctx) {
           random(),
           random());
 
-  fd_ = FDHolder(open(fn, O_WRONLY | O_CREAT | O_EXCL, 0666));
+  fd_.reset(open(fn, O_WRONLY | O_CREAT | O_EXCL, 0666));
   if (fd_ == -1) {
     ngx_log_error(NGX_LOG_ERR,
                   ctx->request->connection->log,
@@ -49,12 +49,12 @@ Status DumpHandler::on_data(const uint8_t* buf, size_t len) {
 
   if ((res = write(fd_, buf, len)) != static_cast<ssize_t>(len)) {
     // XXX
-    return Status::ERROR;
+    return STATUS_ERROR;
   }
 
   if (next_)
     return next_->on_data(buf, len);
-  return Status::OK;
+  return STATUS_OK;
 }
 
 }  // namespace sdch

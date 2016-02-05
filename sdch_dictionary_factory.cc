@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+#include "sdch_fdholder.h"
+
 namespace sdch {
 
 namespace {
@@ -17,6 +19,34 @@ bool compare_dict_conf(const DictConfig& a, const DictConfig& b) {
   return a.priority < b.priority;
 }
 
+// Skip dictionary headers in case of on-disk dictionary
+const char *get_dict_payload(const char *dictbegin, const char *dictend)
+{
+	const char *nl = dictbegin;
+	while (nl < dictend) {
+		if (*nl == '\n')
+			return nl+1;
+		nl = (const char*)memchr(nl, '\n', dictend-nl);
+		if (nl == dictend)
+			return nl;
+		++nl;
+	}
+	return dictend;
+}
+
+bool read_file(const char* fn, std::vector<char>& blob) {
+  blob.clear();
+  FDHolder fd(open(fn, O_RDONLY));
+  if (fd == -1)
+    return false;
+  struct stat st;
+  if (fstat(fd, &st) == -1)
+    return false;
+  blob.resize(st.st_size);
+  if (read(fd, &blob[0], blob.size()) != (ssize_t)blob.size())
+    return false;
+  return true;
+}
 }  // namespace
 
 DictionaryFactory::DictionaryFactory(ngx_pool_t* pool)
@@ -28,8 +58,8 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
                                             ngx_str_t& groupname,
                                             ngx_uint_t prio) {
 
-  conf_storage_.emplace_back();
-  auto* res = &*conf_storage_.rbegin();
+  conf_storage_.resize(conf_storage_.size() + 1);
+  DictConfig* res = &*conf_storage_.rbegin();
 
   res->groupname.len = groupname.len;
   res->groupname.data = ngx_pstrdup(pool_, &groupname);
@@ -40,8 +70,22 @@ DictConfig* DictionaryFactory::store_config(Dictionary* dict,
   return res;
 }
 
-Dictionary* DictionaryFactory::allocate_dictionary() {
-  auto* res = pool_alloc<Dictionary>(pool_);
+Dictionary* DictionaryFactory::load_dictionary(const char* filename) {
+  Dictionary* res = POOL_ALLOC(pool_, Dictionary);
+  if (res == NULL) {
+    return res;
+  }
+
+  std::vector<char> blob;
+  if (!read_file(filename, blob))
+    return NULL;
+
+  if (!res->init(blob.data(),
+              get_dict_payload(blob.data(), blob.data() + blob.size()),
+              blob.data() + blob.size())) {
+    return NULL;
+  }
+
   dict_storage_.push_back(res);
   return res;
 }
@@ -49,9 +93,9 @@ Dictionary* DictionaryFactory::allocate_dictionary() {
 DictConfig* DictionaryFactory::choose_best_dictionary(DictConfig* old,
                                                       DictConfig* n,
                                                       const ngx_str_t& group) {
-  if (old == nullptr)
+  if (old == NULL)
     return n;
-  if (n == nullptr)
+  if (n == NULL)
     return old;
 
   int om =
@@ -69,12 +113,13 @@ DictConfig* DictionaryFactory::choose_best_dictionary(DictConfig* old,
 }
 
 DictConfig* DictionaryFactory::find_dictionary(const u_char* client_id) {
-  for (auto& c : conf_storage_) {
-    if (ngx_strncmp(client_id, c.dict->client_id().data(), 8) == 0)
-      return &c;
+  for (DictConfStorage::iterator c = conf_storage_.begin();
+       c != conf_storage_.end(); ++c) {
+    if (ngx_strncmp(client_id, c->dict->client_id().data(), 8) == 0)
+      return &*c;
   }
 
-  return nullptr;
+  return NULL;
 }
 
 void DictionaryFactory::merge(const DictionaryFactory* parent) {

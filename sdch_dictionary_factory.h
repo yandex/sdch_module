@@ -23,7 +23,7 @@ class DictionaryFactory {
   explicit DictionaryFactory(ngx_pool_t* pool);
 
   // Allocate new Dictionary. We keep ownership
-  Dictionary* allocate_dictionary();
+  Dictionary* load_dictionary(const char* filename);
 
   // Allocate new DictConfig and store it internally. We keep ownership.
   DictConfig* store_config(Dictionary* dict,
@@ -42,8 +42,8 @@ class DictionaryFactory {
   void merge(const DictionaryFactory* parent);
 
  private:
-  using DictStorage = std::vector<Dictionary*, PoolAllocator<Dictionary*>>;
-  using DictConfStorage = std::vector<DictConfig, PoolAllocator<DictConfig>>;
+  typedef std::vector<Dictionary*, PoolAllocator<Dictionary*> > DictStorage;
+  typedef std::vector<DictConfig, PoolAllocator<DictConfig> >  DictConfStorage;
 
   ngx_pool_t* pool_;
   DictStorage dict_storage_;

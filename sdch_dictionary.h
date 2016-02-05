@@ -11,9 +11,8 @@ extern "C" {
 #include <ngx_http.h>
 }
 
-#include <cstdint>
+#include <stdint.h>  // uint8_t
 #include <memory>
-#include <array>
 
 namespace open_vcdiff {
 class HashedDictionary;
@@ -22,17 +21,23 @@ class HashedDictionary;
 namespace sdch {
 
 // In-memory Dictionary representation
+// Should NOT be allocated from short-lived nginx pool. For example
+// request->pool is totally unsuitable for FastDict.
 class Dictionary {
  public:
-  using id_t = std::array<uint8_t, 8>;
+  class id_t {
+   public:
+    uint8_t* data() { return id_; }
+    const uint8_t* data() const { return id_; }
+    size_t size() const { return 8; }
 
-  Dictionary();
-  Dictionary(Dictionary&& other);
-  ~Dictionary();
+    friend bool operator<(const id_t& left, const id_t& right) {
+      return ngx_strncmp(left.id_, right.id_, 8) < 0;
+    }
 
-  // Init dictionary. Returns false in case of errors.
-  bool init_from_file(const char* filename);
-  bool init_quasy(const char* buf, size_t len);
+   private:
+    uint8_t id_[8];
+  };
 
   // Size of dictionary
   size_t size() const {
@@ -52,11 +57,14 @@ class Dictionary {
   }
 
  private:
-  bool init(const char* begin, const char* payload, const char* end);
+  friend class DictionaryFactory;
+  friend class FastdictFactory;
 
-  // It's not really good. We should integrate with nginx's pool allocations.
-  // But this will do for now.
-  std::unique_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
+  bool init(const char* begin,
+            const char* payload,
+            const char* end);
+
+  std::auto_ptr<open_vcdiff::HashedDictionary> hashed_dict_;
 
   size_t size_;
   id_t client_id_;

@@ -21,7 +21,7 @@
 
 extern "C" {
 ngx_flag_t sdch_need_vary(ngx_http_request_t *r) {
-    auto* conf = sdch::Config::get(r);
+    sdch::Config* conf = sdch::Config::get(r);
     return conf->vary;
 }
 }
@@ -83,7 +83,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, enable),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_disablecv"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -92,14 +92,14 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, sdch_disablecv_s),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_buffers"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
       ngx_conf_set_bufs_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, bufs),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_dict"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -108,7 +108,7 @@ static ngx_command_t  filter_commands[] = {
       set_sdch_dict,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_group"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -117,7 +117,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, sdch_group),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_url"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -126,7 +126,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, sdch_url),
-      nullptr },
+      NULL },
 
    { ngx_string("sdch_dumpdir"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -135,7 +135,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, sdch_dumpdir),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_proxied"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -172,7 +172,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, enable_fastdict),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_min_length"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -181,7 +181,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_num_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, min_length),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_vary"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF
@@ -189,7 +189,7 @@ static ngx_command_t  filter_commands[] = {
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(Config, vary),
-      nullptr },
+      NULL },
 
     { ngx_string("sdch_stor_size"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
@@ -209,8 +209,8 @@ static ngx_http_module_t  sdch_module_ctx = {
     create_main_conf,        /* create main configuration */
     init_main_conf,          /* init main configuration */
 
-    nullptr,                 /* create server configuration */
-    nullptr,                 /* merge server configuration */
+    NULL,                 /* create server configuration */
+    NULL,                 /* merge server configuration */
 
     create_conf,             /* create location configuration */
     merge_conf               /* merge location configuration */
@@ -247,7 +247,7 @@ static ngx_table_elt_t* header_find(ngx_list_t* headers,
   for (i = 0;; i++) {
 
     if (i >= part->nelts) {
-      if (part->next == nullptr) {
+      if (part->next == NULL) {
         break;
       }
 
@@ -271,13 +271,13 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_DECLINED;
   }
 
-  auto* conf = Config::get(r);
+  Config* conf = Config::get(r);
 
-  if (r->headers_in.via == nullptr) {
+  if (r->headers_in.via == NULL) {
     return NGX_OK;
   }
 
-  auto p = conf->sdch_proxied;
+  ngx_uint_t p = conf->sdch_proxied;
 
   if (p & NGX_HTTP_GZIP_PROXIED_OFF) {
     return NGX_DECLINED;
@@ -291,7 +291,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_OK;
   }
 
-  auto e = r->headers_out.expires;
+  ngx_table_elt_t* e = r->headers_out.expires;
   if (e) {
     if (!(p & NGX_HTTP_GZIP_PROXIED_EXPIRED)) {
       return NGX_DECLINED;
@@ -303,7 +303,7 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
       return NGX_DECLINED;
     }
 
-    auto d = r->headers_out.date;
+    ngx_table_elt_t* d = r->headers_out.date;
     if (d) {
       date = ngx_http_parse_time(d->value.data, d->value.len);
       if (date == NGX_ERROR) {
@@ -321,25 +321,25 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
     return NGX_DECLINED;
   }
 
-  auto cc = &r->headers_out.cache_control;
+  ngx_array_t* cc = &r->headers_out.cache_control;
 
   if (cc->elts) {
 
     if ((p & NGX_HTTP_GZIP_PROXIED_NO_CACHE) &&
         ngx_http_parse_multi_header_lines(
-            cc, &ngx_http_gzip_no_cache, nullptr) >= 0) {
+            cc, &ngx_http_gzip_no_cache, NULL) >= 0) {
       return NGX_OK;
     }
 
     if ((p & NGX_HTTP_GZIP_PROXIED_NO_STORE) &&
         ngx_http_parse_multi_header_lines(
-            cc, &ngx_http_gzip_no_store, nullptr) >= 0) {
+            cc, &ngx_http_gzip_no_store, NULL) >= 0) {
       return NGX_OK;
     }
 
     if ((p & NGX_HTTP_GZIP_PROXIED_PRIVATE) &&
         ngx_http_parse_multi_header_lines(
-            cc, &ngx_http_gzip_private, nullptr) >= 0) {
+            cc, &ngx_http_gzip_private, NULL) >= 0) {
       return NGX_OK;
     }
 
@@ -357,21 +357,21 @@ static ngx_int_t ngx_http_sdch_ok(ngx_http_request_t* r) {
   return NGX_OK;
 }
 
-static Storage::ValueHolder find_quasidict(ngx_http_request_t* r,
-                                           const u_char * const h) {
+static FastdictFactory::ValuePtr find_quasidict(ngx_http_request_t* r,
+                                        const u_char* const h) {
   Dictionary::id_t id;
-  std::copy(h, h+8, std::begin(id));
-  auto* main = MainConfig::get(r);
-  return main->storage.find(id);
+  std::copy(h, h + 8, id.data());
+  MainConfig* main = MainConfig::get(r);
+  return main->fastdict_factory.find(id);
 }
 
 static ngx_int_t
 get_dictionary_header(ngx_http_request_t *r, Config *conf)
 {
-    if (header_find(&r->headers_out.headers, "get-dictionary", nullptr)) {
+    if (header_find(&r->headers_out.headers, "get-dictionary", NULL)) {
         return NGX_OK;
     }
-    if (ngx_http_test_content_type(r, &conf->nodict_types) != nullptr) {
+    if (ngx_http_test_content_type(r, &conf->nodict_types) != NULL) {
         return NGX_OK;
     }
     ngx_str_t val;
@@ -384,7 +384,7 @@ get_dictionary_header(ngx_http_request_t *r, Config *conf)
 
     ngx_table_elt_t *h;
     h = static_cast<ngx_table_elt_t*>(ngx_list_push(&r->headers_out.headers));
-    if (h == nullptr) {
+    if (h == NULL) {
         return NGX_ERROR;
     }
 
@@ -398,12 +398,12 @@ template <size_t K, size_t V>
 ngx_int_t create_output_header(ngx_http_request_t* r,
                                const char (&key)[K],
                                const char (&value)[V],
-                               ngx_table_elt_t* prev = nullptr) {
+                               ngx_table_elt_t* prev = NULL) {
   ngx_table_elt_t* h = prev
                        ? prev
                        : static_cast<ngx_table_elt_t*>(
                             ngx_list_push(&r->headers_out.headers));
-  if (h == nullptr) {
+  if (h == NULL) {
     return NGX_ERROR;
   }
 
@@ -418,9 +418,9 @@ static ngx_int_t
 x_sdch_encode_0_header(ngx_http_request_t *r, bool sdch_expected)
 {
   ngx_table_elt_t* h =
-      header_find(&r->headers_out.headers, "x-sdch-encode", nullptr);
+      header_find(&r->headers_out.headers, "x-sdch-encode", NULL);
   if (!sdch_expected) {
-    if (h != nullptr) {
+    if (h != NULL) {
       h->hash = 0;
       h->value.len = 0;
     }
@@ -478,7 +478,7 @@ static bool should_process(ngx_http_request_t* r, Config* conf,
     return false;
   }
 
-  if (ngx_http_test_content_type(r, &conf->types) == nullptr) {
+  if (ngx_http_test_content_type(r, &conf->types) == NULL) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "sdch header: unsupported content type");
     return false;
@@ -502,12 +502,12 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
                             bool sdch_expected,
                             Dictionary*& dict,
                             bool& is_best,
-                            Storage::ValueHolder& quasidict) {
-  DictConfig* bestdict = nullptr;
+                            FastdictFactory::ValuePtr& quasidict) {
+  DictConfig* bestdict = NULL;
   while (val.len >= 8) {
     DictConfig* d = dict_factory->find_dictionary(val.data);
     bestdict = dict_factory->choose_best_dictionary(bestdict, d, group);
-    if (quasidict == nullptr && d == nullptr) {
+    if (quasidict == NULL && d == NULL) {
       quasidict = find_quasidict(r, val.data);
       ngx_log_error(NGX_LOG_INFO,
                     r->connection->log,
@@ -518,11 +518,11 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
     }
     val.data += 8;
     val.len -= 8;
-    auto l = std::min(strspn((char*)val.data, " \t,"), val.len);
+    size_t l = std::min(strspn((char*)val.data, " \t,"), val.len);
     val.data += l;
     val.len -= l;
   }
-  if (bestdict != nullptr) {
+  if (bestdict != NULL) {
     ngx_log_error(NGX_LOG_INFO,
                   r->connection->log,
                   0,
@@ -534,9 +534,9 @@ ngx_int_t select_dictionary(ngx_http_request_t* r,
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "nobestdict");
   }
 
-  if (bestdict == nullptr) {
+  if (bestdict == NULL) {
     // Use quasi if there it's available and there is no predefined one
-    if (quasidict != nullptr) {
+    if (quasidict != NULL) {
       dict = &quasidict->dict;
     }
     is_best = false;
@@ -561,7 +561,7 @@ header_filter(ngx_http_request_t *r)
   ngx_log_debug(
       NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter header 000");
 
-  auto* conf = Config::get(r);
+  Config* conf = Config::get(r);
 
   ngx_str_t val;
   if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
@@ -614,8 +614,8 @@ header_filter(ngx_http_request_t *r)
     return NGX_ERROR;
   }
 
-  Dictionary* dict = nullptr;
-  Storage::ValueHolder quasidict;
+  Dictionary* dict = NULL;
+  FastdictFactory::ValuePtr quasidict;
   bool is_best;
 
   select_dictionary(r,
@@ -629,14 +629,14 @@ header_filter(ngx_http_request_t *r)
 
   // No the best Dictionary selected.
   if (!is_best) {
-    auto e = get_dictionary_header(r, conf);
+    ngx_int_t e = get_dictionary_header(r, conf);
     if (e != NGX_OK)
       return e;
   }
 
   // Actually it wasn't selected at all.
-  if (dict == nullptr) {
-    auto e = x_sdch_encode_0_header(r, sdch_expected);
+  if (dict == NULL) {
+    ngx_int_t e = x_sdch_encode_0_header(r, sdch_expected);
     if (e != NGX_OK)
       return e;
     // And we are not creating quasi one.
@@ -649,19 +649,19 @@ header_filter(ngx_http_request_t *r)
   }
 
 
-  auto* ctx = pool_alloc<RequestContext>(r, r);
-  if (ctx == nullptr) {
+  RequestContext* ctx = POOL_ALLOC(r, RequestContext, r);
+  if (ctx == NULL) {
     return NGX_ERROR;
   }
 
   // Allocate Handlers chain in reverse order
   // Last will be OutputHandler.
-  ctx->handler = pool_alloc<OutputHandler>(r, ctx, ngx_http_next_body_filter);
-  if (ctx->handler == nullptr)
+  ctx->handler = POOL_ALLOC(r, OutputHandler, ctx, ngx_http_next_body_filter);
+  if (ctx->handler == NULL)
     return NGX_ERROR;
 
   // If we have actual Dictionary - do encode response
-  if (dict != nullptr) {
+  if (dict != NULL) {
     if (create_output_header(r, "Content-Encoding", "sdch") != NGX_OK) {
       return NGX_ERROR;
     }
@@ -676,26 +676,25 @@ header_filter(ngx_http_request_t *r)
       }
     }
 
-    ctx->handler = pool_alloc<EncodingHandler>(r,
-                                               ctx->handler,
-                                               dict,
-                                               std::move(quasidict));
-    if (ctx->handler == nullptr) {
+    ctx->handler = POOL_ALLOC(r,
+        EncodingHandler, ctx->handler, dict, quasidict);
+
+    if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
   }
 
   if (conf->sdch_dumpdir.len > 0) {
-    ctx->handler = pool_alloc<DumpHandler>(r, ctx->handler);
-    if (ctx->handler == nullptr) {
+    ctx->handler = POOL_ALLOC(r, DumpHandler, ctx->handler);
+    if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
   }
 
   // If we have to create new quasi-dictionary
   if (store_as_quasi) {
-    ctx->handler = pool_alloc<AutoautoHandler>(r, ctx, ctx->handler);
-    if (ctx->handler == nullptr) {
+    ctx->handler = POOL_ALLOC(r, AutoautoHandler, ctx, ctx->handler);
+    if (ctx->handler == NULL) {
       return NGX_ERROR;
     }
   }
@@ -723,13 +722,13 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
   ngx_log_debug0(
       NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "http sdch filter body 000");
 
-  if (ctx == nullptr || ctx->done || r->header_only) {
+  if (ctx == NULL || ctx->done || r->header_only) {
     return ngx_http_next_body_filter(r, in);
   }
 
   if (!ctx->started) {
     ctx->started = true;
-    for (auto* h = ctx->handler; h; h = h->next()) {
+    for (Handler* h = ctx->handler; h; h = h->next()) {
       if (!h->init(ctx)) {
         ctx->done = true;
         return NGX_ERROR;
@@ -746,12 +745,12 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
       ctx->need_flush = true;
     }
 
-    auto buf_size = ngx_buf_size(in->buf);
-    auto status = ctx->handler->on_data(in->buf->pos, buf_size);
+    off_t buf_size = ngx_buf_size(in->buf);
+    Status status = ctx->handler->on_data(in->buf->pos, buf_size);
     in->buf->pos = in->buf->last;
     ctx->total_in += buf_size;
 
-    if (status == Status::ERROR) {
+    if (status == STATUS_ERROR) {
       ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
       ctx->done = true;
       return NGX_ERROR;
@@ -761,7 +760,7 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
       ngx_log_debug(NGX_LOG_DEBUG_HTTP,
           ctx->request->connection->log, 0, "closing ctx");
       ctx->done = true;
-      return ctx->handler->on_finish() == Status::OK ? NGX_OK : NGX_ERROR;
+      return ctx->handler->on_finish() == STATUS_OK ? NGX_OK : NGX_ERROR;
     }
   }
 
@@ -777,7 +776,7 @@ add_variables(ngx_conf_t *cf)
     ngx_http_variable_t  *var;
 
     var = ngx_http_add_variable(cf, &ratio, NGX_HTTP_VAR_NOHASH);
-    if (var == nullptr) {
+    if (var == NULL) {
         return NGX_ERROR;
     }
 
@@ -799,13 +798,13 @@ ratio_variable(ngx_http_request_t *r,
     v->not_found = 0;
 
 
-    if (ctx == nullptr || ctx->total_out == 0) {
+    if (ctx == NULL || ctx->total_out == 0) {
         v->not_found = 1;
         return NGX_OK;
     }
 
     v->data = static_cast<u_char*>(ngx_pnalloc(r->pool, NGX_INT32_LEN + 3));
-    if (v->data == nullptr) {
+    if (v->data == NULL) {
         return NGX_ERROR;
     }
 
@@ -832,7 +831,7 @@ ratio_variable(ngx_http_request_t *r,
 static void *
 create_main_conf(ngx_conf_t *cf)
 {
-    return pool_alloc<MainConfig>(cf);
+    return POOL_ALLOC(cf, MainConfig);
 }
 
 static char *
@@ -840,14 +839,14 @@ init_main_conf(ngx_conf_t *cf, void *cnf)
 {
     MainConfig *conf = static_cast<MainConfig*>(cnf);
     if (conf->stor_size != NGX_CONF_UNSET_SIZE)
-        conf->storage.set_max_size(conf->stor_size);
+        conf->fastdict_factory.set_max_size(conf->stor_size);
     return NGX_CONF_OK;
 }
 
 static void *
 create_conf(ngx_conf_t *cf)
 {
-  return pool_alloc<Config>(cf, cf->pool);
+  return POOL_ALLOC(cf, Config, cf->pool);
 }
 
 static char *
@@ -873,8 +872,8 @@ set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
         }
     }
 
-    auto* dict = conf->dict_factory->allocate_dictionary();
-    if (!dict->init_from_file((const char*)value[1].data)) {
+    Dictionary* dict = conf->dict_factory->load_dictionary((const char*)value[1].data);
+    if (!dict) {
       ngx_conf_log_error(
           NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", value[1].data);
       return const_cast<char*>("Get hashed dict failed");
@@ -979,13 +978,13 @@ ngx_module_t  sdch_module = {
     &sdch::sdch_module_ctx,           /* module context */
     sdch::filter_commands,            /* module directives */
     NGX_HTTP_MODULE,                  /* module type */
-    nullptr,                          /* init master */
-    nullptr,                          /* init module */
-    nullptr,                          /* init process */
-    nullptr,                          /* init thread */
-    nullptr,                          /* exit thread */
-    nullptr,                          /* exit process */
-    nullptr,                          /* exit master */
+    NULL,                          /* init master */
+    NULL,                          /* init module */
+    NULL,                          /* init process */
+    NULL,                          /* init thread */
+    NULL,                          /* exit thread */
+    NULL,                          /* exit process */
+    NULL,                          /* exit master */
     NGX_MODULE_V1_PADDING
 };
 

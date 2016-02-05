@@ -16,7 +16,7 @@ extern "C" {
 #include "sdch_module.h"
 
 #include "sdch_dictionary.h"
-#include "sdch_storage.h"
+#include "sdch_fastdict_factory.h"
 
 namespace sdch {
 

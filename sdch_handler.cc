@@ -12,7 +12,7 @@ Handler::~Handler() {}
 Status Handler::on_finish() {
   if (next_)
     return next_->on_finish();
-  return Status::OK;
+  return STATUS_OK;
 }
 
 }  // namespace sdch

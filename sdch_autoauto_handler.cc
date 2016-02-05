@@ -25,7 +25,7 @@ Status AutoautoHandler::on_data(const uint8_t* buf, size_t len) {
 
   if (next_)
     return next_->on_data(buf, len);
-  return Status::OK;
+  return STATUS_OK;
 }
 
 Status AutoautoHandler::on_finish() {
@@ -35,13 +35,12 @@ Status AutoautoHandler::on_finish() {
                   0,
                   "storing quasidict: no blob");
   } else {
-    Dictionary dict;
-    if (!dict.init_quasy(blob_.data(), blob_.size()))
-      return Status::ERROR;
-    auto client_id = dict.client_id();
-    auto* main = MainConfig::get(ctx_->request);
-    if (main->storage.store(client_id,
-                            Storage::Value(time(nullptr), std::move(dict)))) {
+    MainConfig* main = MainConfig::get(ctx_->request);
+    Dictionary* dict =
+        main->fastdict_factory.create_dictionary(blob_.data(), blob_.size());
+
+    if (dict) {
+      Dictionary::id_t client_id = dict->client_id();
       ngx_log_error(NGX_LOG_DEBUG,
                     ctx_->request->connection->log,
                     0,
@@ -52,8 +51,7 @@ Status AutoautoHandler::on_finish() {
       ngx_log_error(NGX_LOG_ERR,
                     ctx_->request->connection->log,
                     0,
-                    "failed storing quasidict %*s (%d)",
-                    client_id.size(), client_id.data(),
+                    "failed storing quasidict (%d)",
                     blob_.size());
     }
   }
