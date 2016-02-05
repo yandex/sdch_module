@@ -20,9 +20,6 @@ class HashedDictionary;
 
 namespace sdch {
 
-class DictionaryFactory;
-class FastdictFactory;
-
 // In-memory Dictionary representation
 // Should NOT be allocated from short-lived nginx pool. For example
 // request->pool is totally unsuitable for FastDict.
