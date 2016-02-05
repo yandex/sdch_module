@@ -13,7 +13,6 @@ extern "C" {
 
 #include <stdint.h>  // uint8_t
 #include <memory>
-#include <vector>
 
 namespace open_vcdiff {
 class HashedDictionary;
