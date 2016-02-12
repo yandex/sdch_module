@@ -1,0 +1,132 @@
+diff --git a/auto/make b/auto/make
+index ed94e8f..6aa144a 100644
+--- a/auto/make
++++ b/auto/make
+@@ -21,6 +21,7 @@ cat << END                                                     > $NGX_MAKEFILE
+ 
+ CC =	$CC
+ CFLAGS = $CFLAGS
++CXXFLAGS = $CXXFLAGS
+ CPP =	$CPP
+ LINK =	$LINK
+ 
+@@ -353,10 +354,16 @@ if test -n "$NGX_ADDON_SRCS"; then
+ 
+         ngx_src=`echo $ngx_src | sed -e "s/\//$ngx_regex_dirsep/g"`
+ 
++        # Append CXXFLAGS iff source is c++
++        ngx_cpp=`echo $ngx_src \
++            | sed -e "s#^.*\.cpp\\$# \\$(CXXFLAGS)#" \
++                  -e "s#^.*\.cc\\$# \\$(CXXFLAGS)#" \
++                  -e "s#^$ngx_src\\$##g"`
++
+         cat << END                                            >> $NGX_MAKEFILE
+ 
+ $ngx_obj:	\$(ADDON_DEPS)$ngx_cont$ngx_src
+-	$ngx_cc$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
++	$ngx_cc$ngx_cpp$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
+ 
+ END
+      done
+diff --git a/src/http/modules/ngx_http_gzip_filter_module.c b/src/http/modules/ngx_http_gzip_filter_module.c
+index f941e63..1e090ee 100644
+--- a/src/http/modules/ngx_http_gzip_filter_module.c
++++ b/src/http/modules/ngx_http_gzip_filter_module.c
+@@ -248,7 +248,8 @@ ngx_http_gzip_header_filter(ngx_http_request_t *r)
+             && r->headers_out.status != NGX_HTTP_FORBIDDEN
+             && r->headers_out.status != NGX_HTTP_NOT_FOUND)
+         || (r->headers_out.content_encoding
+-            && r->headers_out.content_encoding->value.len)
++            && ngx_http_encoding_list_gzip(
++                &r->headers_out.content_encoding->value, 0) == NGX_OK)
+         || (r->headers_out.content_length_n != -1
+             && r->headers_out.content_length_n < conf->min_length)
+         || ngx_http_test_content_type(r, &conf->types) == NULL
+@@ -292,15 +293,26 @@ ngx_http_gzip_header_filter(ngx_http_request_t *r)
+ 
+     ngx_http_gzip_filter_memory(r, ctx);
+ 
+-    h = ngx_list_push(&r->headers_out.headers);
+-    if (h == NULL) {
+-        return NGX_ERROR;
+-    }
++    if (r->headers_out.content_encoding == NULL) {
++        h = ngx_list_push(&r->headers_out.headers);
++        if (h == NULL) {
++            return NGX_ERROR;
++        }
+ 
+-    h->hash = 1;
+-    ngx_str_set(&h->key, "Content-Encoding");
+-    ngx_str_set(&h->value, "gzip");
+-    r->headers_out.content_encoding = h;
++        h->hash = 1;
++        ngx_str_set(&h->key, "Content-Encoding");
++        ngx_str_set(&h->value, "gzip");
++        r->headers_out.content_encoding = h;
++    } else {
++        unsigned char *ha = ngx_pcalloc(r->pool,
++            r->headers_out.content_encoding->value.len + 6);
++        (void)ngx_cpymem(ha, r->headers_out.content_encoding->value.data,
++            r->headers_out.content_encoding->value.len);
++        (void)ngx_cpymem(ha+r->headers_out.content_encoding->value.len,
++            (u_char *)",gzip", 6);
++        r->headers_out.content_encoding->value.len += 5;
++        r->headers_out.content_encoding->value.data = ha;
++    }
+ 
+     r->main_filter_need_in_memory = 1;
+ 
+diff --git a/src/http/ngx_http_core_module.c b/src/http/ngx_http_core_module.c
+index bfcd48b..2bb8e45 100644
+--- a/src/http/ngx_http_core_module.c
++++ b/src/http/ngx_http_core_module.c
+@@ -74,7 +74,6 @@ static char *ngx_http_core_internal(ngx_conf_t *cf, ngx_command_t *cmd,
+ static char *ngx_http_core_resolver(ngx_conf_t *cf, ngx_command_t *cmd,
+     void *conf);
+ #if (NGX_HTTP_GZIP)
+-static ngx_int_t ngx_http_gzip_accept_encoding(ngx_str_t *ae);
+ static ngx_uint_t ngx_http_gzip_quantity(u_char *p, u_char *last);
+ static char *ngx_http_gzip_disable(ngx_conf_t *cf, ngx_command_t *cmd,
+     void *conf);
+@@ -2191,7 +2190,7 @@ ngx_http_gzip_ok(ngx_http_request_t *r)
+      */
+ 
+     if (ngx_memcmp(ae->value.data, "gzip,", 5) != 0
+-        && ngx_http_gzip_accept_encoding(&ae->value) != NGX_OK)
++        && ngx_http_encoding_list_gzip(&ae->value, 1) != NGX_OK)
+     {
+         return NGX_DECLINED;
+     }
+@@ -2325,8 +2324,8 @@ ok:
+  *     "gzip; q=0" ... "gzip; q=0.000", and for any invalid cases
+  */
+ 
+-static ngx_int_t
+-ngx_http_gzip_accept_encoding(ngx_str_t *ae)
++ngx_int_t
++ngx_http_encoding_list_gzip(ngx_str_t *ae, int is_accept)
+ {
+     u_char  *p, *start, *last;
+ 
+@@ -2365,6 +2364,8 @@ ngx_http_gzip_accept_encoding(ngx_str_t *ae)
+ 
+ quantity:
+ 
++    if (!is_accept)
++        return NGX_DECLINED;
+     while (p < last) {
+         switch (*p++) {
+         case 'q':
+diff --git a/src/http/ngx_http_core_module.h b/src/http/ngx_http_core_module.h
+index e0ca2ce..210f235 100644
+--- a/src/http/ngx_http_core_module.h
++++ b/src/http/ngx_http_core_module.h
+@@ -516,6 +516,7 @@ u_char *ngx_http_map_uri_to_path(ngx_http_request_t *r, ngx_str_t *name,
+ ngx_int_t ngx_http_auth_basic_user(ngx_http_request_t *r);
+ #if (NGX_HTTP_GZIP)
+ ngx_int_t ngx_http_gzip_ok(ngx_http_request_t *r);
++ngx_int_t ngx_http_encoding_list_gzip(ngx_str_t *ae, int is_accept);
+ #endif
+ 
+ 
