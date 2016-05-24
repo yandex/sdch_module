@@ -39,6 +39,10 @@ class Dictionary {
     uint8_t id_[8];
   };
 
+  // We need it explicitly defined to be able to call it from pool_cleanup
+  // This is some shenanigans happening there...
+  ~Dictionary();
+
   // Size of dictionary
   size_t size() const {
     return size_;

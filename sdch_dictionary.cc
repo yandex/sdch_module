@@ -52,6 +52,8 @@ void get_dict_ids(const char* buf,
 
 }  // namespace
 
+Dictionary::~Dictionary() {}
+
 bool Dictionary::init(const char* begin,
                       const char* payload,
                       const char* end) {
