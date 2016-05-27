@@ -14,9 +14,7 @@ extern "C" {
 #include <stdint.h>  // uint8_t
 #include <memory>
 
-namespace open_vcdiff {
-class HashedDictionary;
-}
+#include <google/vcencoder.h>
 
 namespace sdch {
 
@@ -38,10 +36,6 @@ class Dictionary {
    private:
     uint8_t id_[8];
   };
-
-  // We need it explicitly defined to be able to call it from pool_cleanup
-  // This is some shenanigans happening there...
-  ~Dictionary();
 
   // Size of dictionary
   size_t size() const {

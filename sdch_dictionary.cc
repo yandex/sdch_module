@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cstring>
 #include <vector>
-#include <google/vcencoder.h>
 #include <openssl/sha.h>
 
 namespace sdch {
@@ -51,8 +50,6 @@ void get_dict_ids(const char* buf,
 
 
 }  // namespace
-
-Dictionary::~Dictionary() {}
 
 bool Dictionary::init(const char* begin,
                       const char* payload,
