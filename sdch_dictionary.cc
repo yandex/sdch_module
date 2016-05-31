@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cstring>
 #include <vector>
-#include <google/vcencoder.h>
 #include <openssl/sha.h>
 
 namespace sdch {

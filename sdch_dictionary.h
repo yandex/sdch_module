@@ -14,9 +14,7 @@ extern "C" {
 #include <stdint.h>  // uint8_t
 #include <memory>
 
-namespace open_vcdiff {
-class HashedDictionary;
-}
+#include <google/vcencoder.h>
 
 namespace sdch {
 
