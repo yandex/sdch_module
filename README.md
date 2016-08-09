@@ -1,11 +1,12 @@
 Build
 =====
 
-Configure nginx like this
+Install the `openvcdiff` packages.
+Configure nginx like this:
 
-configure --add-module=/path/to/this/directory ...other..flags...
-
-also install the openvcdiff packages.
+```
+./configure --add-module=/path/to/sdch_module
+```
 
 Directives
 =========
