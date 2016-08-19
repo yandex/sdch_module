@@ -54,6 +54,9 @@ void get_dict_ids(const char* buf,
 bool Dictionary::init(const char* begin,
                       const char* payload,
                       const char* end) {
+  if (begin == NULL || payload == NULL || end == NULL)
+    return false;
+
   hashed_dict_.reset(new open_vcdiff::HashedDictionary(payload, end - payload));
   if (!hashed_dict_->Init())
     return false;

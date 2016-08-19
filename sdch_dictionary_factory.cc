@@ -22,16 +22,18 @@ bool compare_dict_conf(const DictConfig& a, const DictConfig& b) {
 // Skip dictionary headers in case of on-disk dictionary
 const char *get_dict_payload(const char *dictbegin, const char *dictend)
 {
-	const char *nl = dictbegin;
-	while (nl < dictend) {
-		if (*nl == '\n')
-			return nl+1;
-		nl = (const char*)memchr(nl, '\n', dictend-nl);
-		if (nl == dictend)
-			return nl;
-		++nl;
-	}
-	return dictend;
+  const char *nl = dictbegin;
+  while (nl < dictend) {
+    if (*nl == '\n')
+      return nl+1;
+    nl = (const char*)memchr(nl, '\n', dictend-nl);
+    if (nl == NULL)
+      return NULL;
+    if (nl == dictend)
+      return nl;
+    ++nl;
+  }
+  return dictend;
 }
 
 bool read_file(const char* fn, std::vector<char>& blob) {
