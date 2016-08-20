@@ -876,7 +876,7 @@ set_sdch_dict(ngx_conf_t *cf, ngx_command_t *cmd, void *cnf)
     if (!dict) {
       ngx_conf_log_error(
           NGX_LOG_EMERG, cf, 0, "get_hashed_dict %s failed", value[1].data);
-      return const_cast<char*>("Get hashed dict failed");
+      return const_cast<char*>("Can't load dictionary");
     }
     ngx_conf_log_error(NGX_LOG_NOTICE,
                        cf,
