@@ -183,3 +183,27 @@ Avail-Dictionary: foobar1
 X-Sdch-Encode: 0
 --- response
 FOO
+=== TEST 8: Offer dictionary (sdch is'n last encoding)
+--- config
+location /sdch {
+  sdch on;
+  sdch_dict $TEST_NGINX_SERVROOT/html/sdch/dict1.dict;
+  sdch_url /sdch/dict1.dict;
+  default_type text/html;
+  return 200 "FOO";
+}
+
+--- user_files
+>>> sdch/dict1.dict
+Host: example.com
+
+THE DICTIONARY
+
+--- request
+GET /sdch HTTP/1.1
+--- more_headers
+Accept-Encoding: gzip, deflate, sdch, br
+--- response_headers
+Get-Dictionary: /sdch/dict1.dict
+--- response
+FOO
