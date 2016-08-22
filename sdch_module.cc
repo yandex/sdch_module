@@ -565,10 +565,10 @@ header_filter(ngx_http_request_t *r)
 
   ngx_str_t val;
   // Workaround for nginx's strstrn which is not decrementing "n" while doing
-  // outmost loop on strings. So 3ul is length(sdch) - 1.
+  // outmost loop on strings. So third parameter is length(sdch) - 1.
   if (header_find(&r->headers_in.headers, "accept-encoding", &val) == 0 ||
       (val.len < 4) ||
-      ngx_strstrn(val.data, const_cast<char*>("sdch"), 3ul) == 0) {
+      ngx_strstrn(val.data, const_cast<char*>("sdch"), size_t(4 - 1)) == 0) {
     ngx_log_debug(NGX_LOG_DEBUG_HTTP,
                   r->connection->log,
                   0,
