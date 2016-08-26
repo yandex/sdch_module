@@ -39,7 +39,5 @@ location /sdch {
   ["sdch/dict1.dict" => "THE DICTIONARY"],
 ]
 --- must_die
---- error_log eval
-qr{get_hashed_dict .*/html/sdch/dict1.dict failed}
 --- no_error_log
 [error]
