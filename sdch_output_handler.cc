@@ -101,7 +101,7 @@ Status OutputHandler::flush_out_buf(bool flush) {
   cl->buf->flush = flush ? 1 : 0;
   cl->next = NULL;
   *last_out_ = cl;
-  last_out_ = &out_;
+  last_out_ = &cl->next;
 
   out_buf_ = NULL;
 
@@ -115,6 +115,7 @@ Status OutputHandler::next_body() {
                           &busy_,
                           &out_,
                           (ngx_buf_tag_t) & sdch_module);
+  last_out_ = &out_;
   return rc == NGX_OK ? STATUS_OK : STATUS_ERROR;
 }
 
