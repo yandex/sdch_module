@@ -26,6 +26,8 @@ EncodingHandler::EncodingHandler(Handler* next,
 EncodingHandler::~EncodingHandler() {}
 
 bool EncodingHandler::init(RequestContext* ctx) {
+  ctx_ = ctx;
+
   // Output Dictionary server_id first
   next_->on_data(dict_->server_id().data(), 8);
 
