@@ -58,14 +58,14 @@ add_block_preprocessor(sub {
         THE OLD JS DICTIONARY
 
         >>> sdch/foo.css
-        ' . 'CSS ' x 65536 . '
+        ' . 'CSS ' x 655360 . '
       ');
 
     return $block;
   });
 
 
-repeat_each(1);
+repeat_each(10);
 no_shuffle();
 run_tests();
 
