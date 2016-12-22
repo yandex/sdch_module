@@ -20,8 +20,8 @@ class AutoautoHandler : public Handler {
 
   virtual bool init(RequestContext* ctx);
 
-  virtual Status on_data(const uint8_t* buf, size_t len);
-  virtual Status on_finish();
+  virtual ngx_int_t on_data(const uint8_t* buf, size_t len);
+  virtual ngx_int_t on_finish();
 
  private:
   // Keep context. For logging purpose mostly.

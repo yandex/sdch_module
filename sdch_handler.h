@@ -5,10 +5,13 @@
 #define SDCH_HANDLER_H_
 
 #include <sys/types.h>  // For size_t and ssize_t
+#include <stdint.h>
+
+extern "C" {
+#include <ngx_http.h>
+}
 
 #include "sdch_status.h"
-
-#include <stdint.h>
 
 namespace sdch {
 
@@ -28,11 +31,11 @@ class Handler {
 
   // Handle chunk of data. For example encode it with VCDIFF.
   // Almost every Handler should call next_->on_data() to keep chain.
-  virtual Status on_data(const uint8_t* buf, size_t len) = 0;
+  virtual ngx_int_t on_data(const uint8_t* buf, size_t len) = 0;
 
   // Called when request processing finished.
   // Default implementation just invokes next_->on_finish();
-  virtual Status on_finish();
+  virtual ngx_int_t on_finish();
 
   Handler* next() const { return next_; }
 

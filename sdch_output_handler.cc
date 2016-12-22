@@ -20,18 +20,18 @@ bool OutputHandler::init(RequestContext* ctx) {
   return true;
 }
 
-Status OutputHandler::on_data(const uint8_t* buf, size_t len) {
+ngx_int_t OutputHandler::on_data(const uint8_t* buf, size_t len) {
   Status res = write(buf, len);
-  if (!out_)
-    return res;
+  if (res == STATUS_ERROR)
+    return NGX_ERROR;
 
   return next_body();
 }
 
-Status OutputHandler::on_finish() {
+ngx_int_t OutputHandler::on_finish() {
   out_buf_->last_buf = 1;
   if (flush_out_buf(false) == STATUS_ERROR)
-    return STATUS_ERROR;
+    return NGX_ERROR;
 
   return next_body();
 }
@@ -108,7 +108,7 @@ Status OutputHandler::flush_out_buf(bool flush) {
   return STATUS_OK;
 }
 
-Status OutputHandler::next_body() {
+ngx_int_t OutputHandler::next_body() {
   ngx_int_t rc = next_body_(ctx_->request, out_);
   ngx_chain_update_chains(ctx_->request->pool,
                           &free_,
@@ -116,7 +116,7 @@ Status OutputHandler::next_body() {
                           &out_,
                           (ngx_buf_tag_t) & sdch_module);
   last_out_ = &out_;
-  return rc == NGX_OK ? STATUS_OK : STATUS_ERROR;
+  return rc;
 }
 
 }  // namespace sdch
