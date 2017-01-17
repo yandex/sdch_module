@@ -21,6 +21,8 @@ add_block_preprocessor(sub {
         sdch_dict $servroot/html/sdch/css_old.dict css 2;
         sdch_dict $servroot/html/sdch/js_old.dict js 2;
         sdch_types text/css application/x-javascript;
+
+        limit_rate 1300000;
       ");
 
     $block->set_value(config => '
