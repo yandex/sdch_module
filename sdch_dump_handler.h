@@ -19,7 +19,7 @@ class DumpHandler : public Handler {
 
   virtual bool init(RequestContext* ctx);
 
-  virtual Status on_data(const uint8_t* buf, size_t len);
+  virtual ngx_int_t on_data(const uint8_t* buf, size_t len);
 
  private:
   FDHolder fd_;

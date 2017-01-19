@@ -26,8 +26,8 @@ class EncodingHandler : public Handler,
 
   // sdch::Handler implementation
   virtual bool init(RequestContext* ctx);
-  virtual Status on_data(const uint8_t* buf, size_t len);
-  virtual Status on_finish();
+  virtual ngx_int_t on_data(const uint8_t* buf, size_t len);
+  virtual ngx_int_t on_finish();
 
   // open_vcdiff::OutputStringInterface implementation
   virtual open_vcdiff::OutputStringInterface& append(const char* s, size_t n);
@@ -49,7 +49,7 @@ class EncodingHandler : public Handler,
   // For OutputStringInterface implementation
   size_t cursize_;
 
-  Status next_status_;
+  ngx_int_t next_status_;
 };
 
 

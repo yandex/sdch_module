@@ -21,6 +21,8 @@ add_block_preprocessor(sub {
         sdch_dict $servroot/html/sdch/css_old.dict css 2;
         sdch_dict $servroot/html/sdch/js_old.dict js 2;
         sdch_types text/css application/x-javascript;
+
+        limit_rate 1300000;
       ");
 
     $block->set_value(config => '
@@ -58,14 +60,14 @@ add_block_preprocessor(sub {
         THE OLD JS DICTIONARY
 
         >>> sdch/foo.css
-        ' . 'CSS ' x 65536 . '
+        ' . 'CSS ' x 655360 . '
       ');
 
     return $block;
   });
 
 
-repeat_each(1);
+repeat_each(10);
 no_shuffle();
 run_tests();
 

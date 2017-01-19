@@ -26,6 +26,8 @@ EncodingHandler::EncodingHandler(Handler* next,
 EncodingHandler::~EncodingHandler() {}
 
 bool EncodingHandler::init(RequestContext* ctx) {
+  ctx_ = ctx;
+
   // Output Dictionary server_id first
   next_->on_data(dict_->server_id().data(), 8);
 
@@ -38,12 +40,12 @@ bool EncodingHandler::init(RequestContext* ctx) {
   return true;
 }
 
-Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
+ngx_int_t EncodingHandler::on_data(const uint8_t* buf, size_t len) {
   // It will call ".append" which will pass it to the next_
   if (len) {
     if (!enc_.EncodeChunkToInterface(
              reinterpret_cast<const char*>(buf), len, this))
-      return STATUS_ERROR;
+      return NGX_ERROR;
     return next_status_;
   }
 
@@ -51,9 +53,9 @@ Status EncodingHandler::on_data(const uint8_t* buf, size_t len) {
   return next_->on_data(buf, len);
 }
 
-Status EncodingHandler::on_finish() {
+ngx_int_t EncodingHandler::on_finish() {
   if (!enc_.FinishEncodingToInterface(this))
-    return STATUS_ERROR;
+    return NGX_ERROR;
 
   return next_->on_finish();
 }

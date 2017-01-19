@@ -44,17 +44,17 @@ bool DumpHandler::init(RequestContext* ctx) {
   return true;
 }
 
-Status DumpHandler::on_data(const uint8_t* buf, size_t len) {
+ngx_int_t DumpHandler::on_data(const uint8_t* buf, size_t len) {
   ssize_t res = 0;
 
   if ((res = write(fd_, buf, len)) != static_cast<ssize_t>(len)) {
     // XXX
-    return STATUS_ERROR;
+    return NGX_ERROR;
   }
 
   if (next_)
     return next_->on_data(buf, len);
-  return STATUS_OK;
+  return NGX_OK;
 }
 
 }  // namespace sdch

@@ -25,15 +25,15 @@ class OutputHandler : public Handler {
 
   virtual bool init(RequestContext* ctx);
 
-  virtual Status on_data(const uint8_t* buf, size_t len);
+  virtual ngx_int_t on_data(const uint8_t* buf, size_t len);
 
-  virtual Status on_finish();
+  virtual ngx_int_t on_finish();
 
  private:
   Status get_buf();
   Status flush_out_buf(bool flush);
   Status write(const uint8_t* buf, size_t len);
-  Status next_body();
+  ngx_int_t next_body();
 
   RequestContext* ctx_;
   ngx_http_output_body_filter_pt next_body_;

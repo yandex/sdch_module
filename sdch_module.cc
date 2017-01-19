@@ -749,11 +749,11 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     }
 
     off_t buf_size = ngx_buf_size(in->buf);
-    Status status = ctx->handler->on_data(in->buf->pos, buf_size);
+    ngx_int_t status = ctx->handler->on_data(in->buf->pos, buf_size);
     in->buf->pos = in->buf->last;
     ctx->total_in += buf_size;
 
-    if (status == STATUS_ERROR) {
+    if (status == NGX_ERROR) {
       ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0, "sdch failed");
       ctx->done = true;
       return NGX_ERROR;
@@ -763,7 +763,7 @@ body_filter(ngx_http_request_t *r, ngx_chain_t *in)
       ngx_log_debug(NGX_LOG_DEBUG_HTTP,
           ctx->request->connection->log, 0, "closing ctx");
       ctx->done = true;
-      return ctx->handler->on_finish() == STATUS_OK ? NGX_OK : NGX_ERROR;
+      return ctx->handler->on_finish();
     }
   }
 
